@@ -57,18 +57,17 @@ const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-      </div>
-      
-      <div 
-        className="p-3 bg-card cursor-pointer" // Added cursor-pointer here
-        onClick={handleCardClick}
-      >
-        <CardTitle 
-            className="text-lg font-semibold truncate text-center text-foreground group-hover:text-primary transition-colors" 
-            title={name}
-        >
-            {name || 'Untitled Novel'}
-        </CardTitle>
+        {/* Novel Name Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none"> {/* Removed p-4 */}
+          <div className="bg-black/60 backdrop-blur-md p-2 px-3 shadow-lg w-full"> {/* Removed rounded-lg */}
+            <h2 
+              className="text-white text-sm md:text-base lg:text-lg font-semibold text-center text-wrap" /* Adjusted text sizes for responsiveness */
+              title={name}
+            >
+              {name || 'Untitled Novel'}
+            </h2>
+          </div>
+        </div>
       </div>
     </Card>
   );

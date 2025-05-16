@@ -9,4 +9,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <RootApp />
   </StrictMode>,
-)
+);
+
+// Add 'loaded' class to body to hide spinner and show app
+document.body.classList.add('loaded');

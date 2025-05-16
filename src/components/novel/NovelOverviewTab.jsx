@@ -54,7 +54,15 @@ const NovelOverviewTab = () => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false); // For collapsible
   const { toast } = useToast();
-  const { taskSettings, TASK_KEYS, themeMode, activeOsTheme } = useSettings(); // Added themeMode, activeOsTheme
+  const { 
+    systemPrompt, 
+    taskSettings, 
+    TASK_KEYS, 
+    themeMode, 
+    activeOsTheme, 
+    endpointProfiles, 
+    activeProfileId 
+  } = useSettings();
   const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
@@ -338,10 +346,21 @@ const NovelOverviewTab = () => {
       themes: localThemes,
       tone: localTone,
     };
+
+    let profileIdToUse = activeProfileId;
+    if (taskSettings && taskSettings[TASK_KEYS.NOVEL_DESC]?.profileId) {
+      profileIdToUse = taskSettings[TASK_KEYS.NOVEL_DESC].profileId;
+    }
+    const activeAIProfile = endpointProfiles?.find(p => p.id === profileIdToUse);
     
-    const activeAIProfile = getActiveProfile(); // from useSettings
     if (!activeAIProfile) {
-      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: "No active AI profile found." });
+      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: "No active AI profile found. Please check settings." });
+      toast({ title: "AI Profile Error", description: "No active AI profile found. Please configure one in settings.", variant: "destructive" });
+      return;
+    }
+    if (!activeAIProfile.endpointUrl) {
+      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: `AI Profile "${activeAIProfile.name}" has no endpoint URL.` });
+      toast({ title: "AI Profile Error", description: `The selected AI Profile "${activeAIProfile.name}" is missing an endpoint URL.`, variant: "destructive" });
       return;
     }
 

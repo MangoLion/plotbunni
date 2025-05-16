@@ -13,8 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { WandSparkles, Database, ChevronDown, ChevronRight, TriangleAlert } from 'lucide-react'; // Added icons
+import { WandSparkles, Database, ChevronDown, ChevronRight, TriangleAlert, Settings2 } from 'lucide-react'; // Added icons
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"; // Added
+import { Label } from "@/components/ui/label"; // Added
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added
 import { useData } from '../../context/DataContext';
 import { useSettings } from '../../context/SettingsContext';
 import { generateContextWithRetry } from '../../lib/aiContextUtils'; // Added
@@ -22,6 +24,7 @@ import { tokenCount } from '../../lib/utils'; // Added
 
 // Constants
 const ROLLING_WINDOW_SIZE = 200;
+const DEFAULT_SCENE_OPTION_VALUE = "__default__"; // Added for placeholder SelectItem
 
 export const AINovelWriterModal = ({
   isOpen,
@@ -61,6 +64,12 @@ export const AINovelWriterModal = ({
   const [currentSceneNovelDataContextString, setCurrentSceneNovelDataContextString] = useState(""); // For debugging
   const [isNovelDataCtxOpen, setIsNovelDataCtxOpen] = useState(false); // For new collapsible
 
+  // New state for scene range selection
+  const [selectedStartSceneId, setSelectedStartSceneId] = useState('');
+  const [selectedEndSceneId, setSelectedEndSceneId] = useState('');
+  const [sceneOptions, setSceneOptions] = useState([]);
+  const [isRangeSelectorOpen, setIsRangeSelectorOpen] = useState(false);
+
 
   const abortControllerRef = useRef(null);
   const confirmActionExecutedRef = useRef(false);
@@ -90,25 +99,34 @@ export const AINovelWriterModal = ({
 
   useEffect(() => {
     if (isOpen && novelData) {
-      const { actOrder, acts, chapters, scenes } = novelData; // novelSynopsis is now from useData()
-      const queue = [];
+      const { actOrder, acts, chapters, scenes } = novelData;
+      const options = [];
+      let initialProcessingQueue = [];
+
       if (actOrder && acts && chapters && scenes) {
-        actOrder.forEach(actId => {
+        actOrder.forEach((actId, actIndex) => {
           const act = acts[actId];
           if (act && act.chapterOrder) {
-            act.chapterOrder.forEach(chapterId => {
+            act.chapterOrder.forEach((chapterId, chapterIndex) => {
               const chapter = chapters[chapterId];
               if (chapter && chapter.sceneOrder) {
-                chapter.sceneOrder.forEach(sceneId => {
+                chapter.sceneOrder.forEach((sceneId, sceneIndex) => {
                   const scene = scenes[sceneId];
                   if (scene) {
-                    queue.push({ 
-                      id: scene.id, 
-                      name: scene.name || 'Unnamed Scene', 
-                      content: scene.content || '', 
-                      chapterId: chapter.id, // Ensure chapter.id is available and correct
+                    const sceneDetail = {
+                      id: scene.id,
+                      name: scene.name || 'Unnamed Scene',
+                      content: scene.content || '',
+                      chapterId: chapter.id,
                       chapterName: chapter.name || 'Unnamed Chapter',
-                      actName: act.name || 'Unnamed Act'
+                      actName: act.name || 'Unnamed Act',
+                      originalIndices: { actIndex, chapterIndex, sceneIndex }
+                    };
+                    initialProcessingQueue.push(sceneDetail);
+                    options.push({
+                      value: scene.id,
+                      label: `${act.name || `Act ${actIndex + 1}`} / ${chapter.name || `Chapter ${chapterIndex + 1}`} / ${scene.name || `Scene ${sceneIndex + 1}`}`,
+                      originalIndices: { actIndex, chapterIndex, sceneIndex }
                     });
                   }
                 });
@@ -117,37 +135,93 @@ export const AINovelWriterModal = ({
           }
         });
       }
-      setScenesQueue(queue);
-      setTotalScenesCount(queue.length);
-      setScenesWrittenCount(0);
-      setCurrentSceneIndex(0);
+      setSceneOptions(options);
+
+      let filteredQueue = [...initialProcessingQueue];
+      // Adjust filtering logic to handle DEFAULT_SCENE_OPTION_VALUE
+      const effectiveStartSceneId = selectedStartSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedStartSceneId;
+      const effectiveEndSceneId = selectedEndSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedEndSceneId;
+
+      if (effectiveStartSceneId) {
+        const startIndex = initialProcessingQueue.findIndex(s => s.id === effectiveStartSceneId);
+        if (startIndex !== -1) {
+          filteredQueue = initialProcessingQueue.slice(startIndex);
+        }
+      }
+
+      if (effectiveEndSceneId) {
+        // If a start scene is selected, search within the already sliced queue. Otherwise, search in the initial full queue.
+        const queueToSearchForEnd = effectiveStartSceneId ? filteredQueue : initialProcessingQueue;
+        const endIndexInThatQueue = queueToSearchForEnd.findIndex(s => s.id === effectiveEndSceneId);
+        
+        if (endIndexInThatQueue !== -1) {
+          if (effectiveStartSceneId) {
+            // If start was selected, slice the `filteredQueue` (which starts from `effectiveStartSceneId`)
+            filteredQueue = filteredQueue.slice(0, endIndexInThatQueue + 1);
+          } else {
+            // If no start was selected, slice the `initialProcessingQueue`
+            const originalEndIndex = initialProcessingQueue.findIndex(s => s.id === effectiveEndSceneId);
+             if (originalEndIndex !== -1) { // Should always be found if endIndexInThatQueue was found
+                filteredQueue = initialProcessingQueue.slice(0, originalEndIndex + 1);
+             }
+          }
+        }
+      }
+      
+      setScenesQueue(filteredQueue);
+      setTotalScenesCount(filteredQueue.length);
+
+      // Reset generation state as the queue/range might have changed
       setIsGenerating(false);
-      setErrorMessages([]);
+      setCurrentSceneIndex(0);
+      setScenesWrittenCount(0);
+      // Don't clear errorMessages or generatedContents here, only on explicit start
       setCurrentStreamingText('');
-      setGeneratedContents(new Map()); // Reset local store
-      setHasAttemptedSaveOnStop(false); // Reset save attempt flag
-      if (queue.length > 0) {
-        setCurrentChapterName(queue[0].chapterName);
-      setCurrentSceneName(queue[0].name);
+      
+      if (filteredQueue.length > 0) {
+        setCurrentChapterName(filteredQueue[0].chapterName);
+        setCurrentSceneName(filteredQueue[0].name);
       } else {
         setCurrentChapterName('');
         setCurrentSceneName('');
       }
-      // Reset memory UI states
+      
+      // Reset memory UI states for the (potentially new) first scene in queue
       setCurrentSceneTokenBreakdown({ system: 0, query: 0, novelData: 0, currentText: 0 });
       setCurrentSceneEstimatedTokens(0);
-      setCurrentSceneMaxPromptTokens(currentAIProfile?.contextLength || 4096); // Initialize with profile's context length
+      setCurrentSceneMaxPromptTokens(currentAIProfile?.contextLength || 4096);
       setCurrentSceneNovelContextLevel(0);
-      setIsMemoryDetailOpen(false);
+      setIsMemoryDetailOpen(false); // Close memory details when range changes
 
     } else if (!isOpen) {
+        // Full reset when modal closes
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
         }
         setIsGenerating(false);
+        setSceneOptions([]);
+        setSelectedStartSceneId(DEFAULT_SCENE_OPTION_VALUE); // Reset to default placeholder value
+        setSelectedEndSceneId(DEFAULT_SCENE_OPTION_VALUE);   // Reset to default placeholder value
+        setIsRangeSelectorOpen(false);
+        setScenesQueue([]);
+        setTotalScenesCount(0);
+        setScenesWrittenCount(0);
+        setCurrentSceneIndex(0);
+        setCurrentChapterName('');
+        setCurrentSceneName('');
+        setErrorMessages([]);
+        setCurrentStreamingText('');
+        setGeneratedContents(new Map());
+        setHasAttemptedSaveOnStop(false);
+        setCurrentSceneTokenBreakdown({ system: 0, query: 0, novelData: 0, currentText: 0 });
+        setCurrentSceneEstimatedTokens(0);
+        setCurrentSceneMaxPromptTokens(currentAIProfile?.contextLength || 4096);
+        setCurrentSceneNovelContextLevel(0);
+        setIsMemoryDetailOpen(false);
+        setIsNovelDataCtxOpen(false);
     }
-  }, [isOpen, novelData, currentAIProfile]); // Added currentAIProfile
+  }, [isOpen, novelData, currentAIProfile, selectedStartSceneId, selectedEndSceneId]);
 
   const getActiveEndpointConfig = () => { // This function now primarily uses currentAIProfile state
     if (!currentAIProfile) {
@@ -420,9 +494,29 @@ export const AINovelWriterModal = ({
       });
     } else {
       // No content to save, ensure it's cleared if action implies it (e.g. stop)
-      // This path means no prompt will be shown.
-      // If called from stop/close, and no content, it's fine.
+    // This path means no prompt will be shown.
+    // If called from stop/close, and no content, it's fine.
     }
+  };
+
+  const getSceneComparableOrder = (sceneId) => {
+    if (!sceneId || sceneOptions.length === 0) return null;
+    const sceneDetail = sceneOptions.find(s => s.value === sceneId);
+    if (!sceneDetail || !sceneDetail.originalIndices) return null;
+    const { actIndex, chapterIndex, sceneIndex } = sceneDetail.originalIndices;
+    const pad = (num) => String(num).padStart(3, '0'); // Pad for correct string comparison
+    return `${pad(actIndex)}_${pad(chapterIndex)}_${pad(sceneIndex)}`;
+  };
+
+  const isStartAfterEnd = () => {
+    const effectiveStartSceneId = selectedStartSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedStartSceneId;
+    const effectiveEndSceneId = selectedEndSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedEndSceneId;
+
+    if (!effectiveStartSceneId || !effectiveEndSceneId) return false;
+    
+    const startOrder = getSceneComparableOrder(effectiveStartSceneId);
+    const endOrder = getSceneComparableOrder(effectiveEndSceneId);
+    return startOrder && endOrder && startOrder > endOrder;
   };
 
   const progressValue = totalScenesCount > 0 ? (scenesWrittenCount / totalScenesCount) * 100 : 0;
@@ -470,20 +564,80 @@ export const AINovelWriterModal = ({
 
           <ScrollArea className="flex-grow">
             <div className="px-6 py-4 space-y-4">
-              {/* Memory Progress Bar & Details for Current Scene MOVED HERE */}
+              {/* Scene Range Selector Collapsible */}
+              <Collapsible open={isRangeSelectorOpen} onOpenChange={setIsRangeSelectorOpen} className="border-b pb-4">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start px-0 hover:bg-transparent">
+                    {isRangeSelectorOpen ? <ChevronDown className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4 mr-2" />}
+                    <Settings2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Select Scene Range (Optional)
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="startScene" className="text-xs">Start Scene</Label>
+                      <Select 
+                        value={selectedStartSceneId || DEFAULT_SCENE_OPTION_VALUE} 
+                        onValueChange={(value) => setSelectedStartSceneId(value === DEFAULT_SCENE_OPTION_VALUE ? '' : value)} 
+                        disabled={isGenerating}
+                      >
+                        <SelectTrigger id="startScene">
+                          <SelectValue placeholder="From First Scene" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>From First Scene</SelectItem>
+                          {sceneOptions.map(option => (
+                            <SelectItem key={`start-${option.value}`} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="endScene" className="text-xs">End Scene</Label>
+                      <Select 
+                        value={selectedEndSceneId || DEFAULT_SCENE_OPTION_VALUE} 
+                        onValueChange={(value) => setSelectedEndSceneId(value === DEFAULT_SCENE_OPTION_VALUE ? '' : value)} 
+                        disabled={isGenerating}
+                      >
+                        <SelectTrigger id="endScene">
+                          <SelectValue placeholder="To Last Scene" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>To Last Scene</SelectItem>
+                          {sceneOptions.map(option => (
+                            <SelectItem key={`end-${option.value}`} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {isStartAfterEnd() && (
+                    <p className="text-xs text-destructive text-center pt-1">
+                      Start scene cannot be after the end scene.
+                    </p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Memory Progress Bar & Details for Current Scene */}
               {isGenerating && scenesQueue[currentSceneIndex] && (
                 <>
-                  <div className="flex items-center gap-2 py-3 border-b"> {/* Removed px-6 */}
+                  <div className="flex items-center gap-2 py-3 border-b">
                     <Database className="h-5 w-5 text-muted-foreground" />
-                    <Progress 
-                      value={currentSceneMaxPromptTokens > 0 ? (currentSceneEstimatedTokens / currentSceneMaxPromptTokens) * 100 : 0} 
+                    <Progress
+                      value={currentSceneMaxPromptTokens > 0 ? (currentSceneEstimatedTokens / currentSceneMaxPromptTokens) * 100 : 0}
                       className={`w-full [&>div]:transition-all [&>div]:duration-500 ${
-                        currentSceneMaxPromptTokens > 0 && currentSceneEstimatedTokens / currentSceneMaxPromptTokens >= 1 ? ' [&>div]:bg-destructive' : 
+                        currentSceneMaxPromptTokens > 0 && currentSceneEstimatedTokens / currentSceneMaxPromptTokens >= 1 ? ' [&>div]:bg-destructive' :
                         currentSceneMaxPromptTokens > 0 && currentSceneEstimatedTokens / currentSceneMaxPromptTokens >= 0.5 ? ' [&>div]:bg-yellow-500' : ''
                       }`}
                     />
                   </div>
-                  <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="py-2 border-b text-xs"> {/* Removed px-6 */}
+                  <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="py-2 border-b text-xs">
                     <CollapsibleTrigger asChild>
                       <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground flex items-center">
                         Memory Details for: "{scenesQueue[currentSceneIndex].name}" (Lvl: {currentSceneNovelContextLevel > 0 ? currentSceneNovelContextLevel : currentSceneNovelContextLevel === -1 ? 'ERR' : 'N/A'})
@@ -505,7 +659,7 @@ export const AINovelWriterModal = ({
                               )}
                               <span className={
                                 currentSceneNovelContextLevel === -1 ? 'text-destructive' :
-                                currentSceneNovelContextLevel === 4 ? 'text-destructive' :
+                                currentSceneNovelContextLevel === 4 ? 'text-destructive' : // Assuming level 4 is also an error/bad state
                                 currentSceneNovelContextLevel === 2 || currentSceneNovelContextLevel === 3 ? 'text-yellow-600 dark:text-yellow-400' : ''
                               }>
                                 Novel Data Context (Lvl {currentSceneNovelContextLevel === -1 ? 'ERR' : currentSceneNovelContextLevel}):
@@ -515,7 +669,7 @@ export const AINovelWriterModal = ({
                               </span>
                             </p>
                           )}
-                          {currentSceneNovelContextLevel && currentSceneNovelContextLevel > 1 && currentSceneNovelContextLevel !== -1 && (
+                          {currentSceneNovelContextLevel && currentSceneNovelContextLevel > 1 && currentSceneNovelContextLevel !== -1 && ( // Exclude error level -1
                             <p className="text-xs text-yellow-600 dark:text-yellow-400 pl-4">
                               (Context automatically reduced to fit model limits. Level 1 is most detailed.)
                             </p>
@@ -525,7 +679,6 @@ export const AINovelWriterModal = ({
                               (Failed to generate context, likely too large even after trimming.)
                             </p>
                           )}
-                           {/* currentSceneTokenBreakdown.currentText is likely 0 for AINovelWriter as existing scene content isn't usually part of the payload by default */}
                           <p className="pt-1 border-t mt-1 font-semibold">Total Estimated Input: {currentSceneEstimatedTokens} tokens</p>
                           <p className="text-slate-500 dark:text-slate-400">Max Output Tokens (Model Setting): {currentAIProfile.maxOutputTokens || 'N/A'} tokens</p>
                           <p className="text-slate-500 dark:text-slate-400">Safety Buffer: {50} tokens</p>
@@ -537,7 +690,7 @@ export const AINovelWriterModal = ({
                   </Collapsible>
 
                   {/* Collapsible for Novel Data Context String */}
-                  <Collapsible open={isNovelDataCtxOpen} onOpenChange={setIsNovelDataCtxOpen} className="py-2 border-b text-xs"> {/* Removed px-6 */}
+                  <Collapsible open={isNovelDataCtxOpen} onOpenChange={setIsNovelDataCtxOpen} className="py-2 border-b text-xs">
                     <CollapsibleTrigger asChild>
                       <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground flex items-center">
                         View Full Prompt Context for "{scenesQueue[currentSceneIndex].name}"
@@ -559,7 +712,12 @@ export const AINovelWriterModal = ({
               <div>
                 <div className="flex justify-between mb-1 text-sm">
                   <span>Overall Progress:</span>
-                  <span>{scenesWrittenCount} / {totalScenesCount} scenes</span>
+                  <span>
+                    {scenesQueue.length > 0 || totalScenesCount > 0 ? 
+                      `${scenesWrittenCount} / ${totalScenesCount} scenes` : 
+                      "No scenes selected/available"
+                    }
+                  </span>
                 </div>
                 <Progress value={progressValue} className="w-full" />
               </div>
@@ -607,10 +765,17 @@ export const AINovelWriterModal = ({
           </ScrollArea> {/* Closing ScrollArea tag added here */}
 
           <DialogFooter className="p-6 pt-4 border-t mt-auto">
-            <Button variant="outline" onClick={handleCloseModal} disabled={isGenerating && scenesQueue.length > 0}>
+            <Button variant="outline" onClick={handleCloseModal} disabled={isGenerating && scenesQueue.length > 0 && totalScenesCount > 0}>
               Close
             </Button>
-            <Button onClick={handleStartStopGeneration} disabled={totalScenesCount === 0 && !isGenerating && scenesQueue.length === 0}>
+            <Button 
+              onClick={handleStartStopGeneration} 
+              disabled={
+                (totalScenesCount === 0 && !isGenerating && scenesQueue.length === 0) || 
+                isStartAfterEnd() ||
+                (isGenerating && scenesQueue.length === 0) // Also disable if generating but queue became empty (shouldn't happen)
+              }
+            >
               {isGenerating ? 'Stop Writing' : 'Start Writing'}
             </Button>
           </DialogFooter>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Markdown from 'react-markdown'; // Added Markdown
 import {
   Dialog,
   DialogContent,
@@ -40,18 +41,29 @@ export const AISuggestionModal = ({
     endpointProfiles,
     activeProfileId: globalActiveProfileId,
     taskSettings,
-    getActiveProfile, // Assuming getActiveProfile is available to get the full profile object
+    // getActiveProfile, // Removed as it's not used directly by this component
   } = useSettings();
 
   const [query, setQuery] = useState(initialQuery || '');
   const [aiResponse, setAiResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('query');
+  const [activeTab, setActiveTab] = useState('suggestion');
   const abortControllerRef = useRef(null);
+  const suggestionTextareaRef = useRef(null); // Added ref for suggestion textarea
+  const [isEditingSuggestion, setIsEditingSuggestion] = useState(false); // Added for editable suggestion
+
+  // State for "Continue Generating" feature
+  const [lastSuccessfulQuery, setLastSuccessfulQuery] = useState('');
+  const [lastSuccessfulEditableSystemPrompt, setLastSuccessfulEditableSystemPrompt] = useState('');
+  const [lastSuccessfulEditableNovelData, setLastSuccessfulEditableNovelData] = useState('');
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [isNovelDataOpen, setIsNovelDataOpen] = useState(false);
   const [isCurrentTextOpen, setIsCurrentTextOpen] = useState(false);
   const [includeCurrentTextInPrompt, setIncludeCurrentTextInPrompt] = useState(false);
+
+  // Editable versions of systemPrompt and novelData
+  const [editableSystemPrompt, setEditableSystemPrompt] = useState('');
+  const [editableNovelData, setEditableNovelData] = useState('');
 
   // State for memory progress bar
   const [estimatedTotalTokens, setEstimatedTotalTokens] = useState(0);
@@ -84,6 +96,16 @@ export const AISuggestionModal = ({
       setIsSystemPromptOpen(false);
       setIsNovelDataOpen(false);
       setIsCurrentTextOpen(false);
+      setIsEditingSuggestion(false); // Reset edit state
+      // Initialize editable fields with current context/props
+      setEditableSystemPrompt(systemPrompt || "You are an experienced creative writing assistant.");
+      setEditableNovelData(novelData || '');
+
+      // Reset states for "Continue Generating"
+      setLastSuccessfulQuery('');
+      setLastSuccessfulEditableSystemPrompt('');
+      setLastSuccessfulEditableNovelData('');
+
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
@@ -95,7 +117,7 @@ export const AISuggestionModal = ({
       }
       setIsLoading(false);
     }
-  }, [isOpen, initialQuery]);
+  }, [isOpen, initialQuery, systemPrompt, novelData]);
 
   // Effect to pre-fill aiResponse when "Continue from" is checked
   useEffect(() => {
@@ -119,9 +141,9 @@ export const AISuggestionModal = ({
     const calculatedMaxPromptTokens = (contextLength || 4096) - (maxOutputTokens || 1024) - safetyBuffer;
     setMaxContextTokensForPrompt(calculatedMaxPromptTokens > 0 ? calculatedMaxPromptTokens : 200); // Ensure it's positive
 
-    const systemPromptTokens = tokenCount(systemPrompt);
+    const systemPromptTokens = tokenCount(editableSystemPrompt);
     const queryTokens = tokenCount(query);
-    const novelContextTokensValue = novelDataTokens !== undefined ? novelDataTokens : tokenCount(novelData);
+    const novelContextTokensValue = tokenCount(editableNovelData); // Use editableNovelData for token count
     const currentTextTokensValue = includeCurrentTextInPrompt ? tokenCount(currentText) : 0;
     
     setTokenBreakdown({
@@ -132,7 +154,21 @@ export const AISuggestionModal = ({
     });
     setEstimatedTotalTokens(systemPromptTokens + queryTokens + novelContextTokensValue + currentTextTokensValue);
 
-  }, [isOpen, currentProfile, systemPrompt, query, novelData, novelDataTokens, currentText, includeCurrentTextInPrompt]);
+  }, [isOpen, currentProfile, editableSystemPrompt, query, editableNovelData, currentText, includeCurrentTextInPrompt]);
+
+  // Effect for resizing suggestion textarea
+  useEffect(() => {
+    if (isEditingSuggestion && suggestionTextareaRef.current) {
+      const textarea = suggestionTextareaRef.current;
+      textarea.style.height = '0px'; // Reset height to correctly calculate scrollHeight
+      // It's often good to defer the height setting to allow the DOM to update
+      setTimeout(() => {
+        if (textarea) { // Check ref again in case component unmounted
+          textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+      }, 0);
+    }
+  }, [aiResponse, isEditingSuggestion]); // Rerun when aiResponse changes or editing mode toggles
 
 
   const getActiveEndpointConfig = () => {
@@ -154,53 +190,101 @@ export const AISuggestionModal = ({
     };
   };
 
-  const handleGetSuggestion = async () => {
-    const endpointConfig = getActiveEndpointConfig();
+  const handleGetSuggestion = async (options = {}) => {
+    const { isContinuationOfCurrentSuggestion = false } = options;
 
+    let systemPromptForAPI;
+    let queryForAPI;
+    let novelDataForAPI;
+    let textToContinueWithForAPI;
+    let shouldClearResponseInitially;
+
+    if (isContinuationOfCurrentSuggestion) {
+      if (!lastSuccessfulQuery && !lastSuccessfulEditableSystemPrompt && !lastSuccessfulEditableNovelData) {
+        // It's possible lastSuccessfulQuery is empty if the initial query was empty,
+        // but system prompt and novel data should ideally exist if a suggestion was made.
+        // For robustness, check if all are effectively empty or rely on aiResponse content.
+        // If aiResponse is also empty, this button shouldn't have been shown.
+        setAiResponse(prev => prev + "\n\n--- Error: Cannot continue, original context not found. ---");
+        setIsLoading(false);
+        return;
+      }
+      systemPromptForAPI = lastSuccessfulEditableSystemPrompt;
+      queryForAPI = lastSuccessfulQuery;
+      novelDataForAPI = lastSuccessfulEditableNovelData;
+      textToContinueWithForAPI = aiResponse; // Current aiResponse is the base
+      shouldClearResponseInitially = false; // We are appending
+    } else {
+      systemPromptForAPI = editableSystemPrompt;
+      queryForAPI = query;
+      novelDataForAPI = editableNovelData;
+      if (includeCurrentTextInPrompt) {
+        textToContinueWithForAPI = currentText;
+        shouldClearResponseInitially = false; 
+      } else {
+        textToContinueWithForAPI = null;
+        shouldClearResponseInitially = true;
+      }
+    }
+
+    const endpointConfig = getActiveEndpointConfig();
     if (!endpointConfig) {
-      setAiResponse("AI endpoint not configured. Please check settings.");
+      setAiResponse((shouldClearResponseInitially ? '' : aiResponse) + "\n\n--- AI endpoint not configured. Please check settings. ---");
       setActiveTab('suggestion');
       setIsLoading(false);
       return;
     }
+
+    // Token calculation for THIS specific request
+    const tempSystemPromptTokens = tokenCount(systemPromptForAPI);
+    const tempQueryTokens = tokenCount(queryForAPI);
+    const tempNovelContextTokensValue = tokenCount(novelDataForAPI);
+    const tempCurrentTextTokensValue = textToContinueWithForAPI ? tokenCount(textToContinueWithForAPI) : 0;
+    const tempTotalTokens = tempSystemPromptTokens + tempQueryTokens + tempNovelContextTokensValue + tempCurrentTextTokensValue;
     
-    if (estimatedTotalTokens > maxContextTokensForPrompt) {
-      setAiResponse(`Estimated prompt tokens (${estimatedTotalTokens}) exceed the maximum allowed for this model's configuration (${maxContextTokensForPrompt}). Please shorten your query or context.`);
+    if (tempTotalTokens > maxContextTokensForPrompt) {
+      setAiResponse((shouldClearResponseInitially ? '' : aiResponse) +
+        `\n\n--- Estimated prompt tokens (${tempTotalTokens}) for this request exceed the maximum allowed (${maxContextTokensForPrompt}). Please shorten your query or context. ---`);
       setActiveTab('suggestion');
       setIsLoading(false);
       return;
+    }
+
+    // If all checks passed and we are about to make the API call, update last successful states if it's a new query
+    if (!isContinuationOfCurrentSuggestion) {
+      setLastSuccessfulQuery(queryForAPI);
+      setLastSuccessfulEditableSystemPrompt(systemPromptForAPI);
+      setLastSuccessfulEditableNovelData(novelDataForAPI);
     }
 
     abortControllerRef.current = new AbortController();
     setIsLoading(true);
-    if (!includeCurrentTextInPrompt) {
-      setAiResponse(''); // Only clear if not continuing
+    setIsEditingSuggestion(false); // Exit edit mode when loading starts
+    if (shouldClearResponseInitially) {
+      setAiResponse('');
     }
-    // If includeCurrentTextInPrompt is true, aiResponse already holds currentText
-    // and the AI's new content will be appended to it.
+    // If continuing (from checkbox or "Continue Generating"), aiResponse already holds the base text.
     setActiveTab('suggestion');
 
     try {
       let userContent = "";
-      if (novelData && novelData.trim() !== '') {
-        userContent += `Novel Data Context:\n${novelData}\n\n---\n`;
+      if (novelDataForAPI && novelDataForAPI.trim() !== '') {
+        userContent += `Novel Data Context:\n${novelDataForAPI}\n\n---\n`;
       }
-      // User Query first
-      userContent += `User Query:\n${query}`;
+      userContent += `User Query:\n${queryForAPI}`;
 
-      // Then the text to continue, if applicable
-      if (includeCurrentTextInPrompt && currentText && currentText.trim() !== '') {
-        userContent += `\n\n---${currentText} (CONTINUE FROM HERE!)`;
+      if (textToContinueWithForAPI && textToContinueWithForAPI.trim() !== '') {
+        userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
       }
 
       const payload = {
         model: endpointConfig.model,
         messages: [
-          { role: 'system', content: systemPrompt || "You are a helpful assistant." },
+          { role: 'system', content: systemPromptForAPI || "You are a helpful assistant." },
           { role: 'user', content: userContent },
         ],
         stream: true,
-        max_tokens: endpointConfig.maxOutputTokens, // Add max_tokens
+        max_tokens: endpointConfig.maxOutputTokens,
       };
 
       const response = await fetch(endpointConfig.url, {
@@ -281,9 +365,14 @@ export const AISuggestionModal = ({
   const handleStopGeneration = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      abortControllerRef.current = null; 
+      // abortControllerRef.current = null; // Let the finally block in handleGetSuggestion clear it
     }
-    setIsLoading(false);
+    // setIsLoading(false); // isLoading will be set to false in the finally block
+    // setIsEditingSuggestion(false); // Already handled by finally block of handleGetSuggestion
+  };
+
+  const handleContinueSuggGeneration = () => {
+    handleGetSuggestion({ isContinuationOfCurrentSuggestion: true });
   };
 
   const handleAccept = () => {
@@ -385,6 +474,11 @@ export const AISuggestionModal = ({
           </TabsList>
 
           <TabsContent value="query" className="flex-grow space-y-3 py-1 pr-1"> {/* Removed overflow-y-auto */}
+            <div className="pb-3">
+              <Button onClick={handleGetSuggestion} className="w-full" disabled={isLoading}>
+                Get Suggestion
+              </Button>
+            </div>
             <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen} className="space-y-1">
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
@@ -394,19 +488,20 @@ export const AISuggestionModal = ({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <Textarea
-                  value={systemPrompt}
-                  readOnly
+                  value={editableSystemPrompt}
+                  onChange={(e) => setEditableSystemPrompt(e.target.value)}
                   rows={3}
                   className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
-                  placeholder="No system prompt configured."
+                  placeholder="Enter system prompt here..."
                 />
               </CollapsibleContent>
             </Collapsible>
 
-            {novelData && novelData.trim() !== '' && (
-              <Collapsible open={isNovelDataOpen} onOpenChange={setIsNovelDataOpen} className="space-y-1">
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
+            {/* NovelData is now always potentially present due to editableNovelData state */}
+            <Collapsible open={isNovelDataOpen} onOpenChange={setIsNovelDataOpen} className="space-y-1">
+              <CollapsibleTrigger asChild>
+                {/* The trigger text can still refer to the original novelData's properties like level */}
+                <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
                     <span>
                       Novel Data Context 
                       {/*novelDataLevel !== undefined && novelDataLevel > 0 && (
@@ -421,15 +516,15 @@ export const AISuggestionModal = ({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <Textarea
-                    value={novelData} // novelData is already a string or null/undefined
-                    readOnly
+                    value={editableNovelData} 
+                    onChange={(e) => setEditableNovelData(e.target.value)}
                     rows={5}
                     className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
-                    placeholder="Novel data context will appear here."
+                    placeholder="Enter novel data context here. (This will be used for the AI prompt)"
                   />
                 </CollapsibleContent>
               </Collapsible>
-            )}
+            {/* )} */} {/* Closing bracket for the original conditional rendering, now removed */}
 
             <div className="flex items-center space-x-2 py-2">
               <Checkbox
@@ -484,48 +579,81 @@ export const AISuggestionModal = ({
                 disabled={isLoading}
               />
             </div>
-            <div className="pt-3">
-              <Button onClick={handleGetSuggestion} className="w-full sm:w-auto" disabled={isLoading}>
-                Get Suggestion
-              </Button>
-            </div>
           </TabsContent>
 
-          <TabsContent value="suggestion" className="flex flex-col flex-grow py-1 pr-1"> {/* Removed overflow-y-auto */}
-            <div className="flex-grow overflow-y-auto">
+          <TabsContent value="suggestion" className="flex flex-col flex-grow py-1 pr-1">
+            {/* Response Area: Takes up available space and scrolls */}
+            <div className="flex-grow overflow-y-auto p-2"> {/* Added p-2 for consistency */}
               {isLoading && !aiResponse && (
-                <div className="w-full p-2 text-muted-foreground min-h-[100px]">Streaming suggestion...</div>
+                <div className="w-full text-muted-foreground min-h-[100px]">Streaming suggestion...</div>
+              )}
+              {isLoading && aiResponse && (
+                 <div className="w-full whitespace-pre-wrap break-words min-h-[100px]">
+                  <Markdown>{aiResponse}</Markdown>
+                  <span className="text-muted-foreground"> (streaming...)</span>
+                </div>
               )}
               {!isLoading && !aiResponse && (
                 <div className="flex items-center justify-center h-full text-slate-500 min-h-[100px]">
                   <p>No suggestion generated. Use the Query tab or check configuration.</p>
                 </div>
               )}
-              {aiResponse && (
-                 <div 
-                  id="aiResponseText"
-                  className="w-full p-2 whitespace-pre-wrap break-words min-h-[100px]"
-                 >
-                  {aiResponse}
-                </div>
+              {!isLoading && aiResponse && (
+                isEditingSuggestion ? (
+                  <Textarea
+                    ref={suggestionTextareaRef} // Assign ref
+                    value={aiResponse}
+                    onChange={(e) => setAiResponse(e.target.value)}
+                    onBlur={() => setIsEditingSuggestion(false)}
+                    autoFocus
+                    className="w-full min-h-[100px] resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 border border-input bg-background rounded-md p-3" // Added overflow-hidden
+                  />
+                ) : (
+                  <div
+                    onClick={() => {
+                      if (!isLoading) setIsEditingSuggestion(true);
+                    }}
+                    className="prose prose-sm dark:prose-invert max-w-none min-h-[100px] cursor-text p-3 border border-transparent hover:border-input rounded-md hover:bg-muted/30 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (!isLoading && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsEditingSuggestion(true); }}}
+                  >
+                    <Markdown>{aiResponse}</Markdown>
+                  </div>
+                )
               )}
             </div>
-            {isLoading && (
-              <div className="pt-2 mt-auto"> {/* Ensures button is at the bottom of the tab content area */}
-                <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
-                  Stop Generating
-                </Button>
+
+            {/* Buttons Area: Always at the bottom of the tab content */}
+            {(isLoading || (aiResponse && aiResponse.trim() !== '')) && (
+              <div className="pt-2 mt-auto"> {/* mt-auto pushes this div to the bottom of the flex-col parent */}
+                {isLoading ? (
+                  <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
+                    Stop Generating
+                  </Button>
+                ) : (
+                  // This branch is taken if !isLoading.
+                  // The outer condition ensures (aiResponse && aiResponse.trim() !== '') is true here.
+                  // Add check for lastSuccessfulEditableSystemPrompt to ensure context exists for continuation.
+                  <Button 
+                    onClick={handleContinueSuggGeneration} 
+                    className="w-full"
+                    disabled={!lastSuccessfulEditableSystemPrompt} // Disable if no prior successful context
+                  >
+                    Continue Generating
+                  </Button>
+                )}
               </div>
             )}
           </TabsContent>
         </Tabs>
       </div> {/* End of scrollable content area */}
 
-        <DialogFooter className="p-6 pt-4 border-t"> {/* Removed mt-auto */}
-          <Button variant="outline" onClick={handleModalClose} disabled={isLoading && !abortControllerRef.current?.signal.aborted}>
+        <DialogFooter className="p-6 pt-4 border-t">
+          <Button variant="outline" onClick={handleModalClose} disabled={isLoading && abortControllerRef.current && !abortControllerRef.current.signal.aborted}>
             Cancel
           </Button>
-          <Button onClick={handleAccept} disabled={!aiResponse || isLoading || activeTab !== 'suggestion'}>
+          <Button onClick={handleAccept} disabled={!aiResponse || isLoading || activeTab !== 'suggestion' || isEditingSuggestion}>
             Accept Suggestion
           </Button>
         </DialogFooter>

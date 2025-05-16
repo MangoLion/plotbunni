@@ -1,3 +1,15 @@
+// Helper function to generate UUID, with fallback for older browsers
+function generateUUID() {
+  if (crypto && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Basic fallback UUID generator (not cryptographically secure, but sufficient for unique IDs)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 /**
  * @typedef {object} Concept
  * @property {string} id - Unique identifier (e.g., UUID)
@@ -20,7 +32,7 @@
 export function createConcept(initialData = {}) {
   const now = Date.now();
   return {
-    id: initialData.id || crypto.randomUUID(), // Generate UUID for new concepts
+    id: initialData.id || generateUUID(), // Generate UUID for new concepts
     name: initialData.name || '',
     aliases: initialData.aliases || [],
     tags: initialData.tags || [],
@@ -64,7 +76,7 @@ export function createConcept(initialData = {}) {
 export function createConceptTemplate(initialData = {}) {
   const now = Date.now();
   return {
-    id: initialData.id || crypto.randomUUID(),
+    id: initialData.id || generateUUID(),
     name: initialData.name || 'Untitled Template',
     templateData: initialData.templateData || {},
     isDefault: initialData.isDefault || false,
@@ -96,7 +108,7 @@ export function createConceptTemplate(initialData = {}) {
 export function createScene(initialData = {}) {
   const now = Date.now();
   return {
-    id: initialData.id || crypto.randomUUID(),
+    id: initialData.id || generateUUID(),
     name: initialData.name || 'Untitled Scene',
     tags: initialData.tags || [],
     synopsis: initialData.synopsis || '',
@@ -125,7 +137,7 @@ export function createScene(initialData = {}) {
 export function createChapter(initialData = {}) {
   const now = Date.now();
   return {
-    id: initialData.id || crypto.randomUUID(),
+    id: initialData.id || generateUUID(),
     name: initialData.name || 'Untitled Chapter',
     sceneOrder: initialData.sceneOrder || [],
     creation_date: initialData.creation_date || now,
@@ -150,7 +162,7 @@ export function createChapter(initialData = {}) {
 export function createAct(initialData = {}) {
   const now = Date.now();
   return {
-    id: initialData.id || crypto.randomUUID(),
+    id: initialData.id || generateUUID(),
     name: initialData.name || 'Untitled Act',
     chapterOrder: initialData.chapterOrder || [],
     creation_date: initialData.creation_date || now,

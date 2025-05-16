@@ -1,3 +1,15 @@
+// Helper function to generate UUID, with fallback for older browsers
+function generateUUID() {
+  if (crypto && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Basic fallback UUID generator (not cryptographically secure, but sufficient for unique IDs)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 const DB_NAME = 'PlothareDB';
 const STORE_NAME = 'ProjectDataStore'; // This store will hold novel data and metadata
 const DB_VERSION = 3; // Incremented DB_VERSION for potential schema changes if any (though structure is mostly key-value)
@@ -146,7 +158,7 @@ export async function createNovel(novelName) {
     throw new Error("Novel name cannot be empty.");
   }
 
-  const novelId = crypto.randomUUID();
+  const novelId = generateUUID();
   const now = new Date().toISOString();
 
   const newNovelMetadata = {

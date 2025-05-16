@@ -294,7 +294,7 @@ const NovelGridView = () => {
       <header className="flex items-center justify-between p-4 border-b bg-background shadow-sm">
         <div className="flex items-center">
           <Rabbit className="h-7 w-7 mr-2 text-primary" />
-          <h1 className="text-2xl font-bold">Plot Bunni - My Novels</h1>
+          <h1 className="text-2xl font-bold">Plot Bunni <span className="hidden sm:inline">- My Novels</span></h1>
         </div>
         <div className="flex items-center">
           <input
@@ -333,7 +333,7 @@ const NovelGridView = () => {
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {filteredNovels.map(novel => (
             <NovelCard
               key={novel.id}

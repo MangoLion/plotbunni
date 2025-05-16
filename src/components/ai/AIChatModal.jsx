@@ -9,18 +9,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, ChevronDown, ChevronRight, Send, Bot, User, TriangleAlert, Database, RefreshCcw, StopCircle, Edit2, Check, XCircle } from 'lucide-react';
+import { X, ChevronDown, ChevronRight, Send, Bot, User, TriangleAlert, Database, RefreshCcw, StopCircle, Edit2, Check, XCircle, Settings2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useSettings } from '../../context/SettingsContext';
 import { useData } from '../../context/DataContext';
 import { tokenCount, cn } from '../../lib/utils';
 import { generateContextWithRetry } from '../../lib/aiContextUtils';
+
+const DEFAULT_SCENE_OPTION_VALUE = "__default__";
 
 const findLastSceneDetails = (actOrder, acts, chapters, scenes) => {
   if (!actOrder || actOrder.length === 0) return null;
@@ -69,6 +73,13 @@ export const AIChatModal = ({
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editText, setEditText] = useState("");
 
+  // State for scene range selection
+  const [selectedStartSceneId, setSelectedStartSceneId] = useState(DEFAULT_SCENE_OPTION_VALUE);
+  const [selectedEndSceneId, setSelectedEndSceneId] = useState(DEFAULT_SCENE_OPTION_VALUE);
+  const [sceneOptions, setSceneOptions] = useState([]);
+  const [isRangeSelectorOpen, setIsRangeSelectorOpen] = useState(false);
+
+
   useEffect(() => {
     const profileIdToUse = taskSettings[TASK_KEYS.CHATTING]?.profileId || globalActiveProfileId;
     const activeProf = endpointProfiles?.find(p => p.id === profileIdToUse);
@@ -82,17 +93,207 @@ export const AIChatModal = ({
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      if (!initialNovelContext.contextString || chatMessages.length === 0) {
-        generateInitialContext();
-      }
+      // Initial context generation is handled by the more specific useEffect below
+    } else {
+      // Reset scene selection when modal closes
+      setSelectedStartSceneId(DEFAULT_SCENE_OPTION_VALUE);
+      setSelectedEndSceneId(DEFAULT_SCENE_OPTION_VALUE);
+      setIsRangeSelectorOpen(false); // Optionally close the selector
     }
   }, [isOpen]);
+  
+  // Populate sceneOptions
+  useEffect(() => {
+    if (isOpen && actOrder && acts && chapters && scenes) {
+      const options = [];
+      actOrder.forEach((actId, actIndex) => {
+        const act = acts[actId];
+        if (act && act.chapterOrder) {
+          act.chapterOrder.forEach((chapterId, chapterIndex) => {
+            const chapter = chapters[chapterId];
+            if (chapter && chapter.sceneOrder) {
+              chapter.sceneOrder.forEach((sceneId, sceneIndex) => {
+                const scene = scenes[sceneId];
+                if (scene) {
+                  options.push({
+                    value: scene.id,
+                    label: `${act.name || `Act ${actIndex + 1}`} / ${chapter.name || `Chapter ${chapterIndex + 1}`} / ${scene.name || `Scene ${sceneIndex + 1}`}`,
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+      setSceneOptions(options);
+    } else if (!isOpen) {
+      setSceneOptions([]);
+    }
+  }, [isOpen, actOrder, acts, chapters, scenes]);
+
+  // generateInitialContext is now a dependency of regenerateContextCallback, ensure it's stable or part of useCallback
+  // For simplicity, making generateInitialContext a useCallback itself.
+  const generateInitialContext = useCallback(async () => {
+    if (!currentProfile || !actOrder || !acts || !chapters || !scenes || !concepts) {
+        setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "AI Profile or core novel data not ready." });
+        setActuallySentNovelContextTokens(0);
+        return;
+    }
+
+    let contextStrategy;
+    let contextBaseData = { actOrder, acts, chapters, scenes, concepts, novelSynopsis };
+    let contextTargetData = {};
+
+    const effectiveStartSceneId = selectedStartSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedStartSceneId;
+    const effectiveEndSceneId = selectedEndSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedEndSceneId;
+
+    if (effectiveStartSceneId || effectiveEndSceneId) {
+        const allScenesOrdered = [];
+        actOrder.forEach(actId => {
+            const act = acts[actId];
+            if (act && act.chapterOrder) {
+                act.chapterOrder.forEach(chapterId => {
+                    const chapter = chapters[chapterId];
+                    if (chapter && chapter.sceneOrder) {
+                        chapter.sceneOrder.forEach(sceneId => {
+                            if (scenes[sceneId]) {
+                                allScenesOrdered.push({ id: sceneId, chapterId: chapter.id, actId: act.id });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        let startIndex = 0;
+        if (effectiveStartSceneId) {
+            const foundStartIndex = allScenesOrdered.findIndex(s => s.id === effectiveStartSceneId);
+            if (foundStartIndex !== -1) startIndex = foundStartIndex;
+        }
+
+        let endIndex = allScenesOrdered.length - 1;
+        if (effectiveEndSceneId) {
+            const foundEndIndex = allScenesOrdered.findIndex(s => s.id === effectiveEndSceneId);
+            if (foundEndIndex !== -1) endIndex = foundEndIndex;
+        }
+        
+        if (startIndex > endIndex) { // Handle invalid range (e.g. start is after end) - use full range or show error? For now, let's take the smaller segment.
+            // This case should ideally be prevented by UI validation (isStartAfterEnd)
+            // If it occurs, it implies user selected start, then end before start.
+            // We can choose to use the full novel or a specific error.
+            // For now, let's assume UI prevents this or we take the literal slice which might be empty/invalid.
+            // A robust way: if startIndex > endIndex, maybe treat as no specific range or use the default.
+            // For now, let the slice proceed; if it's empty, it will be handled.
+        }
+
+        const scenesInRangeDetails = allScenesOrdered.slice(startIndex, endIndex + 1);
+        const scenesInRangeIds = scenesInRangeDetails.map(s => s.id);
+
+        if (scenesInRangeIds.length > 0) {
+            const filteredScenes = {};
+            scenesInRangeIds.forEach(id => { if (scenes[id]) filteredScenes[id] = scenes[id]; });
+
+            const chapterToScenesMap = new Map();
+            scenesInRangeDetails.forEach(detail => {
+                if (!chapterToScenesMap.has(detail.chapterId)) chapterToScenesMap.set(detail.chapterId, []);
+                chapterToScenesMap.get(detail.chapterId).push(detail.id);
+            });
+
+            const filteredChapters = {};
+            const actToChaptersMap = new Map();
+            chapterToScenesMap.forEach((sceneList, chapterId) => {
+                if (chapters[chapterId]) {
+                    filteredChapters[chapterId] = { ...chapters[chapterId], sceneOrder: sceneList };
+                    const actIdForChapter = allScenesOrdered.find(s => s.chapterId === chapterId)?.actId;
+                    if (actIdForChapter) {
+                        if (!actToChaptersMap.has(actIdForChapter)) actToChaptersMap.set(actIdForChapter, []);
+                        if (!actToChaptersMap.get(actIdForChapter).includes(chapterId)) {
+                           actToChaptersMap.get(actIdForChapter).push(chapterId);
+                        }
+                    }
+                }
+            });
+            
+            const filteredActs = {};
+            const filteredActOrder = [];
+            actOrder.forEach(actId => {
+                if (actToChaptersMap.has(actId) && acts[actId]) {
+                    const chaptersForThisAct = actToChaptersMap.get(actId).filter(chId => filteredChapters[chId]);
+                    if (chaptersForThisAct.length > 0) {
+                        filteredActs[actId] = { ...acts[actId], chapterOrder: chaptersForThisAct };
+                        if (!filteredActOrder.includes(actId)) {
+                           filteredActOrder.push(actId);
+                        }
+                    }
+                }
+            });
+
+            if (filteredActOrder.length > 0 && Object.keys(filteredScenes).length > 0) {
+                contextBaseData = {
+                    actOrder: filteredActOrder,
+                    acts: filteredActs,
+                    chapters: filteredChapters,
+                    scenes: filteredScenes,
+                    concepts,
+                    novelSynopsis
+                };
+                // If only one scene is effectively selected, use 'sceneText' strategy for more detail.
+                if (effectiveStartSceneId && effectiveStartSceneId === effectiveEndSceneId && scenesInRangeIds.length === 1) {
+                    contextStrategy = 'sceneText';
+                    contextTargetData = { targetSceneId: scenesInRangeIds[0], targetChapterId: scenesInRangeDetails[0].chapterId };
+                } else {
+                    contextStrategy = 'novelOutline'; // Outline of the selected (potentially multi-scene) range
+                }
+                contextTargetData = scenesInRangeIds.length === 1 ? { targetSceneId: scenesInRangeIds[0], targetChapterId: scenesInRangeDetails[0].chapterId } : {};
+
+            } else {
+                setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Selected scene range resulted in no content." });
+                setActuallySentNovelContextTokens(0);
+                return;
+            }
+        } else if (effectiveStartSceneId || effectiveEndSceneId) { // Range selected but resulted in no scenes
+            setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Selected scene range is invalid or empty." });
+            setActuallySentNovelContextTokens(0);
+            return;
+        }
+    }
+
+    // If no range is selected, or if filtering didn't change baseData significantly, use default logic
+    if (!effectiveStartSceneId && !effectiveEndSceneId) {
+        const defaultTarget = findLastSceneDetails(actOrder, acts, chapters, scenes);
+        contextStrategy = defaultTarget ? 'sceneText' : 'novelOutline';
+        contextTargetData = defaultTarget || {};
+        // contextBaseData remains the full novel data
+    }
+
+
+    const contextResult = await generateContextWithRetry({
+        strategy: contextStrategy,
+        baseData: contextBaseData,
+        targetData: contextTargetData,
+        aiProfile: currentProfile,
+        systemPromptText: systemPrompt,
+        userQueryText: taskSettings[TASK_KEYS.CHATTING]?.prompt || "Chat about the novel.",
+    });
+    setInitialNovelContext(contextResult);
+    setActuallySentNovelContextTokens(contextResult.estimatedTokens);
+  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId]);
+
+  const regenerateContextCallback = useCallback(async () => {
+    if (!currentProfile || !actOrder || !acts || !chapters || !scenes || !concepts) {
+      setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "AI Profile or core novel data not ready." });
+      setActuallySentNovelContextTokens(0);
+      return;
+    }
+    await generateInitialContext();
+  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId, generateInitialContext]); 
 
   useEffect(() => {
-    if (isOpen && (chatMessages.length === 0 || !initialNovelContext.contextString)) {
-        generateInitialContext();
+    if (isOpen && currentProfile) {
+      regenerateContextCallback();
     }
-  }, [actOrder, acts, chapters, scenes, concepts, novelSynopsis, isOpen, chatMessages.length]);
+  }, [isOpen, currentProfile, selectedStartSceneId, selectedEndSceneId, regenerateContextCallback]);
+
 
   useEffect(() => {
     if (chatAreaRef.current) {
@@ -127,23 +328,6 @@ export const AIChatModal = ({
 
   }, [isOpen, currentProfile, systemPrompt, initialNovelContext, chatMessages, userInput, actuallySentNovelContextTokens]);
 
-  const generateInitialContext = async () => {
-    if (!currentProfile || !actOrder || !acts || !chapters || !scenes || !concepts) {
-      setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "AI Profile or core novel data not ready." });
-      setActuallySentNovelContextTokens(0);
-      return;
-    }
-    const contextResult = await generateContextWithRetry({
-      strategy: findLastSceneDetails(actOrder, acts, chapters, scenes) ? 'sceneText' : 'novelOutline',
-      baseData: { actOrder, acts, chapters, scenes, concepts, novelSynopsis },
-      targetData: findLastSceneDetails(actOrder, acts, chapters, scenes) || {},
-      aiProfile: currentProfile,
-      systemPromptText: systemPrompt,
-      userQueryText: taskSettings[TASK_KEYS.CHATTING]?.prompt || "Chat about the novel.",
-    });
-    setInitialNovelContext(contextResult);
-    setActuallySentNovelContextTokens(contextResult.estimatedTokens); // Initially, assume full novel context is sent
-  };
 
   const handleSendMessage = async () => {
     if (!userInput.trim() || isLoading) return;
@@ -324,11 +508,88 @@ export const AIChatModal = ({
     onClose();
   };
 
+  const getSceneComparableOrder = (sceneId) => {
+    if (!sceneId || sceneOptions.length === 0) return null;
+    const sceneIndex = sceneOptions.findIndex(opt => opt.value === sceneId);
+    return sceneIndex !== -1 ? sceneIndex : null;
+  };
+
+  const isStartAfterEnd = () => {
+    const effectiveStartSceneIdVal = selectedStartSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedStartSceneId;
+    const effectiveEndSceneIdVal = selectedEndSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedEndSceneId;
+
+    if (!effectiveStartSceneIdVal || !effectiveEndSceneIdVal) return false;
+    
+    const startIndex = getSceneComparableOrder(effectiveStartSceneIdVal);
+    const endIndex = getSceneComparableOrder(effectiveEndSceneIdVal);
+    return startIndex !== null && endIndex !== null && startIndex > endIndex;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-[90vw] h-[90vh] flex flex-col p-0">
         <div className="flex-grow overflow-hidden flex flex-col pt-6">
           <div className="px-4 pt-3 pb-1 border-b">
+            {/* Scene Range Selector Collapsible */}
+            <Collapsible open={isRangeSelectorOpen} onOpenChange={setIsRangeSelectorOpen} className="pb-3 mb-3 border-b">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start px-0 hover:bg-transparent -ml-1">
+                    {isRangeSelectorOpen ? <ChevronDown className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4 mr-2" />}
+                    <Settings2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Select Scene Range for AI Context (Optional)
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="startScene" className="text-xs">Start Scene</Label>
+                      <Select 
+                        value={selectedStartSceneId} 
+                        onValueChange={(value) => setSelectedStartSceneId(value)} 
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger id="startScene">
+                          <SelectValue placeholder="From First Scene" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>From First Scene</SelectItem>
+                          {sceneOptions.map(option => (
+                            <SelectItem key={`start-${option.value}`} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="endScene" className="text-xs">End Scene</Label>
+                      <Select 
+                        value={selectedEndSceneId} 
+                        onValueChange={(value) => setSelectedEndSceneId(value)} 
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger id="endScene">
+                          <SelectValue placeholder="To Last Scene" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>To Last Scene</SelectItem>
+                          {sceneOptions.map(option => (
+                            <SelectItem key={`end-${option.value}`} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {isStartAfterEnd() && (
+                    <p className="text-xs text-destructive text-center pt-1">
+                      Warning: Start scene is after the end scene. Context might be limited or unexpected.
+                    </p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
             <div className="flex items-center justify-between gap-2 pb-2">
               <div className="flex items-center gap-2 flex-grow">
                 <Database className="h-5 w-5 text-muted-foreground" />

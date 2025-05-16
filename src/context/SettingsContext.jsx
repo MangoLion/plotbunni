@@ -203,6 +203,8 @@ const loadSettings = () => {
         themeMode: parsed.themeMode || 'system',
         userLightColors: parsed.userLightColors || { ...defaultLightPreset.colors },
         userDarkColors: parsed.userDarkColors || { ...defaultDarkPreset.colors },
+        fontFamily: parsed.fontFamily || DEFAULT_FONT_FAMILY,
+        fontSize: parsed.fontSize || DEFAULT_FONT_SIZE,
         taskSettings: taskSettings,
         systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant", // Updated default
       };
@@ -218,6 +220,8 @@ const loadSettings = () => {
     themeMode: 'system',
     userLightColors: { ...defaultLightPreset.colors },
     userDarkColors: { ...defaultDarkPreset.colors },
+    fontFamily: DEFAULT_FONT_FAMILY,
+    fontSize: DEFAULT_FONT_SIZE,
     taskSettings: createDefaultTaskSettings(defaultProfileId),
     systemPrompt: "You are an experienced creative writing assistant", // Updated default
   };
