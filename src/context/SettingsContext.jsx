@@ -35,8 +35,8 @@ const TASK_KEYS = {
 
 const DEFAULT_TASK_PROMPTS = {
   [TASK_KEYS.NOVEL_DESC]: "Write the synopsis for my novel. Don't include title or any other text or labels!",
-  [TASK_KEYS.SYNOPSIS]: "write the synopsis for the next chapter scene.",
-  [TASK_KEYS.SCENE_TEXT]: "Based on the provided scene synopsis and context, write the full text for this scene.",
+  [TASK_KEYS.SYNOPSIS]: "write the synopsis for the next chapter scene. Do not write the chapter or scene title.",
+  [TASK_KEYS.SCENE_TEXT]: "Based on the provided scene synopsis and context, write the full text for this scene. Do not write the chapter or scene title.",
   [TASK_KEYS.CHAT]: "Engage in a helpful conversation about the novel, offering ideas, answering questions, or discussing plot points.",
   [TASK_KEYS.PLANNER_OUTLINE]: 
   `Generate a comprehensive plot outline for a new novel based on the synopsis above. NO markdown, plaintext only!

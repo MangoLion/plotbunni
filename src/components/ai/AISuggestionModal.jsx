@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 // Input import removed as it's not used
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Added RadioGroup
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
@@ -59,7 +59,7 @@ export const AISuggestionModal = ({
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [isNovelDataOpen, setIsNovelDataOpen] = useState(false);
   const [isCurrentTextOpen, setIsCurrentTextOpen] = useState(false);
-  const [includeCurrentTextInPrompt, setIncludeCurrentTextInPrompt] = useState(false);
+  const [promptMode, setPromptMode] = useState('scratch'); // 'scratch', 'continue', 'modify'
 
   // Editable versions of systemPrompt and novelData
   const [editableSystemPrompt, setEditableSystemPrompt] = useState('');
@@ -92,7 +92,7 @@ export const AISuggestionModal = ({
       setQuery(initialQuery || '');
       setAiResponse('');
       setActiveTab('query');
-      setIncludeCurrentTextInPrompt(false);
+      setPromptMode('scratch'); // Reset to default
       setIsSystemPromptOpen(false);
       setIsNovelDataOpen(false);
       setIsCurrentTextOpen(false);
@@ -119,16 +119,16 @@ export const AISuggestionModal = ({
     }
   }, [isOpen, initialQuery, systemPrompt, novelData]);
 
-  // Effect to pre-fill aiResponse when "Continue from" is checked
-  useEffect(() => {
-    if (isOpen && includeCurrentTextInPrompt) {
-      setAiResponse(currentText || '');
-    }
-    // If the user unchecks it, aiResponse is not automatically cleared.
-  }, [isOpen, includeCurrentTextInPrompt, currentText]);
+// Effect to pre-fill aiResponse when "Continue from" is selected
+useEffect(() => {
+  if (isOpen && promptMode === 'continue') {
+    setAiResponse(currentText || '');
+  }
+  // For 'scratch' or 'modify', aiResponse should start empty or be cleared by handleGetSuggestion.
+}, [isOpen, promptMode, currentText]);
 
-  // Effect to update token estimation and max context tokens
-  useEffect(() => {
+// Effect to update token estimation and max context tokens
+useEffect(() => {
     if (!isOpen || !currentProfile) {
       setEstimatedTotalTokens(0);
       // Potentially set maxContextTokensForPrompt to a default if profile is null
@@ -144,7 +144,7 @@ export const AISuggestionModal = ({
     const systemPromptTokens = tokenCount(editableSystemPrompt);
     const queryTokens = tokenCount(query);
     const novelContextTokensValue = tokenCount(editableNovelData); // Use editableNovelData for token count
-    const currentTextTokensValue = includeCurrentTextInPrompt ? tokenCount(currentText) : 0;
+    const currentTextTokensValue = (promptMode === 'continue' || promptMode === 'modify') ? tokenCount(currentText) : 0;
     
     setTokenBreakdown({
       system: systemPromptTokens,
@@ -154,7 +154,7 @@ export const AISuggestionModal = ({
     });
     setEstimatedTotalTokens(systemPromptTokens + queryTokens + novelContextTokensValue + currentTextTokensValue);
 
-  }, [isOpen, currentProfile, editableSystemPrompt, query, editableNovelData, currentText, includeCurrentTextInPrompt]);
+  }, [isOpen, currentProfile, editableSystemPrompt, query, editableNovelData, currentText, promptMode]);
 
   // Effect for resizing suggestion textarea
   useEffect(() => {
@@ -218,12 +218,13 @@ export const AISuggestionModal = ({
       systemPromptForAPI = editableSystemPrompt;
       queryForAPI = query;
       novelDataForAPI = editableNovelData;
-      if (includeCurrentTextInPrompt) {
+
+      if (promptMode === 'scratch' || promptMode === 'modify') {
+        textToContinueWithForAPI = (promptMode === 'modify') ? currentText : null; // Pass currentText for API if modifying
+        shouldClearResponseInitially = true; // Clear response area for both scratch and modify
+      } else { // 'continue'
         textToContinueWithForAPI = currentText;
-        shouldClearResponseInitially = false; 
-      } else {
-        textToContinueWithForAPI = null;
-        shouldClearResponseInitially = true;
+        shouldClearResponseInitially = false;
       }
     }
 
@@ -274,7 +275,12 @@ export const AISuggestionModal = ({
       userContent += `User Query:\n${queryForAPI}`;
 
       if (textToContinueWithForAPI && textToContinueWithForAPI.trim() !== '') {
-        userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
+        if (promptMode === 'continue') {
+          userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
+        } else if (promptMode === 'modify') {
+          userContent += `\n\n---${textToContinueWithForAPI} (MODIFY THIS)`;
+        }
+        // For 'scratch', textToContinueWithForAPI is null, so this block is skipped.
       }
 
       const payload = {
@@ -452,7 +458,7 @@ export const AISuggestionModal = ({
                         (Failed to generate context, likely too large even after trimming.)
                       </p>
                     )}
-                    {includeCurrentTextInPrompt && tokenBreakdown.currentText > 0 && (
+                    {(promptMode === 'continue' || promptMode === 'modify') && tokenBreakdown.currentText > 0 && (
                       <p>Current Text: {(tokenBreakdown.currentText / estimatedTotalTokens * 100).toFixed(1)}% ({tokenBreakdown.currentText} tokens)</p>
                     )}
                     <p className="pt-1 border-t mt-1 font-semibold">Total Estimated Input: {estimatedTotalTokens} tokens</p>
@@ -525,41 +531,49 @@ export const AISuggestionModal = ({
                 </CollapsibleContent>
               </Collapsible>
             {/* )} */} {/* Closing bracket for the original conditional rendering, now removed */}
-
-            <div className="flex items-center space-x-2 py-2">
-              <Checkbox
-                id="includeCurrentTextCheckbox"
-                checked={includeCurrentTextInPrompt}
-                onCheckedChange={setIncludeCurrentTextInPrompt}
-                disabled={!currentText || currentText.trim() === ''}
-              />
-              <Label
-                htmlFor="includeCurrentTextCheckbox"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Continue from existing text
-              </Label>
-            </div>
             
-            <Collapsible 
-              open={includeCurrentTextInPrompt && isCurrentTextOpen} 
-              onOpenChange={setIsCurrentTextOpen} 
+            <div className="py-2 space-y-2">
+              <Label className="text-sm font-medium">AI Prompt Mode:</Label>
+              <RadioGroup
+                value={promptMode}
+                onValueChange={setPromptMode}
+                className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0"
+                disabled={!currentText || currentText.trim() === ''} // Disable group if no current text for continue/modify
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="scratch" id="r-scratch" />
+                  <Label htmlFor="r-scratch" className="font-normal">Write from scratch</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="continue" id="r-continue" disabled={!currentText || currentText.trim() === ''} />
+                  <Label htmlFor="r-continue" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>Continue from previous</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="modify" id="r-modify" disabled={!currentText || currentText.trim() === ''} />
+                  <Label htmlFor="r-modify" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>Modify previous</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <Collapsible
+              open={(promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen}
+              onOpenChange={setIsCurrentTextOpen}
               className="space-y-1"
             >
               <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left"
-                  disabled={!includeCurrentTextInPrompt || (!currentText || currentText.trim() === '')}
+                  disabled={!(promptMode === 'continue' || promptMode === 'modify') || (!currentText || currentText.trim() === '')}
                 >
                   Current {fieldLabel || 'Text'}
-                  {(includeCurrentTextInPrompt && isCurrentTextOpen) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  {((promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <Textarea
                   id="currentTextDisplay"
-                  value={currentText || `No current ${fieldLabel?.toLowerCase() || 'text'} provided or checkbox unchecked.`}
+                  value={currentText || `No current ${fieldLabel?.toLowerCase() || 'text'} available or relevant mode selected.`}
                   readOnly
                   rows={3}
                   className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
