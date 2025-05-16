@@ -1,0 +1,102 @@
+/* Font Imports */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/roboto/400.css";
+@import "@fontsource/roboto/700.css";
+@import "@fontsource/open-sans/400.css";
+@import "@fontsource/open-sans/700.css";
+@import "@fontsource/lato/400.css";
+@import "@fontsource/lato/700.css";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource/montserrat/400.css";
+@import "@fontsource/montserrat/700.css";
+@import "@fontsource/source-sans-3/400.css";
+@import "@fontsource/source-sans-3/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 35 30% 90%;
+    --foreground: 35 25% 25%;
+    --card: 35 30% 92%;
+    --card-foreground: 35 25% 25%;
+    --popover: 35 30% 92%;
+    --popover-foreground: 35 25% 25%;
+    --primary: 15 15% 50%;
+    --primary-foreground: 35 30% 95%;
+    --secondary: 35 20% 85%;
+    --secondary-foreground: 35 25% 25%;
+    --muted: 35 20% 85%;
+    --muted-foreground: 30 20% 40%;
+    --accent: 35 40% 75%;
+    --accent-foreground: 35 25% 25%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 35 30% 95%;
+    --border: 35 30% 80%;
+    --input: 35 30% 80%;
+    --ring: 35 40% 40%;
+    --radius: 0.5rem;
+    /* Font variables */
+    --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-size-base: 16px;
+    --chart-1: 35 70% 55%;
+    --chart-2: 25 65% 45%;
+    --chart-3: 15 60% 35%;
+    --chart-4: 45 75% 50%;
+    --chart-5: 55 80% 60%;
+  }
+
+  .dark {
+    --background: 220 10% 12%;
+    --foreground: 220 10% 90%;
+    --card: 220 10% 14%;
+    --card-foreground: 220 10% 90%;
+    --popover: 220 10% 14%;
+    --popover-foreground: 220 10% 90%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 220 10% 12%;
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 220 10% 90%;
+    --muted: 220 10% 20%;
+    --muted-foreground: 220 10% 70%;
+    --accent: 210 100% 40%;
+    --accent-foreground: 220 10% 90%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 220 10% 90%;
+    --border: 220 10% 25%;
+    --input: 220 10% 25%;
+    --ring: 210 100% 60%;
+    /* Font variables are inherited from :root */
+    --chart-1: 210 100% 60%;
+    --chart-2: 195 90% 50%;
+    --chart-3: 180 80% 45%;
+    --chart-4: 225 85% 65%;
+    --chart-5: 240 90% 70%;
+  }
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base); /* Set base font size on HTML for REM calculation */
+  }
+
+  html, body, #root {
+    @apply h-full w-full; /* Ensure full height and width */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* font-family is inherited from html */
+    /* font-size is inherited from html and scales with rem units */
+    /* Ensure no centering or flex properties that might constrain width */
+  }
+}
