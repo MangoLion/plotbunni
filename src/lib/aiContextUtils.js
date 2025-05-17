@@ -162,14 +162,19 @@ function buildSceneTextContext_L1(actOrder, acts, chapters, scenes, concepts, no
   let context = "CONTEXT FOR SCENE WRITING:\n";
   context += buildNovelMetadataString(novelDetails);
   
-  // For L1, trimDescription is false.
-  const conceptDetails = buildConceptDetails(concepts, false, scenes, targetChapterId, targetSceneId, acts, chapters);
-  if (conceptDetails.trim() !== "") context += conceptDetails + "\n---\n";
-  
   context += "RELEVANT OUTLINE AND PRECEDING SCENES:\n";
   // For L1 scene text, includeSynopses=true, includeSceneText=true.
   // This triggers the detailed L1 logic in buildStructuralOutline.
+  // All preceding scenes will now have full text and synopsis.
   context += buildStructuralOutline(actOrder, acts, chapters, scenes, targetChapterId, targetSceneId, true, true, false, false, false);
+  
+  // For L1, trimDescription is false. Concepts are moved after preceding scenes.
+  const conceptDetails = buildConceptDetails(concepts, false, scenes, targetChapterId, targetSceneId, acts, chapters);
+  if (conceptDetails.trim() !== "") {
+    context += "\n\n---\n\n"; // Separator before concepts
+    context += conceptDetails;
+    context += "\n---\n"; // Separator after concepts
+  }
   
   const currentChapter = chapters[targetChapterId];
   const currentScene = scenes[targetSceneId];
@@ -248,11 +253,11 @@ function buildStructuralOutline(
   // The L1 sceneText strategy (includeSceneText=true) has specific logic.
   // Other strategies (novelOutline) or simplified calls will use the more generic block below.
   if (includeSceneText && targetSceneId && targetChapterId && chapters && acts && scenes && actOrder) {
-    let earlierChaptersSynopsisContent = "";
-    let precedingTwoScenesFullTextContent = "";
-    
+    let precedingScenesContent = "";
     const allSceneIdsInOrder = [];
     const sceneToChapterMap = {}; // Helper to find chapter for a scene
+    const sceneToActMap = {}; // Helper to find act for a scene
+
     actOrder.forEach(actId => {
       const act = acts[actId];
       if (act && act.chapterOrder) {
@@ -262,6 +267,7 @@ function buildStructuralOutline(
             chapter.sceneOrder.forEach(sceneId => {
               allSceneIdsInOrder.push(sceneId);
               sceneToChapterMap[sceneId] = chapId;
+              sceneToActMap[sceneId] = actId;
             });
           }
         });
@@ -269,112 +275,59 @@ function buildStructuralOutline(
     });
 
     const targetSceneGlobalIndex = allSceneIdsInOrder.indexOf(targetSceneId);
-    let firstOfTwoPrecedingScenesId = null;
 
-    // 1. Get full text of up to two immediately preceding scenes
+    if (targetSceneGlobalIndex === -1) { // Target scene not found in the order
+        console.warn(`Target scene ${targetSceneId} not found in ordered list of scenes.`);
+        // Potentially return a minimal outline or an error indicator
+    }
+
     if (targetSceneGlobalIndex > 0) {
-      precedingTwoScenesFullTextContent = "IMMEDIATELY PRECEDING SCENES (FULL TEXT):\n";
-      const startIndex = Math.max(0, targetSceneGlobalIndex - 2);
-      let actualPrecedingScenesAdded = 0;
-      for (let i = startIndex; i < targetSceneGlobalIndex; i++) {
+      precedingScenesContent = "PRECEDING SCENES (FULL TEXT AND SYNOPSIS):\n";
+      let scenesAddedCount = 0;
+      for (let i = 0; i < targetSceneGlobalIndex; i++) {
         const prevSceneId = allSceneIdsInOrder[i];
-        if (i === startIndex) { // This is the first of the (up to) two preceding scenes
-            firstOfTwoPrecedingScenesId = prevSceneId;
-        }
         const sceneObj = scenes[prevSceneId];
         if (sceneObj) {
-          let sceneChapter, sceneAct;
           const chapIdForScene = sceneToChapterMap[prevSceneId];
-          if (chapIdForScene) sceneChapter = chapters[chapIdForScene];
-          if (sceneChapter) sceneAct = Object.values(acts).find(act => act.chapterOrder?.includes(chapIdForScene));
+          const actIdForScene = sceneToActMap[prevSceneId];
+          const sceneChapter = chapIdForScene ? chapters[chapIdForScene] : null;
+          const sceneAct = actIdForScene ? acts[actIdForScene] : null;
 
-          if (sceneAct) precedingTwoScenesFullTextContent += `Act: ${sceneAct.name || 'Unnamed Act'}\n`;
-          if (sceneChapter) precedingTwoScenesFullTextContent += `  Chapter: ${sceneChapter.name || 'Unnamed Chapter'}\n`;
-          precedingTwoScenesFullTextContent += `    Scene: ${sceneObj.name || 'Unnamed Scene'}\n`;
-          if (sceneObj.synopsis) precedingTwoScenesFullTextContent += `      Synopsis: ${sceneObj.synopsis.replace(/\n/g, '\n        ')}\n`;
-          if (sceneObj.content?.trim()) precedingTwoScenesFullTextContent += `      --- Start Scene Text ---\n${sceneObj.content.replace(/\n/g, '\n        ')}\n      --- End Scene Text ---\n`;
-          else precedingTwoScenesFullTextContent += `      (No content for this scene)\n`;
-          precedingTwoScenesFullTextContent += "\n";
-          actualPrecedingScenesAdded++;
+          if (sceneAct) precedingScenesContent += `Act: ${sceneAct.name || 'Unnamed Act'}\n`;
+          if (sceneChapter) precedingScenesContent += `  Chapter: ${sceneChapter.name || 'Unnamed Chapter'}\n`;
+          precedingScenesContent += `    Scene: ${sceneObj.name || 'Unnamed Scene'}\n`;
+          if (sceneObj.synopsis) {
+            precedingScenesContent += `      Synopsis: ${sceneObj.synopsis.replace(/\n/g, '\n        ')}\n`;
+          } else {
+            precedingScenesContent += `      Synopsis: (No synopsis for this scene)\n`;
+          }
+          if (sceneObj.content?.trim()) {
+            precedingScenesContent += `      --- Start Scene Text ---\n${sceneObj.content.replace(/\n/g, '\n        ')}\n      --- End Scene Text ---\n`;
+          } else {
+            precedingScenesContent += `      (No content for this scene)\n`;
+          }
+          precedingScenesContent += "\n";
+          scenesAddedCount++;
         }
       }
-      if (actualPrecedingScenesAdded > 0) {
-        outline += precedingTwoScenesFullTextContent + "---\n\n";
-      } else {
-        precedingTwoScenesFullTextContent = ""; // No preceding scenes found
+      if (scenesAddedCount > 0) {
+        outline += precedingScenesContent + "---\n\n";
       }
-    }
-
-    // 2. Get synopses of all chapters before the chapter of firstOfTwoPrecedingScenesId (or before targetChapterId if no preceding scenes)
-    let chapterToStopSynopsesAt = targetChapterId; // Default to target chapter
-    if (firstOfTwoPrecedingScenesId) {
-        chapterToStopSynopsesAt = sceneToChapterMap[firstOfTwoPrecedingScenesId] || targetChapterId;
-    }
-
-    let synopsesHeaderAdded = false;
-    for (const actId of actOrder) {
-        const act = acts[actId];
-        if (!act || !act.chapterOrder) continue;
-        let currentActHeaderAddedToSynopses = false;
-
-        for (const chapId of act.chapterOrder) {
-            if (chapId === chapterToStopSynopsesAt) { // Stop before this chapter
-                break; // Break from inner loop (chapters)
-            }
-            const chapter = chapters[chapId];
-            if (chapter) {
-                if (!synopsesHeaderAdded) {
-                    earlierChaptersSynopsisContent += "SYNOPSES OF EARLIER CHAPTERS:\n";
-                    synopsesHeaderAdded = true;
-                }
-                if (!currentActHeaderAddedToSynopses) {
-                    earlierChaptersSynopsisContent += `Act: ${act.name || 'Unnamed Act'}\n`;
-                    currentActHeaderAddedToSynopses = true;
-                }
-                earlierChaptersSynopsisContent += `  Chapter: ${chapter.name || 'Unnamed Chapter'}\n`;
-                if (chapter.sceneOrder && includeSynopses) {
-                    chapter.sceneOrder.forEach(sceneIdInChapter => {
-                        const scene = scenes[sceneIdInChapter];
-                        if (scene && scene.synopsis) {
-                            earlierChaptersSynopsisContent += `    Scene: ${scene.name || 'Unnamed Scene'} - Synopsis: ${scene.synopsis.replace(/\n/g, '\n      ')}\n`;
-                        } else if (scene) {
-                            earlierChaptersSynopsisContent += `    Scene: ${scene.name || 'Unnamed Scene'} - (No synopsis)\n`;
-                        }
-                    });
-                }
-                earlierChaptersSynopsisContent += "\n";
-            }
-        }
-        if (act.chapterOrder && act.chapterOrder.includes(chapterToStopSynopsesAt)) {
-             break; // Break from outer loop (acts) if the stop chapter was in this act
-        }
-    }
-    if (synopsesHeaderAdded) {
-        outline = earlierChaptersSynopsisContent + "---\n\n" + outline; // Prepend synopses
     }
     
-    // 3. Current chapter's structure up to the target scene (names only)
+    // Indication of the current chapter and scene being written
     const currentChapter = chapters[targetChapterId];
     const actOfCurrentChapter = Object.values(acts).find(a => a.chapterOrder?.includes(targetChapterId));
-    outline += `CURRENT CHAPTER STRUCTURE (leading to target scene):\n`;
+    outline += `TARGET SCENE LOCATION:\n`;
     if (actOfCurrentChapter) outline += `Act: ${actOfCurrentChapter.name || 'Unnamed Act'}\n`;
     if (currentChapter) outline += `  Chapter: ${currentChapter.name || 'Unnamed Chapter'}\n`;
-
-    if (currentChapter && currentChapter.sceneOrder) {
-      for (const sceneIdInOrder of currentChapter.sceneOrder) {
-        const scene = scenes[sceneIdInOrder];
-        if (!scene) continue;
-        
-        // We only list scene names in the current chapter up to the target scene
-        // The full text of preceding scenes (if among the last two overall) is already added.
-        if (currentChapter.sceneOrder.indexOf(sceneIdInOrder) < currentChapter.sceneOrder.indexOf(targetSceneId)) {
-            outline += `    Scene: ${scene.name || 'Unnamed Scene'} (Synopsis: ${scene.synopsis || 'N/A'})\n`;
-        } else if (sceneIdInOrder === targetSceneId) {
-          outline += `    Scene: ${scene.name || 'Unnamed Scene'} (This is the scene to write - its synopsis is part of the main query)\n`;
-          break; 
-        }
-      }
+    const targetSceneObj = scenes[targetSceneId];
+    if (targetSceneObj) {
+        outline += `    Scene: ${targetSceneObj.name || 'Unnamed Scene'} (This is the scene to write - its synopsis is part of the main query)\n`;
+    } else {
+        outline += `    Scene: (Target scene details not found - this is the scene to write)\n`;
     }
+    
     return outline.trim();
   }
 
