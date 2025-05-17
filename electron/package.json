@@ -1,0 +1,30 @@
+{
+  "name": "plotbunni",
+  "version": "1.0.0",
+  "description": "Plot Bunni",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.fyrean.plotbunni",
+    "productName": "Plot Bunni",
+    "files": [
+      "main.js",
+      "static/**/*",
+      "icon.ico"
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": "portable"
+    },
+    "compression": "maximum"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  }
+}
