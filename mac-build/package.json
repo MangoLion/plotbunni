@@ -1,0 +1,30 @@
+{
+  "name": "plotbunni-mac",
+  "version": "1.0.0",
+  "description": "Plot Bunni - Mac Build Configuration",
+  "main": "build/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "node ./scripts/prepare-build.js && electron-builder --mac",
+    "build-both": "node ./scripts/prepare-build.js && electron-builder --win portable --mac"
+  },
+  "build": {
+    "appId": "com.fyrean.plotbunni",
+    "productName": "Plot Bunni",
+    "files": [
+      "build/**/*",
+      "resources/icon.icns"
+    ],
+    "mac": {
+      "icon": "resources/icon.icns",
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.developer-tools"
+    },
+    "compression": "maximum"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
+    "fs-extra": "^11.2.0"
+  }
+}
