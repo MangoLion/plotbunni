@@ -13,6 +13,7 @@ import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { generateContextWithRetry } from '../../lib/aiContextUtils'; // Added
+import { removeIndentation } from '../../lib/utils'; // Added
 
 // Helper component for editable titles
 const EditableTitle = ({ initialValue, onSave, placeholder, className, inputClassName, tag: Component = 'div' }) => {
@@ -282,7 +283,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                     className="prose prose-sm dark:prose-invert max-w-none p-3 min-h-[100px] border border-input rounded-md bg-background hover:bg-muted/50 cursor-text transition-colors text-base leading-relaxed"
                     // Style to mimic textarea, make it clickable
                 >
-                    {text ? <Markdown>{text}</Markdown> : <p className="text-muted-foreground italic">{placeholder || "Write your scene here..."}</p>}
+                    {text ? <Markdown>{removeIndentation(text)}</Markdown> : <p className="text-muted-foreground italic">{placeholder || "Write your scene here..."}</p>}
                 </div>
             )}
             {isAISuggestionModalOpen && aiSceneContext && (

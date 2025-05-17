@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Markdown from 'react-markdown'; // Added Markdown
+// import Markdown from 'react-markdown'; // Added Markdown
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
 import { ChevronDown, ChevronRight, TriangleAlert, Database } from 'lucide-react'; // Or ChevronsUpDown
 import { Progress } from "@/components/ui/progress"; // Added Progress
 import { useSettings } from '../../context/SettingsContext';
-import { tokenCount } from '../../lib/utils'; // Added tokenCount
+import { tokenCount, removeIndentation } from '../../lib/utils'; // Added tokenCount and removeIndentation
 
 export const AISuggestionModal = ({
   isOpen,
@@ -631,7 +631,7 @@ useEffect(() => {
               )}
               {isLoading && aiResponse && (
                  <div className="w-full whitespace-pre-wrap break-words min-h-[100px]">
-                  <Markdown>{aiResponse}</Markdown>
+                  {aiResponse}
                   <span className="text-muted-foreground"> (streaming...)</span>
                 </div>
               )}
@@ -655,12 +655,12 @@ useEffect(() => {
                     onClick={() => {
                       if (!isLoading) setIsEditingSuggestion(true);
                     }}
-                    className="prose prose-sm dark:prose-invert max-w-none min-h-[100px] cursor-text p-3 border border-transparent hover:border-input rounded-md hover:bg-muted/30 transition-colors"
+                    className="w-full p-2 whitespace-pre-wrap break-words min-h-[100px]" // Removed interactive styling classes
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => { if (!isLoading && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsEditingSuggestion(true); }}}
                   >
-                    <Markdown>{aiResponse}</Markdown>
+                    {aiResponse}
                   </div>
                 )
               )}
