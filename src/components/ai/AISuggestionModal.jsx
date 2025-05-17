@@ -275,12 +275,18 @@ useEffect(() => {
       userContent += `User Query:\n${queryForAPI}`;
 
       if (textToContinueWithForAPI && textToContinueWithForAPI.trim() !== '') {
-        if (promptMode === 'continue') {
+        if (isContinuationOfCurrentSuggestion) {
+          // When "Continue Generating" is clicked, always use this suffix
           userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
-        } else if (promptMode === 'modify') {
-          userContent += `\n\n---${textToContinueWithForAPI} (MODIFY THIS)`;
+        } else {
+          // For initial suggestions from the Query tab, use the selected promptMode
+          if (promptMode === 'continue') {
+            userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
+          } else if (promptMode === 'modify') {
+            userContent += `\n\n---${textToContinueWithForAPI} (MODIFY THIS)`;
+          }
+          // For 'scratch', textToContinueWithForAPI is null, so this block is skipped.
         }
-        // For 'scratch', textToContinueWithForAPI is null, so this block is skipped.
       }
 
       const payload = {
@@ -596,6 +602,28 @@ useEffect(() => {
           </TabsContent>
 
           <TabsContent value="suggestion" className="flex flex-col flex-grow py-1 pr-1">
+            {/* Buttons Area: Moved to the top of the tab content */}
+            {(isLoading || (aiResponse && aiResponse.trim() !== '')) && (
+              <div className="pt-2 pb-2 mb-2"> 
+                {isLoading ? (
+                  <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
+                    Stop Generating
+                  </Button>
+                ) : (
+                  // This branch is taken if !isLoading.
+                  // The outer condition ensures (aiResponse && aiResponse.trim() !== '') is true here.
+                  // Add check for lastSuccessfulEditableSystemPrompt to ensure context exists for continuation.
+                  <Button 
+                    onClick={handleContinueSuggGeneration} 
+                    className="w-full"
+                    disabled={!lastSuccessfulEditableSystemPrompt} // Disable if no prior successful context
+                  >
+                    Continue Generating
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Response Area: Takes up available space and scrolls */}
             <div className="flex-grow overflow-y-auto p-2"> {/* Added p-2 for consistency */}
               {isLoading && !aiResponse && (
@@ -638,27 +666,7 @@ useEffect(() => {
               )}
             </div>
 
-            {/* Buttons Area: Always at the bottom of the tab content */}
-            {(isLoading || (aiResponse && aiResponse.trim() !== '')) && (
-              <div className="pt-2 mt-auto"> {/* mt-auto pushes this div to the bottom of the flex-col parent */}
-                {isLoading ? (
-                  <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
-                    Stop Generating
-                  </Button>
-                ) : (
-                  // This branch is taken if !isLoading.
-                  // The outer condition ensures (aiResponse && aiResponse.trim() !== '') is true here.
-                  // Add check for lastSuccessfulEditableSystemPrompt to ensure context exists for continuation.
-                  <Button 
-                    onClick={handleContinueSuggGeneration} 
-                    className="w-full"
-                    disabled={!lastSuccessfulEditableSystemPrompt} // Disable if no prior successful context
-                  >
-                    Continue Generating
-                  </Button>
-                )}
-              </div>
-            )}
+            {/* Buttons Area was here, now moved to the top */}
           </TabsContent>
         </Tabs>
       </div> {/* End of scrollable content area */}
