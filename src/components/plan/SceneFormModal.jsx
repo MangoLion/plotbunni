@@ -31,7 +31,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     scenes,
     actOrder,
     // Destructure all required novel detail fields from useData()
-    novelSynopsis, 
+    novelSynopsis,
     genre,
     pointOfView,
     timePeriod,
@@ -40,7 +40,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     tone
     // authorName is intentionally omitted as per requirements
   } = useData();
-  const { taskSettings, TASK_KEYS, systemPrompt, getActiveProfile } = useSettings();
+  const { taskSettings, TASK_KEYS, systemPrompt, getActiveProfile, showAiFeatures } = useSettings();
 
   const [name, setName] = useState('');
   const [tags, setTags] = useState(''); // Comma-separated
@@ -219,18 +219,20 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
                     onChange={(e) => setSynopsisText(e.target.value)}
                     placeholder="Brief summary of what happens in the scene (Outline)." // Updated placeholder
                     rows={6} // Increased rows
-                    className="pr-10" 
+                    className={showAiFeatures ? "pr-10" : ""}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
-                    onClick={handleOpenAISuggestionModal}
-                    aria-label="Get AI Suggestion for Outline" // Changed aria-label
-                  >
-                    <WandSparkles className="h-4 w-4" />
-                  </Button>
+                  {showAiFeatures && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
+                      onClick={handleOpenAISuggestionModal}
+                      aria-label="Get AI Suggestion for Outline" // Changed aria-label
+                    >
+                      <WandSparkles className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </TabsContent>

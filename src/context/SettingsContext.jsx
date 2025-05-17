@@ -206,9 +206,10 @@ const loadSettings = () => {
         fontFamily: parsed.fontFamily || DEFAULT_FONT_FAMILY,
         fontSize: parsed.fontSize || DEFAULT_FONT_SIZE,
         taskSettings: taskSettings,
-        systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant", // Updated default
-      };
-    }
+    systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant", // Updated default
+    showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
+  };
+}
   } catch (error) {
     console.error("Error loading settings from localStorage:", error);
   }
@@ -224,6 +225,7 @@ const loadSettings = () => {
     fontSize: DEFAULT_FONT_SIZE,
     taskSettings: createDefaultTaskSettings(defaultProfileId),
     systemPrompt: "You are an experienced creative writing assistant", // Updated default
+    showAiFeatures: true,
   };
 };
 
@@ -272,6 +274,9 @@ export const SettingsProvider = ({ children }) => {
   // System Prompt state
   const [systemPrompt, setSystemPrompt] = useState("You are an experienced creative writing assistant"); // Updated default initial state
 
+  // AI Features Toggle state
+  const [showAiFeatures, setShowAiFeatures] = useState(true);
+
 
   // Load settings on initial mount
   useEffect(() => {
@@ -288,7 +293,8 @@ export const SettingsProvider = ({ children }) => {
     setFontFamilyState(loaded.fontFamily || DEFAULT_FONT_FAMILY);
     setFontSizeState(loaded.fontSize || DEFAULT_FONT_SIZE);
     setSystemPrompt(loaded.systemPrompt); // Load systemPrompt
-    
+    setShowAiFeatures(loaded.showAiFeatures !== undefined ? loaded.showAiFeatures : true); // Load AI features toggle
+
     // Ensure task settings have valid profile IDs after profiles are loaded
     const updatedTaskSettings = { ...loaded.taskSettings };
     let settingsUpdated = false;
@@ -319,9 +325,10 @@ export const SettingsProvider = ({ children }) => {
         fontSize,
         taskSettings, // Add taskSettings to save
         systemPrompt, // Add systemPrompt to save
+        showAiFeatures, // Add showAiFeatures to save
       });
     }
-  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, isLoaded]); // Add systemPrompt dependency
+  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, isLoaded]); // Add showAiFeatures dependency
 
   // OS theme listener
   useEffect(() => {
@@ -760,6 +767,10 @@ export const SettingsProvider = ({ children }) => {
   }, [endpointProfiles]);
 
 
+  const toggleAiFeatures = useCallback(() => {
+    setShowAiFeatures(prev => !prev);
+  }, []);
+
   const value = {
     // Existing profile values
     endpointProfiles,
@@ -803,6 +814,10 @@ export const SettingsProvider = ({ children }) => {
     // System Prompt values
     systemPrompt,
     setSystemPrompt,
+
+    // AI Features Toggle
+    showAiFeatures,
+    toggleAiFeatures,
   };
 
   return (

@@ -7,7 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Select might still be used
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, PlusCircle, Edit, Palette, Cloud, FileText } from 'lucide-react'; // Removed AArrowUp, AArrowDown as they are in FontSettingsControl
+import { Switch } from "@/components/ui/switch"; // Added Switch
+import { Brain, EyeOff, Trash2, PlusCircle, Edit, Palette, Cloud, FileText } from 'lucide-react'; // Added Brain, EyeOff
 import { useSettings } from '@/context/SettingsContext';
 import EndpointProfileFormModal from './EndpointProfileFormModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -32,6 +33,9 @@ const SettingsView = () => {
     // System Prompt
     systemPrompt,
     setSystemPrompt,
+    // AI Features Toggle
+    showAiFeatures,
+    toggleAiFeatures,
   } = useSettings();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -82,14 +86,18 @@ const SettingsView = () => {
               <Palette className="h-4 w-4" />
               Appearance
             </TabsTrigger>
-            <TabsTrigger value="aiEndpoints" className="flex items-center gap-2"> {/* Renamed for clarity */}
-              <Cloud className="h-4 w-4" />
-              AI Endpoints
-            </TabsTrigger>
-            <TabsTrigger value="taskPrompts" className="flex items-center gap-2"> {/* New Tab */}
-              <FileText className="h-4 w-4" />
-              Task Prompts
-            </TabsTrigger>
+            {showAiFeatures && (
+              <>
+                <TabsTrigger value="aiEndpoints" className="flex items-center gap-2"> {/* Renamed for clarity */}
+                  <Cloud className="h-4 w-4" />
+                  AI Endpoints
+                </TabsTrigger>
+                <TabsTrigger value="taskPrompts" className="flex items-center gap-2"> {/* New Tab */}
+                  <FileText className="h-4 w-4" />
+                  Task Prompts
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="appearance" className="mt-6">
@@ -105,10 +113,34 @@ const SettingsView = () => {
                   <FontSettingsControl />
                 </CardContent>
               </Card>
+              <Separator />
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Features</CardTitle>
+                  <CardDescription>Control the visibility of AI-assisted features throughout the application.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="ai-features-toggle" className="flex flex-col space-y-1">
+                      <span>Show AI Wizard Buttons & Tabs</span>
+                      <span className="font-normal leading-snug text-muted-foreground">
+                        Enable or disable AI helper buttons and AI-specific tabs in settings.
+                      </span>
+                    </Label>
+                    <Switch
+                      id="ai-features-toggle"
+                      checked={showAiFeatures}
+                      onCheckedChange={toggleAiFeatures}
+                      aria-label="Toggle AI features"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="aiEndpoints" className="mt-6"> {/* Renamed for clarity */}
+            {showAiFeatures ? (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -194,10 +226,23 @@ const SettingsView = () => {
                 </ul>
               </div>
             </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center justify-center space-y-3 text-center">
+                    <EyeOff className="h-12 w-12 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      AI features are currently hidden. You can re-enable them in the "Appearance" settings tab.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* New Tab Content for Task Prompts */}
           <TabsContent value="taskPrompts" className="mt-6">
+            {showAiFeatures ? (
             <div className="space-y-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -276,6 +321,18 @@ const SettingsView = () => {
                 </CardContent>
               </Card>
             </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center justify-center space-y-3 text-center">
+                    <EyeOff className="h-12 w-12 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      AI features are currently hidden. You can re-enable them in the "Appearance" settings tab.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>

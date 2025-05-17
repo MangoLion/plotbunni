@@ -100,7 +100,7 @@ const AutoExpandingTextarea = React.forwardRef(({
     const [text, setText] = useState(initialValue || '');
     const [isEditingScene, setIsEditingScene] = useState(false); // New state for editing
     const { updateScene, scenes: scenesFromHook } = useData(); // scenesFromHook to differentiate
-    const { taskSettings, TASK_KEYS, systemPrompt, getActiveProfile } = useSettings();
+    const { taskSettings, TASK_KEYS, systemPrompt, getActiveProfile, showAiFeatures } = useSettings();
     const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
     const [aiSceneContext, setAiSceneContext] = useState({
         contextString: "",
@@ -265,17 +265,19 @@ const AutoExpandingTextarea = React.forwardRef(({
                     </Popover>
 
                     {/* AI Suggestion Button */}
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700" // Remains bottom-right
-                        onMouseDown={(e) => e.preventDefault()} 
-                        onClick={handleOpenAISuggestionModal}
-                        aria-label="Get AI Suggestion for Scene Text"
-                    >
-                        <WandSparkles className="h-4 w-4" />
-                    </Button>
+                    {showAiFeatures && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700" // Remains bottom-right
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={handleOpenAISuggestionModal}
+                            aria-label="Get AI Suggestion for Scene Text"
+                        >
+                            <WandSparkles className="h-4 w-4" />
+                        </Button>
+                    )}
                 </>
             ) : (
                 <div
@@ -306,12 +308,13 @@ const AutoExpandingTextarea = React.forwardRef(({
   
 
 const WriteView = ({ targetChapterId, targetSceneId }) => {
-    const { 
-      acts, chapters, scenes, actOrder, concepts, 
-      updateAct, updateChapter, 
+    const {
+      acts, chapters, scenes, actOrder, concepts,
+      updateAct, updateChapter,
       // Destructure all novel detail fields needed for AutoExpandingTextarea context
-      novelSynopsis, genre, pointOfView, timePeriod, targetAudience, themes, tone 
+      novelSynopsis, genre, pointOfView, timePeriod, targetAudience, themes, tone
     } = useData();
+    const { showAiFeatures } = useSettings(); // Get showAiFeatures
     const [isAINovelWriterModalOpen, setIsAINovelWriterModalOpen] = useState(false);
     const [isOutlinePopoverOpen, setIsOutlinePopoverOpen] = useState(false); // State for outline popover
     const chapterRefs = useRef({});
@@ -464,17 +467,19 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
             </div>
 
             {/* Button to open AI Novel Writer Modal */}
-            <div className="absolute top-4 right-4 z-10">
-                <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsAINovelWriterModalOpen(true)}
-                    className="rounded-full shadow-lg hover:bg-primary/10"
-                    title="AI Novel Writer"
-                >
-                    <Sparkles className="h-5 w-5 text-primary" />
-                </Button>
-            </div>
+            {showAiFeatures && (
+                <div className="absolute top-4 right-4 z-10">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsAINovelWriterModalOpen(true)}
+                        className="rounded-full shadow-lg hover:bg-primary/10"
+                        title="AI Novel Writer"
+                    >
+                        <Sparkles className="h-5 w-5 text-primary" />
+                    </Button>
+                </div>
+            )}
 
             <div className="mx-auto max-w-[800px] w-full space-y-10 pt-12"> {/* Added pt-12 to avoid overlap with button */}
                 {actOrder.map((actId) => {

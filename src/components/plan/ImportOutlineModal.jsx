@@ -39,7 +39,7 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
   const [error, setError] = useState('');
   const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
   const [replaceExisting, setReplaceExisting] = useState(false);
-  const { taskSettings, TASK_KEYS } = useSettings();
+  const { taskSettings, TASK_KEYS, showAiFeatures } = useSettings();
   const { synopsis: novelSynopsis } = useData();
 
   useEffect(() => {
@@ -151,18 +151,20 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
             onChange={(e) => setOutlineText(e.target.value)}
             rows={15}
             placeholder="Paste your outline here, or use the AI wand to generate one..."
-            className="font-mono text-sm pr-10"
+            className={`font-mono text-sm ${showAiFeatures ? "pr-10" : ""}`}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
-            onClick={() => setIsAISuggestionModalOpen(true)}
-            aria-label="Get AI Suggestion for Outline"
-          >
-            <WandSparkles className="h-4 w-4" />
-          </Button>
+          {showAiFeatures && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
+              onClick={() => setIsAISuggestionModalOpen(true)}
+              aria-label="Get AI Suggestion for Outline"
+            >
+              <WandSparkles className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
         <div className="flex items-center space-x-2 mb-4">

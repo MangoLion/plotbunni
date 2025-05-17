@@ -11,6 +11,7 @@ import ChapterFormModal from './ChapterFormModal';
 import ImportOutlineModal from './ImportOutlineModal'; // Import the new modal
 import ConfirmModal from '@/components/ui/ConfirmModal'; // Import ConfirmModal
 import { AIChatModal } from '@/components/ai/AIChatModal'; // Import AIChatModal
+import { useSettings } from '@/context/SettingsContext'; // Import useSettings
 
 
 const SceneCard = ({ scene, conceptsMap, chapterId, onDeleteScene }) => {
@@ -236,12 +237,13 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
     deleteChapter, // Destructure deleteChapter
     deleteScene, // Destructure deleteScene
   } = useData();
+  const { showAiFeatures } = useSettings(); // Get showAiFeatures
   const [isActModalOpen, setIsActModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false); // State for import modal
-  
+
   // State for AI Chat Modal
   const [isAIChatModalOpen, setIsAIChatModalOpen] = useState(false);
-  
+
   // State for AI Chat Modal with localStorage persistence
   const getChatStorageKey = (type, id) => `plotbunni_chat_${type}_${id}`;
   const getOldChatStorageKey = (type, id) => `plothare_chat_${type}_${id}`;
@@ -441,19 +443,22 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
       />
 
       {/* Floating Action Button for AI Chat */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          size="icon"
-          className="rounded-full w-12 h-12 shadow-lg hover:scale-105 transition-transform"
-          onClick={() => setIsAIChatModalOpen(true)}
-          title="Open AI Chat"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
-      </div>
+      {showAiFeatures && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button
+            size="icon"
+            className="rounded-full w-12 h-12 shadow-lg hover:scale-105 transition-transform"
+            onClick={() => setIsAIChatModalOpen(true)}
+            title="Open AI Chat"
+          >
+            <MessageSquare className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
 
-      <AIChatModal
-        isOpen={isAIChatModalOpen}
+      {showAiFeatures && isAIChatModalOpen && ( // Also ensure modal only renders if features are shown
+        <AIChatModal
+          isOpen={isAIChatModalOpen}
         onClose={() => setIsAIChatModalOpen(false)}
         chatMessages={chatMessages}
         setChatMessages={setChatMessages}
@@ -465,6 +470,7 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
           // localStorage will be cleared by the useEffect hooks for chatMessages and userInputInChatModal
         }}
       />
+      )} 
     </ScrollArea>
   );
 };

@@ -61,7 +61,8 @@ const NovelOverviewTab = () => {
     themeMode, 
     activeOsTheme, 
     endpointProfiles, 
-    activeProfileId 
+    activeProfileId,
+    showAiFeatures
   } = useSettings();
   const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -433,12 +434,15 @@ const NovelOverviewTab = () => {
         content: "Customize application settings, including theme and AI configurations, in the 'Settings' tab.",
         placement: 'bottom',
       },
-      {
+    ];
+
+    if (showAiFeatures) {
+      steps.push({
         target: 'button[aria-label="Get AI Suggestion for Synopsis"]',
         content: "Look for the magic wand icon! It offers AI assistance for various tasks, like generating text or ideas. You'll find similar icons in other parts of the app.",
         placement: 'top',
-      },
-    ];
+      });
+    }
     setTourSteps(steps);
 
     // Check for first run
@@ -565,12 +569,14 @@ const NovelOverviewTab = () => {
         content: "Customize application settings, including theme and AI configurations, in the 'Settings' tab.",
         placement: 'bottom',
       },
-      {
+    ];
+    if (showAiFeatures) {
+      currentSteps.push({
         target: 'button[aria-label="Get AI Suggestion for Synopsis"]',
         content: "Look for the magic wand icon! It offers AI assistance for various tasks, like generating text or ideas. You'll find similar icons in other parts of the app.",
         placement: 'top',
-      },
-    ];
+      });
+    }
     setTourSteps(currentSteps);
     setRunTour(true);
   };
@@ -634,18 +640,20 @@ const NovelOverviewTab = () => {
               onChange={(e) => setLocalSynopsis(e.target.value)}
               placeholder="A short, captivating summary of your novel..."
               rows={4}
-              className="pr-10" // Add padding for the button
+              className={showAiFeatures ? "pr-10" : ""} // Add padding for the button
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
-              onClick={handleOpenAISynopsisSuggestionModal}
-              aria-label="Get AI Suggestion for Synopsis"
-            >
-              <WandSparkles className="h-4 w-4" />
-            </Button>
+            {showAiFeatures && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
+                onClick={handleOpenAISynopsisSuggestionModal}
+                aria-label="Get AI Suggestion for Synopsis"
+              >
+                <WandSparkles className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 

@@ -36,7 +36,7 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
 
   const fileInputRef = useRef(null);
   const { toast } = useToast();
-  const { taskSettings, TASK_KEYS } = useSettings();
+  const { taskSettings, TASK_KEYS, showAiFeatures } = useSettings();
 
   const defaultNovelDescriptionPrompt = "Write a captivating synopsis for a new novel.";
 
@@ -185,18 +185,20 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
                   onChange={(e) => setSynopsis(e.target.value)}
                   placeholder="A short, captivating summary..."
                   rows={4}
-                  className="pr-10"
+                  className={showAiFeatures ? "pr-10" : ""}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
-                  onClick={() => setIsAISuggestionModalOpen(true)}
-                  aria-label="Get AI Suggestion for Synopsis"
-                >
-                  <WandSparkles className="h-4 w-4" />
-                </Button>
+                {showAiFeatures && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
+                    onClick={() => setIsAISuggestionModalOpen(true)}
+                    aria-label="Get AI Suggestion for Synopsis"
+                  >
+                    <WandSparkles className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 
