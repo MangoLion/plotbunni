@@ -14,10 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select
+import { Switch } from "@/components/ui/switch"; // Added Switch
+import { Settings, CircleX } from 'lucide-react'; // For Manage Templates button icon and Clear Image button
+
 import { useData } from '@/context/DataContext';
 import { createConcept } from '@/data/models';
 import ManageTemplatesModal from './ManageTemplatesModal'; // Import ManageTemplatesModal
-import { Settings } from 'lucide-react'; // For Manage Templates button icon
 
 const NO_TEMPLATE_VALUE = "__no_template__"; // Constant for "None" option
 
@@ -32,6 +34,7 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState(0);
   const [image, setImage] = useState(''); // Base64 string or URL
+  const [useImageUrl, setUseImageUrl] = useState(false); // State to toggle image input type
 
   // Function to apply a template
   const applyTemplate = (templateId) => {
@@ -72,6 +75,7 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
     setPriority(0);
     setImage('');
     setSelectedTemplateId(NO_TEMPLATE_VALUE); // Reset to "None"
+    setUseImageUrl(false); // Reset image input type
   };
 
   const handleSubmit = () => {
@@ -157,11 +161,68 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Concept notes (not shown to AI)" rows={3}/>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="image" className="text-right">Image URL</Label>
-            <Input id="image" value={image} onChange={(e) => setImage(e.target.value)} className="col-span-3" placeholder="Optional: URL or Base64 string for an image" />
-            {/* TODO: Add file input for Base64 conversion later */}
+
+          {/* Image Upload/URL Section */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="image">Image</Label>
+            <div className="flex items-center gap-2">
+              {useImageUrl ? (
+                <Input
+                  id="image-url"
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  placeholder="Optional: URL for an image"
+                  className="flex-grow"
+                />
+              ) : (
+                <Input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setImage(reader.result); // result is base64 string
+                      };
+                      reader.readAsDataURL(file);
+                    } else {
+                      setImage('');
+                    }
+                  }}
+                  className="flex-grow"
+                />
+              )}
+              {/* Clear Image Button */}
+              {image && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setImage('')}
+                  title="Clear Image"
+                >
+                  <CircleX className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            {/* Toggle between URL and File Upload */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="image-type-switch">{useImageUrl ? 'Use Image URL' : 'Upload Image (Base64)'}</Label>
+              <Switch
+                id="image-type-switch"
+                checked={useImageUrl}
+                onCheckedChange={setUseImageUrl}
+              />
+            </div>
           </div>
+
+          {/* Display Image if exists */}
+          {image && (
+            <div className="flex justify-center mt-2">
+              <img src={image} alt="Concept Preview" className="max-w-full max-h-48 object-contain" />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild>

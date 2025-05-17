@@ -144,7 +144,8 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-            {/* Template Selector - Show for both new (if this modal was used) and edit */}
+            {/* Template Selector - Only show if not editing */}
+            {!isEditing && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="concept-form-template" className="text-right">Template</Label>
               <div className="col-span-2">
@@ -166,6 +167,7 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
                 <Settings className="h-4 w-4 mr-1 sm:mr-2" /> Manage
               </Button>
             </div>
+            )}
             
             {/* Name Field */}
             <div className="flex flex-col gap-2">

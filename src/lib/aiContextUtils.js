@@ -195,15 +195,55 @@ function buildConceptDetails(concepts, trimDescription = false, scenes = null, t
       currentChapter.sceneOrder.forEach(sceneIdInChapter => {
         const scene = scenes[sceneIdInChapter];
         let includeConceptsFromThisScene = true;
+
         if (targetSceneId) { // Only include concepts from scenes up to and including the target scene
-            const targetSceneIndexInChapter = currentChapter.sceneOrder.indexOf(targetSceneId);
-            const currentSceneIndexInChapter = currentChapter.sceneOrder.indexOf(sceneIdInChapter);
-            if (targetSceneIndexInChapter !== -1 && currentSceneIndexInChapter > targetSceneIndexInChapter) {
-                includeConceptsFromThisScene = false;
-            }
+          const targetSceneIndexInChapter = currentChapter.sceneOrder.indexOf(targetSceneId);
+          const currentSceneIndexInChapter = currentChapter.sceneOrder.indexOf(sceneIdInChapter);
+          if (targetSceneIndexInChapter !== -1 && currentSceneIndexInChapter > targetSceneIndexInChapter) {
+            includeConceptsFromThisScene = false;
+          }
         }
-        if (includeConceptsFromThisScene && scene && scene.context) {
-          scene.context.forEach(id => relevantConceptIds.add(id));
+
+        if (includeConceptsFromThisScene && scene) {
+          let conceptIdsForPromptFromThisScene = new Set();
+          if (scene.autoUpdateContext === true && concepts && concepts.length > 0) {
+            const autoDetectedConceptIds = new Set();
+            concepts.forEach(concept => {
+              const termsToSearch = [];
+              if (concept.name && concept.name.trim() !== "") {
+                termsToSearch.push(concept.name.trim());
+              }
+              if (concept.aliases && concept.aliases.length > 0) {
+                concept.aliases.forEach(alias => {
+                  if (alias && alias.trim() !== "") {
+                    termsToSearch.push(alias.trim());
+                  }
+                });
+              }
+              let foundInText = false;
+              for (const term of termsToSearch) {
+                const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+                if ((scene.synopsis && regex.test(scene.synopsis)) || (scene.content && regex.test(scene.content))) {
+                  foundInText = true;
+                  break;
+                }
+              }
+              if (foundInText) {
+                autoDetectedConceptIds.add(concept.id);
+              }
+            });
+            // Update the scene.context array itself by merging auto-detected with existing manual ones
+            scene.context = Array.from(new Set([...(scene.context || []), ...autoDetectedConceptIds]));
+          }
+          
+          // After potential auto-update, populate concepts for the prompt from the (possibly modified) scene.context
+          if (scene.context && scene.context.length > 0) {
+            scene.context.forEach(id => conceptIdsForPromptFromThisScene.add(id));
+          }
+          
+          // Add these to the overall relevantConceptIds for the prompt string
+          conceptIdsForPromptFromThisScene.forEach(id => relevantConceptIds.add(id));
         }
       });
     }

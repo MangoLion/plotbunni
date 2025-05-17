@@ -122,6 +122,18 @@ Plot Bunni offers a comprehensive suite of features for novelists:
 -   **Responsive Design**: UI adapts for optimal use on desktop, tablet, and mobile devices.
 -   **Error Handling & Loading States**: Provides feedback during data operations and loading.
 
+## Tech Stack
+
+Plot Bunni is built with the following technologies:
+
+-   **Framework/Library**: React
+-   **Build Tool**: Vite
+-   **Styling**: Tailwind CSS
+-   **UI Components**: Shadcn/UI (built on Radix UI)
+-   **Routing**: React Router
+-   **Local Data Storage**: IndexedDB
+-   **Linting**: ESLint
+
 ## Directory Tree (src folder)
 
 ```
