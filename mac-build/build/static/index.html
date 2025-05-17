@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./rabbit.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plot Bunni</title>
+    <style>
+      body {
+        background-color: hsl(var(--background)); /* Ensure body background matches theme */
+        margin: 0; /* Remove default margin */
+        display: flex; /* For centering spinner if needed */
+        align-items: center; /* For centering spinner if needed */
+        justify-content: center; /* For centering spinner if needed */
+        min-height: 100vh; /* Ensure full viewport height */
+      }
+      #loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid hsl(var(--secondary)); /* Lighter color for the track */
+        border-bottom-color: hsl(var(--primary)); /* Primary color for the spinner arc */
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+        position: fixed; /* Keep it centered even if content loads */
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%); /* Center precisely */
+        z-index: 9999; /* Ensure it's on top */
+      }
+
+      @keyframes rotation {
+        0% {
+          transform: translate(-50%, -50%) rotate(0deg);
+        }
+        100% {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+
+      /* Hide spinner when React app is loaded and adds 'loaded' class to body */
+      body.loaded #loading-spinner {
+        display: none;
+      }
+      /* Ensure root div is hidden initially and takes full space when loaded */
+      #root {
+        display: none; /* Hidden initially */
+        width: 100%;
+        height: 100%;
+      }
+      body.loaded #root {
+        display: block; /* Shown when loaded */
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-tXyTnOTH.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B6url4st.css">
+  </head>
+  <body>
+    <div id="loading-spinner"></div>
+    <div id="root"></div>
+  </body>
+</html>
