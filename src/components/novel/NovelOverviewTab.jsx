@@ -576,7 +576,7 @@ const NovelOverviewTab = () => {
   };
 
   return (
-    <ScrollArea className="h-[calc(100vh-4rem)] p-4"> {/* Root ScrollArea like in PlanView */}
+    <ScrollArea className="h-[calc(100vh-4rem)]"> {/* Root ScrollArea like in PlanView */}
       <Joyride
         continuous
         run={runTour}

@@ -273,11 +273,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                       className="absolute inset-0 p-0 m-0"
                       forceMount={activeSidebarTab === "overview"}
                     >
-                      <ScrollArea className="h-full w-full">
-                        <div className="p-4">
-                          <NovelOverviewTab />
-                        </div>
-                      </ScrollArea>
+                      <NovelOverviewTab />
                     </TabsContent>
                     
                     <TabsContent 
@@ -285,11 +281,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                       className="absolute inset-0 p-0 m-0"
                       forceMount={activeSidebarTab === "concepts"}
                     >
-                      <ScrollArea className="h-full w-full">
-                        <div className="p-4">
-                          <ConceptCacheList />
-                        </div>
-                      </ScrollArea>
+                      <ConceptCacheList />
                     </TabsContent>
                   </div>
                 </Tabs>
