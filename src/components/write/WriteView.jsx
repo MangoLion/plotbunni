@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AISuggestionModal } from '../ai/AISuggestionModal';
 import { AINovelWriterModal } from '../ai/AINovelWriterModal';
-import { WandSparkles, Sparkles, Type as TypeIcon, NotebookText } from 'lucide-react'; // Added TypeIcon and NotebookText
+import { WandSparkles, Sparkles, Type as TypeIcon, NotebookText } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -12,8 +12,8 @@ import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent, CardHeader } from '../ui/card';
-import { generateContextWithRetry } from '../../lib/aiContextUtils'; // Added
-import { removeIndentation } from '../../lib/utils'; // Added
+import { generateContextWithRetry } from '../../lib/aiContextUtils';
+import { removeIndentation } from '../../lib/utils';
 
 // Helper component for editable titles
 const EditableTitle = ({ initialValue, onSave, placeholder, className, inputClassName, tag: Component = 'div' }) => {
@@ -82,7 +82,6 @@ const AutoExpandingTextarea = React.forwardRef(({
     sceneId,
     initialValue,
     placeholder,
-    // novelContextString, // This will be generated internally now
     sceneName,
     sceneSynopsis, // Retained for potential use, though current scene content is primary
     // Add base data props needed for context generation
@@ -93,7 +92,7 @@ const AutoExpandingTextarea = React.forwardRef(({
     concepts,
     // Pass all novel detail fields
     novelDetailsForContext
-}, forwardedRef) => { // Renamed ref to forwardedRef for clarity
+}, forwardedRef) => {
     const internalTextareaRef = useRef(null); // For the <Textarea> element itself
     const popoverTriggerRef = useRef(null); // Ref for Popover trigger
     const popoverContentRef = useRef(null); // Ref for Popover content
@@ -128,7 +127,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                 }
             }, 0);
         }
-    }, [isEditingScene, text, initialValue]); // Ensure it runs if initialValue changes while editing too
+    }, [isEditingScene, text, initialValue]);
 
     const handleChange = (e) => {
         setText(e.target.value);
@@ -555,9 +554,6 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                                     {sceneIndex < chapter.sceneOrder.length - 1 && (
                                                         <div className="flex justify-center">
                                                             <div className="w-2/3 h-px mx-auto my-3 bg-gradient-to-r from-transparent via-muted-foreground/70 to-transparent"></div>
-                                                            {/* Alternative "nicer" separator:
-                                                            <div className="text-center text-muted-foreground text-lg tracking-widest">~ &lowast; ~</div>
-                                                            */}
                                                         </div>
                                                     )}
                                                 </article>
@@ -576,8 +572,7 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                     </section>
                 );
             })}
-            </div> {/* Close inner div */}
-
+            </div>
             {isAINovelWriterModalOpen && (
                 <AINovelWriterModal
                     isOpen={isAINovelWriterModalOpen}
@@ -585,7 +580,7 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                     novelData={novelDataForAI}
                 />
             )}
-        </ScrollArea> // Close ScrollArea
+        </ScrollArea>
     );
 };
 

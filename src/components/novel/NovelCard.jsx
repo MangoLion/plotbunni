@@ -34,7 +34,7 @@ const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
   return (
     <Card className="w-full max-w-xs flex flex-col overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 group">
       <div 
-        className="aspect-[2/3] w-full relative overflow-hidden cursor-pointer" // Added cursor-pointer here
+        className="aspect-[2/3] w-full relative overflow-hidden cursor-pointer"
         onClick={handleCardClick}
       >
         {coverImage ? (
@@ -58,8 +58,8 @@ const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
           </Button>
         </div>
         {/* Novel Name Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none"> {/* Removed p-4 */}
-          <div className="bg-black/60 backdrop-blur-md p-2 px-3 shadow-lg w-full"> {/* Removed rounded-lg */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-black/60 backdrop-blur-md p-2 px-3 shadow-lg w-full">
             <h2 
               className="text-white text-sm md:text-base lg:text-lg font-semibold text-center text-wrap" /* Adjusted text sizes for responsiveness */
               title={name}

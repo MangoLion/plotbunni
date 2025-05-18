@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid'; // Need to install uuid
+import { v4 as uuidv4 } from 'uuid';
 import {
   defaultLightPreset,
   defaultDarkPreset,
@@ -206,7 +206,7 @@ const loadSettings = () => {
         fontFamily: parsed.fontFamily || DEFAULT_FONT_FAMILY,
         fontSize: parsed.fontSize || DEFAULT_FONT_SIZE,
         taskSettings: taskSettings,
-    systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant", // Updated default
+    systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant",
     showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
   };
 }
@@ -224,7 +224,7 @@ const loadSettings = () => {
     fontFamily: DEFAULT_FONT_FAMILY,
     fontSize: DEFAULT_FONT_SIZE,
     taskSettings: createDefaultTaskSettings(defaultProfileId),
-    systemPrompt: "You are an experienced creative writing assistant", // Updated default
+    systemPrompt: "You are an experienced creative writing assistant",
     showAiFeatures: true,
   };
 };
@@ -292,8 +292,8 @@ export const SettingsProvider = ({ children }) => {
     setUserDarkColorsState(loaded.userDarkColors);
     setFontFamilyState(loaded.fontFamily || DEFAULT_FONT_FAMILY);
     setFontSizeState(loaded.fontSize || DEFAULT_FONT_SIZE);
-    setSystemPrompt(loaded.systemPrompt); // Load systemPrompt
-    setShowAiFeatures(loaded.showAiFeatures !== undefined ? loaded.showAiFeatures : true); // Load AI features toggle
+    setSystemPrompt(loaded.systemPrompt);
+    setShowAiFeatures(loaded.showAiFeatures !== undefined ? loaded.showAiFeatures : true);
 
     // Ensure task settings have valid profile IDs after profiles are loaded
     const updatedTaskSettings = { ...loaded.taskSettings };
@@ -323,12 +323,12 @@ export const SettingsProvider = ({ children }) => {
         userDarkColors,
         fontFamily,
         fontSize,
-        taskSettings, // Add taskSettings to save
-        systemPrompt, // Add systemPrompt to save
-        showAiFeatures, // Add showAiFeatures to save
+        taskSettings,
+        systemPrompt,
+        showAiFeatures,
       });
     }
-  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, isLoaded]); // Add showAiFeatures dependency
+  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, isLoaded]);
 
   // OS theme listener
   useEffect(() => {
@@ -361,7 +361,7 @@ export const SettingsProvider = ({ children }) => {
 
     // Apply the raw HSL values directly to the CSS variables
     for (const [variable, hslValue] of Object.entries(effectiveColors)) {
-      document.documentElement.style.setProperty(`--${variable}`, hslValue); // Corrected: Apply raw HSL string
+      document.documentElement.style.setProperty(`--${variable}`, hslValue);
     }
 
     // Apply font family and font size
@@ -544,7 +544,6 @@ export const SettingsProvider = ({ children }) => {
     }
 
     if (stateChanged) {
-      // console.log("Theme guessing: Applying detected changes to state:", { newThemeMode, newLightColors, newDarkColors });
       if (newThemeMode !== themeMode) setThemeModeState(newThemeMode);
       
       // For color objects, compare properly before setting to avoid unnecessary re-renders/saves
@@ -569,8 +568,6 @@ export const SettingsProvider = ({ children }) => {
   }, [
     isLoaded, activeOsTheme, themeMode, userLightColors, userDarkColors, 
     setThemeModeState, setUserLightColorsState, setUserDarkColorsState
-    // Removed HSL helper functions from dependencies as they are now module-scoped
-    // defaultLightPreset, defaultDarkPreset, lightThemePresets, darkThemePresets
   ]);
 
 
@@ -795,7 +792,7 @@ export const SettingsProvider = ({ children }) => {
     resetThemeToDefault,
     getAvailablePresets,
     getCurrentColors,
-    getActivePresetId, // Export new function
+    getActivePresetId,
 
     // Font and Size values
     fontFamily,
@@ -809,7 +806,7 @@ export const SettingsProvider = ({ children }) => {
     taskSettings,
     updateTaskSetting,
     DEFAULT_TASK_PROMPTS, // Exporting for resetting prompts if needed
-    resetAllTaskPrompts, // New function
+    resetAllTaskPrompts,
 
     // System Prompt values
     systemPrompt,

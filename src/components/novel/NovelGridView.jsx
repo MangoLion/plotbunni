@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NovelCard from './NovelCard';
 import AddNewNovelCard from './AddNewNovelCard';
-import CreateNovelFormModal from './CreateNovelFormModal'; // Added
-import SettingsView from '@/components/settings/SettingsView'; // Added for settings modal
+import CreateNovelFormModal from './CreateNovelFormModal';
+import SettingsView from '@/components/settings/SettingsView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Rabbit, Sun, Moon, UploadCloud, Settings } from 'lucide-react'; // Added Settings icon
-import { useSettings } from '@/context/SettingsContext'; // Import useSettings
-import { useToast } from '@/hooks/use-toast'; // Added useToast
+import { Search, Rabbit, Sun, Moon, UploadCloud, Settings } from 'lucide-react';
+import { useSettings } from '@/context/SettingsContext';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,9 +28,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Added
+import { ScrollArea } from "@/components/ui/scroll-area";
 import * as idb from '@/lib/indexedDb';
-import { getDefaultConceptTemplates } from '@/data/models'; // Added
+import { getDefaultConceptTemplates } from '@/data/models';
 
 const NovelGridView = () => {
   const [novels, setNovels] = useState([]);
@@ -38,8 +38,8 @@ const NovelGridView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  const [isCreateFormModalOpen, setIsCreateFormModalOpen] = useState(false); // Changed
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Added for settings modal
+  const [isCreateFormModalOpen, setIsCreateFormModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingNovel, setEditingNovel] = useState(null); // { id, name }
@@ -316,8 +316,8 @@ const NovelGridView = () => {
         </div>
       </header>
 
-      <main className="flex-grow p-4 md:p-6"> {/* Removed overflow-auto */}
-        <ScrollArea className="h-[calc(100vh-4rem)] p-4"> {/* Added ScrollArea */}
+      <main className="flex-grow p-4 md:p-6">
+        <ScrollArea className="h-[calc(100vh-4rem)] p-4">
           <div className="mb-6 flex items-center gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -361,7 +361,7 @@ const NovelGridView = () => {
             </p>
           </div>
         )}
-        </ScrollArea> {/* Closed ScrollArea */}
+        </ScrollArea>
       </main>
 
       {/* Create Novel Form Modal (New) */}

@@ -25,7 +25,7 @@ export const generateContextWithRetry = async ({
   systemPromptText,
   userQueryText,
 }) => {
-  const { actOrder, acts, chapters, scenes: originalScenes, concepts, novelDetails, currentGeneratedContents } = baseData; // Changed novelSynopsis to novelDetails
+  const { actOrder, acts, chapters, scenes: originalScenes, concepts, novelDetails, currentGeneratedContents } = baseData;
   const { targetChapterId, targetSceneId, currentSceneText } = targetData;
 
   // Create effective scenes object by merging original scenes with currently generated content
@@ -65,10 +65,8 @@ export const generateContextWithRetry = async ({
   try {
     let contextL1 = "";
     if (strategy === 'novelOutline') {
-      // Pass novelDetails instead of novelSynopsis
       contextL1 = buildNovelOutlineContext_L1(actOrder, acts, chapters, scenes, concepts, targetChapterId, targetSceneId, novelDetails);
     } else if (strategy === 'sceneText') {
-      // Pass novelDetails instead of novelSynopsis
       contextL1 = buildSceneTextContext_L1(actOrder, acts, chapters, scenes, concepts, novelDetails, targetChapterId, targetSceneId, currentSceneText);
     }
     let tokensL1 = tokenCount(contextL1);

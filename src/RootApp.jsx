@@ -1,19 +1,18 @@
 import React from 'react';
 import {
-  createHashRouter, // Changed from createBrowserRouter
+  createHashRouter,
   RouterProvider,
   useParams,
 } from 'react-router-dom';
-import App from './App'; // This is the existing App.jsx, will become NovelEditorView
-import NovelGridView from './components/novel/NovelGridView'; // Import the actual NovelGridView
-import { DataProvider } from './context/DataContext'; // Import DataProvider
-import { SettingsProvider } from './context/SettingsContext'; // Import SettingsProvider
+import App from './App';
+import NovelGridView from './components/novel/NovelGridView';
+import { DataProvider } from './context/DataContext';
+import { SettingsProvider } from './context/SettingsContext';
 
 // Novel Editor View Layout
 // Extracts novelId from params and provides DataContext for that novel
 const NovelEditorLayout = () => {
   const { novelId } = useParams();
-  // console.log("NovelEditorLayout - Novel ID from route params:", novelId);
 
   if (!novelId) {
     // This case should ideally be handled by routing or a redirect
@@ -28,12 +27,12 @@ const NovelEditorLayout = () => {
 
   return (
     <DataProvider novelId={novelId}>
-      <App novelId={novelId} /> {/* App now receives novelId and is wrapped by its specific DataProvider */}
+      <App novelId={novelId} />
     </DataProvider>
   );
 };
 
-const router = createHashRouter([ // Changed from createBrowserRouter
+const router = createHashRouter([
   {
     path: '/',
     element: <NovelGridView />,

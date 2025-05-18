@@ -1,25 +1,25 @@
-import { useState, useEffect, useRef } from 'react'; // Added useRef
+import { useState, useEffect, useRef } from 'react';
 import { useData } from './context/DataContext.jsx';
-import { useSettings } from './context/SettingsContext.jsx'; // Import useSettings
+import { useSettings } from './context/SettingsContext.jsx';
 import { getAllNovelMetadata } from '@/lib/indexedDb.js'; // Import for fetching novel name
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"; // Added TabsContent
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ConceptCacheList from '@/components/concept/ConceptCacheList.jsx';
 import NovelOverviewTab from '@/components/novel/NovelOverviewTab.jsx'; // Import new component
 import PlanView from '@/components/plan/PlanView.jsx';
 import SettingsView from '@/components/settings/SettingsView.jsx';
-import WriteView from '@/components/write/WriteView.jsx'; // Added real WriteView
-import { Link } from 'react-router-dom'; // Import Link for navigation
-import { PanelLeftClose, PanelLeftOpen, Rabbit, Home, Clipboard, Edit, Settings, BookOpen, Lightbulb, Sun, Moon, Text } from 'lucide-react'; // Added PanelLeftClose, PanelLeftOpen, Sun, Moon, Text icons
-import { Button } from "@/components/ui/button"; // Import Button
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover components
-import FontSettingsControl from '@/components/settings/FontSettingsControl'; // Import FontSettingsControl
+import WriteView from '@/components/write/WriteView.jsx';
+import { Link } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen, Rabbit, Home, Clipboard, Edit, Settings, BookOpen, Lightbulb, Sun, Moon, Text } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import FontSettingsControl from '@/components/settings/FontSettingsControl';
 
 // App component now represents the Novel Editor for a specific novel
 function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayout
   // useData() will now get data for the specific novelId via context
-  const { isDataLoaded, currentNovelId } = useData(); // Removed novelNameFromContext
+  const { isDataLoaded, currentNovelId } = useData();
   const [activeMainTab, setActiveMainTab] = useState("plan");
   const [activeSidebarTab, setActiveSidebarTab] = useState("overview"); // New state for sidebar tabs
   const [currentNovelName, setCurrentNovelName] = useState("Novel"); // State for novel name
@@ -131,9 +131,9 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
   const renderMobileContent = () => {
     switch (activeMainTab) {
       case "overview":
-        return <NovelOverviewTab />; // Now has its own ScrollArea
+        return <NovelOverviewTab />;
       case "concepts":
-        return <ConceptCacheList />; // Now has its own ScrollArea, remove p-4 wrapper
+        return <ConceptCacheList />;
       case "write":
         // Pass targetChapterId and targetSceneId to WriteView for mobile too
         return <WriteView targetChapterId={targetChapterId} targetSceneId={targetSceneId} />;
@@ -227,7 +227,6 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
         <ResizablePanelGroup 
           direction="horizontal" 
           className="flex-grow"
-          // ref={panelGroupRef} // No longer needed for this
         >
           <ResizablePanel
             id={SIDEBAR_PANEL_ID}
@@ -246,7 +245,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                 <Tabs value={activeSidebarTab} onValueChange={setActiveSidebarTab} className="flex flex-col h-full">
                   {/* This div wraps TabsList and the new button */}
                   <div className="flex items-center shrink-0 border-b"> {/* Parent for TabsList and Button */}
-                    <TabsList className="shrink-0 rounded-none flex-grow"> {/* flex-grow, border-b moved from TabsList to parent div */}
+                    <TabsList className="shrink-0 rounded-none flex-grow">
                       <TabsTrigger value="overview" className="flex-1 rounded-none">
                         <BookOpen className="mr-2 h-4 w-4" />Overview
                       </TabsTrigger>

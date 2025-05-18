@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { createConcept, createAct, createChapter, createScene, createConceptTemplate, getDefaultConceptTemplates } from '@/data/models';
-import { getNovelData, saveNovelData } from '@/lib/indexedDb'; // Import NEW IndexedDB helpers for multi-novel
+import { getNovelData, saveNovelData } from '@/lib/indexedDb';
 
 const DataContext = createContext();
 
@@ -437,16 +437,16 @@ export const DataProvider = ({ children, novelId }) => { // Accept novelId as a 
 
 
   const value = {
-    authorName, // New
-    synopsis,   // New
-    coverImage, // New
-    pointOfView, // New
-    genre, // New
-    timePeriod, // New
-    targetAudience, // New
-    themes, // New
-    tone, // New
-    updateNovelDetails, // New
+    authorName,
+    synopsis,
+    coverImage,
+    pointOfView,
+    genre,
+    timePeriod,
+    targetAudience,
+    themes,
+    tone,
+    updateNovelDetails,
     concepts,
     addConcept,
     updateConcept,
@@ -473,12 +473,6 @@ export const DataProvider = ({ children, novelId }) => { // Accept novelId as a 
     updateSceneOrderInChapter,
     isDataLoaded, // Expose isDataLoaded for UI to show loading states if needed
     currentNovelId, // Expose currentNovelId for debugging or advanced conditional rendering
-    // Helper to get novel name from metadata (though App.jsx might get it directly from NovelGridView state or route params)
-    // This might be redundant if App.jsx already has novel name.
-    // novelName: currentNovelId ? (async () => {
-    //   const meta = await getNovelMetadata(currentNovelId); // Assuming getNovelMetadata exists
-    //   return meta ? meta.name : 'Novel';
-    // })() : 'Novel',
   };
 
   // Render children only when data for the specific novelId is loaded or initialized

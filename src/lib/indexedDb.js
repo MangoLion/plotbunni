@@ -229,6 +229,3 @@ export async function deleteNovel(novelId) {
   metadataList = metadataList.filter(meta => meta.id !== novelId);
   await _idbSet(NOVELS_METADATA_KEY, metadataList);
 }
-
-// The old PROJECT_DATA_KEY is no longer used for individual novel data.
-// export const PROJECT_DATA_KEY = 'currentProject'; // This line is now removed/commented.

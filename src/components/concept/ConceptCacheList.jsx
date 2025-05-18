@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input"; // For search bar
 import { NotebookText, PlusCircle, Filter, Copy, Trash2 } from 'lucide-react'; // Icons
-import ConceptFormModal from './ConceptFormModal'; // Import the modal - updated name
+import ConceptFormModal from './ConceptFormModal';
 import CreateConceptModal  from './CreateConceptModal';
-import ConfirmModal from '@/components/ui/ConfirmModal'; // Import ConfirmModal
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { createConcept } from '@/data/models'; // For duplicating concepts
-// Removed: import { defaultConceptTemplates } from '@/data/conceptTemplates'; // Will use conceptTemplates from DataContext
 
 const ConceptCacheList = () => {
   const { concepts, conceptTemplates, addConcept, deleteConcept } = useData(); // Get novel-specific conceptTemplates and addConcept, add deleteConcept
@@ -116,14 +115,14 @@ const ConceptCacheList = () => {
           sortedGroupKeys.map(groupKey => (
             <div key={groupKey}>
               {/* Divider */}
-              <div className="px-2 py-1 mt-3 mb-1 text-xs font-semibold text-muted-foreground border-b border-border"> {/* Changed text-slate-600 and border-slate-300 */}
+              <div className="px-2 py-1 mt-3 mb-1 text-xs font-semibold text-muted-foreground border-b border-border">
                 {groupKey}
               </div>
               {/* Concepts in group */}
               {groupedConcepts[groupKey].map(concept => (
                 <div
                   key={concept.id}
-                  className="p-2 mb-1 mx-1 border-b border-border hover:bg-muted rounded-md flex items-center text-sm text-foreground group" // Changed border-slate-200, hover:bg-slate-100, added text-foreground, added group
+                  className="p-2 mb-1 mx-1 border-b border-border hover:bg-muted rounded-md flex items-center text-sm text-foreground group"
                 >
                   <div 
                     className="flex-grow flex items-center cursor-pointer"
@@ -135,7 +134,7 @@ const ConceptCacheList = () => {
                     {concept.image ? (
                       <img src={concept.image} alt={concept.name} className="w-7 h-7 mr-2 object-cover rounded-sm" />
                     ) : (
-                      <NotebookText className="w-7 h-7 mr-2 text-muted-foreground flex-shrink-0" /> // Changed text-slate-400
+                      <NotebookText className="w-7 h-7 mr-2 text-muted-foreground flex-shrink-0" />
                     )}
                     <span className="truncate">{concept.name}</span>
                   </div>
@@ -170,8 +169,8 @@ const ConceptCacheList = () => {
         ) : (
           <p className="p-2 text-sm text-muted-foreground">No concepts found. Click '+' to add one.</p>
         )}
-        </div> {/* Close the main content div */}
-      </ScrollArea> {/* Close the Root ScrollArea */}
+        </div>
+      </ScrollArea>
       
       {/* Modals remain outside the ScrollArea but within the fragment */}
       <CreateConceptModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
