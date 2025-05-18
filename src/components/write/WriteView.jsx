@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../../context/DataContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AISuggestionModal } from '../ai/AISuggestionModal';
@@ -17,6 +18,7 @@ import { removeIndentation } from '../../lib/utils';
 
 // Helper component for editable titles
 const EditableTitle = ({ initialValue, onSave, placeholder, className, inputClassName, tag: Component = 'div' }) => {
+    const { t } = useTranslation();
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(initialValue);
     const inputRef = useRef(null);
@@ -58,7 +60,7 @@ const EditableTitle = ({ initialValue, onSave, placeholder, className, inputClas
                 onChange={(e) => setValue(e.target.value)}
                 onBlur={handleSave}
                 onKeyDown={handleKeyDown}
-                placeholder={placeholder}
+                placeholder={placeholder || t('write_view_editable_title_default_placeholder')}
                 className={`${inputClassName || className || ''} p-0 h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none`}
             />
         );
@@ -72,7 +74,7 @@ const EditableTitle = ({ initialValue, onSave, placeholder, className, inputClas
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsEditing(true); }}}
         >
-            {value || <span className="text-muted-foreground italic">{placeholder}</span>}
+            {value || <span className="text-muted-foreground italic">{placeholder || t('write_view_editable_title_default_placeholder')}</span>}
         </Component>
     );
 };
@@ -93,6 +95,7 @@ const AutoExpandingTextarea = React.forwardRef(({
     // Pass all novel detail fields
     novelDetailsForContext
 }, forwardedRef) => {
+    const { t } = useTranslation();
     const internalTextareaRef = useRef(null); // For the <Textarea> element itself
     const popoverTriggerRef = useRef(null); // Ref for Popover trigger
     const popoverContentRef = useRef(null); // Ref for Popover content
@@ -162,12 +165,12 @@ const AutoExpandingTextarea = React.forwardRef(({
 
     const prepareAISceneContext = async () => {
         if (!actOrder || !acts || !chapters || !scenesData || !concepts) {
-            setAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Base novel data for scene context not fully loaded." });
+            setAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('write_view_ai_context_error_base_data') });
             return;
         }
         const activeAIProfile = getActiveProfile();
         if (!activeAIProfile) {
-            setAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: "No active AI profile found for scene context." });
+            setAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('write_view_ai_context_error_no_profile') });
             return;
         }
 
@@ -186,7 +189,7 @@ const AutoExpandingTextarea = React.forwardRef(({
             if (currentChapterId) break;
         }
         if (!currentChapterId) {
-             setAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Could not determine current chapter for the scene." });
+             setAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('write_view_ai_context_error_no_chapter') });
             return;
         }
 
@@ -224,7 +227,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                         value={text}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        placeholder={placeholder || "Write your scene here..."}
+                        placeholder={placeholder || t('write_view_textarea_default_placeholder')}
                         className="w-full resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 pr-10 transition-all duration-200 ease-in-out" // Removed pl-10, not needed for top-right button
                     />
                     {/* Markdown Help Popover Button */}
@@ -237,7 +240,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                                 size="icon"
                                 className="absolute top-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
                                 onMouseDown={(e) => e.preventDefault()} 
-                                aria-label="Markdown Formatting Help"
+                                aria-label={t('write_view_markdown_help_tooltip')}
                             >
                                 <TypeIcon className="h-4 w-4" />
                             </Button>
@@ -245,9 +248,9 @@ const AutoExpandingTextarea = React.forwardRef(({
                         <PopoverContent ref={popoverContentRef} className="w-80" side="bottom" align="end"> {/* Added side and align for better positioning */}
                             <div className="grid gap-4">
                                 <div className="space-y-2">
-                                    <h4 className="font-medium leading-none">Markdown Basics</h4>
+                                    <h4 className="font-medium leading-none">{t('write_view_markdown_basics_title')}</h4>
                                     <p className="text-sm text-muted-foreground">
-                                        Simple formatting syntax.
+                                        {t('write_view_markdown_basics_description')}
                                     </p>
                                 </div>
                                 <div className="grid gap-2 text-sm">
@@ -272,7 +275,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                             className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700" // Remains bottom-right
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={handleOpenAISuggestionModal}
-                            aria-label="Get AI Suggestion for Scene Text"
+                            aria-label={t('write_view_ai_suggestion_tooltip')}
                         >
                             <WandSparkles className="h-4 w-4" />
                         </Button>
@@ -284,7 +287,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                     className="prose prose-sm dark:prose-invert max-w-none p-3 min-h-[100px] border border-input rounded-md bg-background hover:bg-muted/50 cursor-text transition-colors text-base leading-relaxed"
                     // Style to mimic textarea, make it clickable
                 >
-                    {text ? <Markdown>{removeIndentation(text)}</Markdown> : <p className="text-muted-foreground italic">{placeholder || "Write your scene here..."}</p>}
+                    {text ? <Markdown>{removeIndentation(text)}</Markdown> : <p className="text-muted-foreground italic">{placeholder || t('write_view_textarea_default_placeholder')}</p>}
                 </div>
             )}
             {isAISuggestionModalOpen && aiSceneContext && (
@@ -297,7 +300,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                     novelDataTokens={aiSceneContext.estimatedTokens}
                     novelDataLevel={aiSceneContext.level}
                     onAccept={handleAcceptAISuggestion}
-                    fieldLabel={`Scene: ${sceneName || 'Unnamed Scene'}`}
+                    fieldLabel={t('write_view_ai_suggestion_field_label_scene', { sceneName: sceneName || t('ai_novel_writer_unnamed_scene')})}
                     taskKeyForProfile={TASK_KEYS.SCENE_TEXT}
                 />
             )}
@@ -307,6 +310,7 @@ const AutoExpandingTextarea = React.forwardRef(({
   
 
 const WriteView = ({ targetChapterId, targetSceneId }) => {
+    const { t } = useTranslation();
     const {
       acts, chapters, scenes, actOrder, concepts,
       updateAct, updateChapter,
@@ -386,7 +390,7 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
     if (!acts || !chapters || !scenes || !actOrder) {
         return (
             <div className="flex items-center justify-center h-full text-muted-foreground p-8">
-                Loading data or initializing...
+                {t('write_view_loading_data')}
             </div>
         );
     }
@@ -394,9 +398,9 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
     if (actOrder.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
-                <p className="text-lg mb-2">Your story awaits!</p>
-                <p>There are no acts in your novel yet. </p>
-                <p>Head over to the 'Plan' tab to outline your acts, chapters, and scenes.</p>
+                <p className="text-lg mb-2">{t('write_view_empty_story_title')}</p>
+                <p>{t('write_view_empty_story_no_acts')}</p>
+                <p>{t('write_view_empty_story_go_to_plan')}</p>
             </div>
         );
     }
@@ -411,26 +415,26 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                             variant="outline"
                             size="icon"
                             className="rounded-full shadow-lg hover:bg-primary/10"
-                            title="View Novel Outline"
+                            title={t('write_view_outline_popover_tooltip')}
                         >
                             <NotebookText className="h-5 w-5 text-primary" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[350px] p-0" side="right" align="start">
                         <ScrollArea className="h-[500px] max-h-[80vh] p-4">
-                            <div className="text-lg font-semibold mb-3">Outline</div>
+                            <div className="text-lg font-semibold mb-3">{t('write_view_outline_popover_title')}</div>
                             {actOrder.map(actId => {
                                 const act = acts[actId];
                                 if (!act) return null;
                                 return (
                                     <div key={actId} className="mb-3">
-                                        <h3 className="font-semibold text-sm mb-1 text-foreground">{act.name || "Untitled Act"}</h3>
+                                        <h3 className="font-semibold text-sm mb-1 text-foreground">{act.name || t('ai_novel_writer_unnamed_act')}</h3>
                                         {act.chapterOrder?.map(chapterId => {
                                             const chapter = chapters[chapterId];
                                             if (!chapter) return null;
                                             return (
                                                 <div key={chapterId} className="ml-3 mb-2">
-                                                    <h4 className="font-medium text-xs text-muted-foreground mb-1">{chapter.name || "Untitled Chapter"}</h4>
+                                                    <h4 className="font-medium text-xs text-muted-foreground mb-1">{chapter.name || t('ai_novel_writer_unnamed_chapter')}</h4>
                                                     {chapter.sceneOrder?.map(sceneId => {
                                                         const scene = scenes[sceneId];
                                                         if (!scene) return null;
@@ -441,24 +445,24 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                                                 className="w-full justify-start h-auto py-1 px-2 text-xs font-normal text-left"
                                                                 onClick={() => handleSceneSelect(sceneId)}
                                                             >
-                                                                {scene.name || "Untitled Scene"}
+                                                                {scene.name || t('ai_novel_writer_unnamed_scene')}
                                                             </Button>
                                                         );
                                                     })}
                                                     {(!chapter.sceneOrder || chapter.sceneOrder.length === 0) && (
-                                                        <p className="ml-2 text-xs text-muted-foreground italic">No scenes</p>
+                                                        <p className="ml-2 text-xs text-muted-foreground italic">{t('write_view_outline_popover_no_scenes')}</p>
                                                     )}
                                                 </div>
                                             );
                                         })}
                                         {(!act.chapterOrder || act.chapterOrder.length === 0) && (
-                                            <p className="ml-3 text-xs text-muted-foreground italic">No chapters</p>
+                                            <p className="ml-3 text-xs text-muted-foreground italic">{t('write_view_outline_popover_no_chapters')}</p>
                                         )}
                                     </div>
                                 );
                             })}
                             {actOrder.length === 0 && (
-                                <p className="text-sm text-muted-foreground italic">Outline is empty. Add acts, chapters, and scenes in the 'Plan' tab.</p>
+                                <p className="text-sm text-muted-foreground italic">{t('write_view_outline_popover_empty_message')}</p>
                             )}
                         </ScrollArea>
                     </PopoverContent>
@@ -473,7 +477,7 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                         size="icon"
                         onClick={() => setIsAINovelWriterModalOpen(true)}
                         className="rounded-full shadow-lg hover:bg-primary/10"
-                        title="AI Novel Writer"
+                        title={t('write_view_ai_novel_writer_tooltip')}
                     >
                         <Sparkles className="h-5 w-5 text-primary" />
                     </Button>
@@ -487,11 +491,11 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
 
                 return (
                     <section key={actId} aria-labelledby={`act-title-${actId}`} className="space-y-6">
-                        <h2 id={`act-title-${actId}`} className="sr-only">{`Act: ${act.name}`}</h2>
+                        <h2 id={`act-title-${actId}`} className="sr-only">{`Act: ${act.name || t('ai_novel_writer_unnamed_act')}`}</h2>
                         <EditableTitle
                             initialValue={act.name}
                             onSave={(newName) => handleActTitleChange(actId, newName)}
-                            placeholder="Act Title"
+                            placeholder={t('write_view_act_title_placeholder')}
                             className="block text-2xl font-bold tracking-tight text-center w-full"
                             inputClassName="text-2xl font-bold tracking-tight text-center w-full"
                             tag="div" // Renders as a div, styled as h1 effectively
@@ -512,7 +516,7 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                         <EditableTitle
                                             initialValue={chapter.name}
                                             onSave={(newName) => handleChapterTitleChange(chapterId, newName)}
-                                            placeholder="Chapter Title"
+                                            placeholder={t('write_view_chapter_title_placeholder')}
                                             className="block text-2xl font-semibold w-full"
                                             inputClassName="text-2xl font-semibold w-full"
                                             tag="h3" // Renders as h3
@@ -522,6 +526,10 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                         {chapter.sceneOrder && chapter.sceneOrder.map((sceneId, sceneIndex) => {
                                             const scene = scenes[sceneId];
                                             if (!scene) return null;
+                                            
+                                            const scenePlaceholder = scene.synopsis 
+                                                ? t('write_view_textarea_placeholder_with_synopsis', { sceneName: scene.name || t('ai_novel_writer_unnamed_scene'), sceneSynopsis: scene.synopsis })
+                                                : t('write_view_textarea_placeholder_no_synopsis', { sceneName: scene.name || t('ai_novel_writer_unnamed_scene') });
 
                                             return (
                                                 <article key={sceneId} aria-labelledby={`scene-heading-${sceneId}`}>
@@ -532,7 +540,7 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                                         ref={el => sceneTextareaRefs.current[sceneId] = el}
                                                         sceneId={sceneId}
                                                         initialValue={scene.content || ''}
-                                                        placeholder={`${scene.name || 'Unnamed Scene'}: ${scene.synopsis || 'Write your scene text here...'}`}
+                                                        placeholder={scenePlaceholder}
                                                         // Pass necessary data for AutoExpandingTextarea to generate its own context
                                                         actOrder={actOrder}
                                                         acts={acts}
@@ -560,14 +568,14 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                             );
                                         })}
                                         {(!chapter.sceneOrder || chapter.sceneOrder.length === 0) && (
-                                            <p className="text-sm text-muted-foreground">This chapter has no scenes yet. Add scenes in the 'Plan' tab.</p>
+                                            <p className="text-sm text-muted-foreground">{t('write_view_chapter_no_scenes_message')}</p>
                                         )}
                                     </CardContent>
                                 </Card>
                             );
                         })}
                         {(!act.chapterOrder || act.chapterOrder.length === 0) && (
-                            <p className="text-sm text-muted-foreground ml-4">This act has no chapters yet. Add chapters in the 'Plan' tab.</p>
+                            <p className="text-sm text-muted-foreground ml-4">{t('write_view_act_no_chapters_message')}</p>
                         )}
                     </section>
                 );

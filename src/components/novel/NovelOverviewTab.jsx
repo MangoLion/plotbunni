@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Joyride, { ACTIONS, EVENTS, STATUS } from 'react-joyride';
 import { ScrollArea } from "@/components/ui/scroll-area"; // Import ScrollArea
 import { useData } from '../../context/DataContext';
@@ -18,6 +19,7 @@ import { generateContextWithRetry } from '../../lib/aiContextUtils'; // Import g
 
 
 const NovelOverviewTab = () => {
+  const { t } = useTranslation();
   const {
     novelId: currentNovelIdFromAppContext,
     authorName, 
@@ -137,13 +139,13 @@ const NovelOverviewTab = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setLocalCoverImage(reader.result);
-        toast({ title: "Image Uploaded", description: "Cover image has been updated." });
+        toast({ title: t('novel_overview_toast_image_uploaded_title'), description: t('novel_overview_toast_image_uploaded_desc') });
       };
       reader.readAsDataURL(file);
     } else {
       toast({ 
-        title: "Invalid File", 
-        description: "Please drop an image file.", 
+        title: t('novel_overview_toast_invalid_file_title'), 
+        description: t('novel_overview_toast_invalid_file_desc'), 
         variant: "destructive" 
       });
     }
@@ -200,7 +202,7 @@ const NovelOverviewTab = () => {
           novelNameUpdated = true;
         } catch (error) {
           console.error("Error auto-saving novel name:", error);
-          toast({ title: "Error", description: "Could not auto-save novel name.", variant: "destructive" });
+          toast({ title: t('novel_overview_toast_error_title'), description: t('novel_overview_toast_error_autosave_name_desc'), variant: "destructive" });
         }
       }
 
@@ -230,16 +232,16 @@ const NovelOverviewTab = () => {
           detailsUpdated = true;
         } catch (error) {
           console.error("Error auto-saving novel details:", error);
-          toast({ title: "Error", description: "Could not auto-save novel details.", variant: "destructive" });
+          toast({ title: t('novel_overview_toast_error_title'), description: t('novel_overview_toast_error_autosave_details_desc'), variant: "destructive" });
         }
       }
       
       if (novelNameUpdated && detailsUpdated) {
-        toast({ title: "Auto-Saved", description: "Novel name & details updated." });
+        toast({ title: t('novel_overview_toast_autosaved_title'), description: t('novel_overview_toast_autosaved_name_details_desc') });
       } else if (novelNameUpdated) {
-        toast({ title: "Auto-Saved", description: "Novel name updated." });
+        toast({ title: t('novel_overview_toast_autosaved_title'), description: t('novel_overview_toast_autosaved_name_desc') });
       } else if (detailsUpdated) {
-        toast({ title: "Auto-Saved", description: "Novel details updated." });
+        toast({ title: t('novel_overview_toast_autosaved_title'), description: t('novel_overview_toast_autosaved_details_desc') });
       }
     }, 1500); // 1.5-second debounce
 
@@ -275,13 +277,13 @@ const NovelOverviewTab = () => {
           themes: localThemes,
           tone: localTone,
         });
-        toast({ title: "Auto-Saved", description: "Cover image updated." });
+        toast({ title: t('novel_overview_toast_autosaved_title'), description: t('novel_overview_toast_autosaved_image_desc') });
       } catch (error) {
         console.error("Error auto-saving cover image:", error);
-        toast({ title: "Error", description: "Could not auto-save cover image.", variant: "destructive" });
+        toast({ title: t('novel_overview_toast_error_title'), description: t('novel_overview_toast_error_autosave_image_desc'), variant: "destructive" });
       }
     }
-  }, [localCoverImage, novelId, updateNovelDetails, toast, localAuthorName, localSynopsis, localPointOfView, localGenre, localTimePeriod, localTargetAudience, localThemes, localTone, coverImage]);
+  }, [localCoverImage, novelId, updateNovelDetails, toast, localAuthorName, localSynopsis, localPointOfView, localGenre, localTimePeriod, localTargetAudience, localThemes, localTone, coverImage, t]);
 
   const downloadFile = ({ data, fileName, fileType }) => {
     const blob = new Blob([data], { type: fileType });
@@ -300,7 +302,7 @@ const NovelOverviewTab = () => {
 
   const handleExportJson = () => {
     if (!isDataLoaded || !localNovelName) {
-      toast({ title: "Error", description: "Novel data not fully loaded or novel name is missing.", variant: "destructive" });
+      toast({ title: t('novel_overview_toast_error_title'), description: t('novel_overview_toast_error_export_data_missing_desc'), variant: "destructive" });
       return;
     }
     const novelData = {
@@ -326,7 +328,7 @@ const NovelOverviewTab = () => {
       fileName,
       fileType: 'application/json',
     });
-    toast({ title: "Exported", description: `${fileName} has been downloaded.` });
+    toast({ title: t('novel_overview_toast_exported_title'), description: t('novel_overview_toast_exported_json_desc', { fileName }) });
   };
 
   // The handleExportMarkdown logic will be moved to/adapted in ExportModal.jsx
@@ -334,7 +336,7 @@ const NovelOverviewTab = () => {
 
   const prepareAIContextForSynopsis = async () => {
     if (!acts || !chapters || !scenes || !concepts || !actOrder || !isDataLoaded) {
-      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Base novel data not fully loaded for AI context." });
+      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('novel_overview_ai_context_error_data_not_loaded') });
       return;
     }
 
@@ -355,13 +357,13 @@ const NovelOverviewTab = () => {
     const activeAIProfile = endpointProfiles?.find(p => p.id === profileIdToUse);
     
     if (!activeAIProfile) {
-      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: "No active AI profile found. Please check settings." });
-      toast({ title: "AI Profile Error", description: "No active AI profile found. Please configure one in settings.", variant: "destructive" });
+      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('novel_overview_ai_context_error_no_profile') });
+      toast({ title: t('novel_overview_toast_ai_profile_error_title'), description: t('novel_overview_toast_ai_profile_error_no_active_desc'), variant: "destructive" });
       return;
     }
     if (!activeAIProfile.endpointUrl) {
-      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: `AI Profile "${activeAIProfile.name}" has no endpoint URL.` });
-      toast({ title: "AI Profile Error", description: `The selected AI Profile "${activeAIProfile.name}" is missing an endpoint URL.`, variant: "destructive" });
+      setAiSynopsisContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('novel_overview_ai_context_error_profile_no_url', {profileName: activeAIProfile.name}) });
+      toast({ title: t('novel_overview_toast_ai_profile_error_title'), description: t('novel_overview_toast_ai_profile_error_no_url_desc', {profileName: activeAIProfile.name}), variant: "destructive" });
       return;
     }
 
@@ -378,7 +380,7 @@ const NovelOverviewTab = () => {
       targetData: { targetChapterId: null, targetSceneId: null }, // No specific target for overall synopsis
       aiProfile: activeAIProfile,
       systemPromptText: systemPrompt, // from useSettings
-      userQueryText: taskSettings[TASK_KEYS.NOVEL_DESC]?.prompt || "Write a compelling synopsis for this novel.", // Default query
+      userQueryText: taskSettings[TASK_KEYS.NOVEL_DESC]?.prompt || t('novel_overview_ai_modal_default_synopsis_prompt'), // Default query
     });
     setAiSynopsisContext(contextResult);
   };
@@ -390,7 +392,7 @@ const NovelOverviewTab = () => {
 
 
   if (!novelId) {
-    return <div className="p-4 text-muted-foreground">Select a novel to see its overview.</div>;
+    return <div className="p-4 text-muted-foreground">{t('novel_overview_no_novel_selected')}</div>;
   }
 
   useEffect(() => {
@@ -400,13 +402,13 @@ const NovelOverviewTab = () => {
     const conceptsStep = isMobile 
       ? {
           target: '[data-joyride="concepts-tab"]', 
-          content: "Manage your characters, locations, and lore in the 'Concepts' area.",
+          content: t('novel_overview_joyride_step_concepts_tab_mobile'),
           placement: 'auto', 
           disableBeacon: false, 
         }
       : {
           target: '[data-joyride="concepts-tab-desktop"]', 
-          content: "Manage your characters, locations, and lore in the 'Concept Cache' sidebar.",
+          content: t('novel_overview_joyride_step_concepts_tab_desktop'),
           placement: 'right', 
           disableBeacon: false, 
         };
@@ -414,32 +416,32 @@ const NovelOverviewTab = () => {
     const steps = [
       {
         target: 'body',
-        content: "Welcome to Plot Bunni! Let's take a quick tour of the main features.",
+        content: t('novel_overview_joyride_step_welcome'),
         placement: 'center',
         disableBeacon: true,
       },
       {
         target: '[data-joyride="plan-tab"]',
-        content: "The 'Plan' tab is where you can outline your story with acts, chapters, and scenes.",
+        content: t('novel_overview_joyride_step_plan_tab'),
         placement: 'bottom',
       },
       {
         target: '[data-joyride="write-tab"]',
-        content: "Switch to the 'Write' tab to draft your manuscript scene by scene.",
+        content: t('novel_overview_joyride_step_write_tab'),
         placement: 'bottom',
       },
       conceptsStep, // Dynamically inserted concepts step
       {
         target: '[data-joyride="settings-tab"]',
-        content: "Customize application settings, including theme and AI configurations, in the 'Settings' tab.",
+        content: t('novel_overview_joyride_step_settings_tab'),
         placement: 'bottom',
       },
     ];
 
     if (showAiFeatures) {
       steps.push({
-        target: 'button[aria-label="Get AI Suggestion for Synopsis"]',
-        content: "Look for the magic wand icon! It offers AI assistance for various tasks, like generating text or ideas. You'll find similar icons in other parts of the app.",
+        target: `button[aria-label="${t('novel_overview_aria_label_ai_synopsis')}"]`,
+        content: t('novel_overview_joyride_step_ai_features'),
         placement: 'top',
       });
     }
@@ -535,13 +537,13 @@ const NovelOverviewTab = () => {
     const conceptsStep = isMobile 
       ? {
           target: '[data-joyride="concepts-tab"]', 
-          content: "Manage your characters, locations, and lore in the 'Concepts' area.",
+          content: t('novel_overview_joyride_step_concepts_tab_mobile'),
           placement: 'auto', 
           disableBeacon: false, 
         }
       : {
           target: '[data-joyride="concepts-tab-desktop"]', 
-          content: "Manage your characters, locations, and lore in the 'Concept Cache' sidebar.",
+          content: t('novel_overview_joyride_step_concepts_tab_desktop'),
           placement: 'right', 
           disableBeacon: false, 
         };
@@ -549,31 +551,31 @@ const NovelOverviewTab = () => {
     const currentSteps = [
       {
         target: 'body',
-        content: "Welcome to Plot Bunni! Let's take a quick tour of the main features.",
+        content: t('novel_overview_joyride_step_welcome'),
         placement: 'center',
         disableBeacon: true,
       },
       {
         target: '[data-joyride="plan-tab"]',
-        content: "The 'Plan' tab is where you can outline your story with acts, chapters, and scenes.",
+        content: t('novel_overview_joyride_step_plan_tab'),
         placement: 'bottom',
       },
       {
         target: '[data-joyride="write-tab"]',
-        content: "Switch to the 'Write' tab to draft your manuscript scene by scene.",
+        content: t('novel_overview_joyride_step_write_tab'),
         placement: 'bottom',
       },
       conceptsStep,
       {
         target: '[data-joyride="settings-tab"]',
-        content: "Customize application settings, including theme and AI configurations, in the 'Settings' tab.",
+        content: t('novel_overview_joyride_step_settings_tab'),
         placement: 'bottom',
       },
     ];
     if (showAiFeatures) {
       currentSteps.push({
-        target: 'button[aria-label="Get AI Suggestion for Synopsis"]',
-        content: "Look for the magic wand icon! It offers AI assistance for various tasks, like generating text or ideas. You'll find similar icons in other parts of the app.",
+        target: `button[aria-label="${t('novel_overview_aria_label_ai_synopsis')}"]`,
+        content: t('novel_overview_joyride_step_ai_features'),
         placement: 'top',
       });
     }
@@ -593,52 +595,52 @@ const NovelOverviewTab = () => {
         styles={joyrideStyles}
         callback={handleJoyrideCallback}
         locale={{
-          back: 'Back',
-          close: 'Close',
-          last: 'Finish',
-          next: 'Next',
-          skip: 'Skip',
+          back: t('novel_overview_joyride_locale_back'),
+          close: t('novel_overview_joyride_locale_close'),
+          last: t('novel_overview_joyride_locale_finish'),
+          next: t('novel_overview_joyride_locale_next'),
+          skip: t('novel_overview_joyride_locale_skip'),
         }}
       />
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <div>
-            <CardTitle>Novel Overview</CardTitle>
-            <CardDescription>Edit your novel's basic information and cover image.</CardDescription>
+            <CardTitle>{t('novel_overview_title')}</CardTitle>
+            <CardDescription>{t('novel_overview_description')}</CardDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={startTour} title="Show Tutorial">
+          <Button variant="ghost" size="icon" onClick={startTour} title={t('novel_overview_button_show_tutorial_title')}>
             <HelpCircle className="h-5 w-5" />
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-          <Label htmlFor="novelName">Novel Name *</Label>
+          <Label htmlFor="novelName">{t('novel_overview_label_novel_name')}</Label>
           <Input
             id="novelName"
             value={localNovelName}
             onChange={(e) => setLocalNovelName(e.target.value)}
-            placeholder="Your amazing novel title"
+            placeholder={t('novel_overview_placeholder_novel_name')}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="authorName">Author Name</Label>
+          <Label htmlFor="authorName">{t('novel_overview_label_author_name')}</Label>
           <Input
             id="authorName"
             value={localAuthorName}
             onChange={(e) => setLocalAuthorName(e.target.value)}
-            placeholder="Pen name or your name"
+            placeholder={t('novel_overview_placeholder_author_name')}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="synopsis">Synopsis</Label>
+          <Label htmlFor="synopsis">{t('novel_overview_label_synopsis')}</Label>
           <div className="relative">
             <Textarea
               id="synopsis"
               value={localSynopsis}
               onChange={(e) => setLocalSynopsis(e.target.value)}
-              placeholder="A short, captivating summary of your novel..."
+              placeholder={t('novel_overview_placeholder_synopsis')}
               rows={4}
               className={showAiFeatures ? "pr-10" : ""} // Add padding for the button
             />
@@ -649,7 +651,7 @@ const NovelOverviewTab = () => {
                 size="icon"
                 className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
                 onClick={handleOpenAISynopsisSuggestionModal}
-                aria-label="Get AI Suggestion for Synopsis"
+                aria-label={t('novel_overview_aria_label_ai_synopsis')}
               >
                 <WandSparkles className="h-4 w-4" />
               </Button>
@@ -661,63 +663,63 @@ const NovelOverviewTab = () => {
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full justify-start px-0 hover:bg-transparent">
               {isDetailsOpen ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
-              Additional Novel Details (Optional)
+              {t('novel_overview_collapsible_details_title')}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="pointOfView">Point of View</Label>
+              <Label htmlFor="pointOfView">{t('novel_overview_label_pov')}</Label>
               <Input
                 id="pointOfView"
                 value={localPointOfView}
                 onChange={(e) => setLocalPointOfView(e.target.value)}
-                placeholder="e.g., First Person, Third Person Limited"
+                placeholder={t('novel_overview_placeholder_pov')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="genre">Genre & Subgenre</Label>
+              <Label htmlFor="genre">{t('novel_overview_label_genre')}</Label>
               <Input
                 id="genre"
                 value={localGenre}
                 onChange={(e) => setLocalGenre(e.target.value)}
-                placeholder="e.g., Fantasy - Urban Fantasy, Sci-Fi - Space Opera"
+                placeholder={t('novel_overview_placeholder_genre')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="timePeriod">Time Period</Label>
+              <Label htmlFor="timePeriod">{t('novel_overview_label_time_period')}</Label>
               <Input
                 id="timePeriod"
                 value={localTimePeriod}
                 onChange={(e) => setLocalTimePeriod(e.target.value)}
-                placeholder="e.g., Contemporary, Historical, Futuristic"
+                placeholder={t('novel_overview_placeholder_time_period')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="targetAudience">Target Audience</Label>
+              <Label htmlFor="targetAudience">{t('novel_overview_label_target_audience')}</Label>
               <Input
                 id="targetAudience"
                 value={localTargetAudience}
                 onChange={(e) => setLocalTargetAudience(e.target.value)}
-                placeholder="e.g., Young Adult, Middle Grade, Adult"
+                placeholder={t('novel_overview_placeholder_target_audience')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="themes">Themes</Label>
+              <Label htmlFor="themes">{t('novel_overview_label_themes')}</Label>
               <Textarea
                 id="themes"
                 value={localThemes}
                 onChange={(e) => setLocalThemes(e.target.value)}
-                placeholder="e.g., Love, betrayal, redemption, overcoming adversity"
+                placeholder={t('novel_overview_placeholder_themes')}
                 rows={3}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tone">Tone</Label>
+              <Label htmlFor="tone">{t('novel_overview_label_tone')}</Label>
               <Textarea
                 id="tone"
                 value={localTone}
                 onChange={(e) => setLocalTone(e.target.value)}
-                placeholder="e.g., Dark, humorous, suspenseful, whimsical"
+                placeholder={t('novel_overview_placeholder_tone')}
                 rows={3}
               />
             </div>
@@ -725,7 +727,7 @@ const NovelOverviewTab = () => {
         </Collapsible>
 
         <div className="space-y-2">
-          <Label htmlFor="coverImageInputFile">Cover Image</Label>
+          <Label htmlFor="coverImageInputFile">{t('novel_overview_label_cover_image')}</Label>
           <Input
             id="coverImageInputFile"
             type="file"
@@ -747,16 +749,16 @@ const NovelOverviewTab = () => {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              title="Click or drag image to change cover"
+              title={t('novel_overview_title_change_cover')}
             >
               <img
                 src={localCoverImage}
-                alt="Cover Preview"
+                alt={t('novel_overview_alt_cover_preview')}
                 className="max-h-full max-w-full object-contain rounded"
               />
               {isDraggingOver && (
                 <div className="absolute inset-0 bg-primary/20 flex items-center justify-center rounded-md">
-                  <span className="text-primary font-medium">Drop to replace image</span>
+                  <span className="text-primary font-medium">{t('novel_overview_text_drop_to_replace')}</span>
                 </div>
               )}
               <Button
@@ -766,7 +768,7 @@ const NovelOverviewTab = () => {
                   e.stopPropagation(); // Prevent triggering file upload on parent
                   handleClearImage();
                 }}
-                title="Remove Cover Image"
+                title={t('novel_overview_title_remove_cover')}
                 className="absolute bottom-2 right-2 transition-opacity shadow-md rounded-full"
               >
                 <Trash2 className="h-4 w-4" />
@@ -785,10 +787,10 @@ const NovelOverviewTab = () => {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              title="Click or drag image to upload"
+              title={t('novel_overview_title_upload_cover')}
             >
               <UploadCloud className={`h-10 w-10 mb-2 ${isDraggingOver ? 'text-primary' : 'text-gray-400'}`} />
-              <span>{isDraggingOver ? 'Drop image here' : 'Click or drag image to upload'}</span>
+              <span>{isDraggingOver ? t('novel_overview_text_drop_image_here') : t('novel_overview_text_click_or_drag_upload')}</span>
             </div>
           )}
         </div>
@@ -802,7 +804,7 @@ const NovelOverviewTab = () => {
               className="flex-1"
               disabled={!isDataLoaded || !localNovelName}
             >
-              <Download className="mr-2 h-4 w-4" /> Download Project
+              <Download className="mr-2 h-4 w-4" /> {t('novel_overview_button_download_project')}
             </Button>
             <Button
               onClick={() => setIsExportModalOpen(true)}
@@ -810,7 +812,7 @@ const NovelOverviewTab = () => {
               className="flex-1"
               disabled={!isDataLoaded || !localNovelName}
             >
-              <FileText className="mr-2 h-4 w-4" /> Export
+              <FileText className="mr-2 h-4 w-4" /> {t('novel_overview_button_export')}
             </Button>
           </div>
         </div>
@@ -820,7 +822,7 @@ const NovelOverviewTab = () => {
           isOpen={isAISuggestionModalOpen}
           onClose={() => setIsAISuggestionModalOpen(false)}
           currentText={localSynopsis}
-          initialQuery={taskSettings[TASK_KEYS.NOVEL_DESC]?.prompt || "Write a compelling synopsis for this novel."}
+          initialQuery={taskSettings[TASK_KEYS.NOVEL_DESC]?.prompt || t('novel_overview_ai_modal_default_synopsis_prompt')}
           novelData={aiSynopsisContext.contextString}
           novelDataTokens={aiSynopsisContext.estimatedTokens}
           novelDataLevel={aiSynopsisContext.level}
@@ -828,7 +830,7 @@ const NovelOverviewTab = () => {
             setLocalSynopsis(suggestion);
             setIsAISuggestionModalOpen(false);
           }}
-          fieldLabel="Novel Synopsis"
+          fieldLabel={t('novel_overview_ai_modal_field_label_synopsis')}
           taskKeyForProfile={TASK_KEYS.NOVEL_DESC}
         />
       )}

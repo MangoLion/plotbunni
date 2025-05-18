@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import { AISuggestionModal } from '@/components/ai/AISuggestionModal';
 import { useSettings } from '@/context/SettingsContext'; // To get TASK_KEYS and taskSettings
 
 const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
+  const { t } = useTranslation();
   const [novelName, setNovelName] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [synopsis, setSynopsis] = useState('');
@@ -38,7 +40,7 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
   const { toast } = useToast();
   const { taskSettings, TASK_KEYS, showAiFeatures } = useSettings();
 
-  const defaultNovelDescriptionPrompt = "Write a captivating synopsis for a new novel.";
+  const defaultNovelDescriptionPrompt = t('create_novel_form_default_synopsis_prompt');
 
   useEffect(() => {
     // Reset form when modal is opened/closed or props change
@@ -67,7 +69,7 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setCoverImage(reader.result);
-        toast({ title: "Image Selected", description: "Cover image preview updated." });
+        toast({ title: t('create_novel_form_toast_image_selected_title'), description: t('create_novel_form_toast_image_selected_desc') });
       };
       reader.readAsDataURL(file);
     }
@@ -78,13 +80,13 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setCoverImage(reader.result);
-        toast({ title: "Image Dropped", description: "Cover image preview updated." });
+        toast({ title: t('create_novel_form_toast_image_dropped_title'), description: t('create_novel_form_toast_image_selected_desc') });
       };
       reader.readAsDataURL(file);
     } else {
       toast({
-        title: "Invalid File",
-        description: "Please drop an image file.",
+        title: t('create_novel_form_toast_invalid_file_title'),
+        description: t('create_novel_form_toast_invalid_file_desc'),
         variant: "destructive",
       });
     }
@@ -116,14 +118,14 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; // Reset file input
     }
-    toast({ title: "Image Cleared", description: "Cover image preview removed." });
+    toast({ title: t('create_novel_form_toast_image_cleared_title'), description: t('create_novel_form_toast_image_cleared_desc') });
   };
 
   const handleSubmit = () => {
     if (!novelName.trim()) {
       toast({
-        title: "Novel Name Required",
-        description: "Please enter a name for your novel.",
+        title: t('novel_name_required_title'),
+        description: t('novel_name_required_desc'),
         variant: "destructive",
       });
       return;
@@ -150,40 +152,40 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Novel</DialogTitle>
+            <DialogTitle>{t('create_novel_form_dialog_title')}</DialogTitle>
             <DialogDescription>
-              Fill in the details for your new novel. You can always change these later.
+              {t('create_novel_form_dialog_description')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="newNovelName">Novel Name *</Label>
+              <Label htmlFor="newNovelName">{t('create_novel_form_label_novel_name_required')}</Label>
               <Input
                 id="newNovelName"
                 value={novelName}
                 onChange={(e) => setNovelName(e.target.value)}
-                placeholder="Your amazing novel title"
+                placeholder={t('create_novel_form_placeholder_novel_name')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newAuthorName">Author Name</Label>
+              <Label htmlFor="newAuthorName">{t('create_novel_form_label_author_name')}</Label>
               <Input
                 id="newAuthorName"
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Pen name or your name"
+                placeholder={t('create_novel_form_placeholder_author_name')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newSynopsis">Synopsis</Label>
+              <Label htmlFor="newSynopsis">{t('create_novel_form_label_synopsis')}</Label>
               <div className="relative">
                 <Textarea
                   id="newSynopsis"
                   value={synopsis}
                   onChange={(e) => setSynopsis(e.target.value)}
-                  placeholder="A short, captivating summary..."
+                  placeholder={t('create_novel_form_placeholder_synopsis')}
                   rows={4}
                   className={showAiFeatures ? "pr-10" : ""}
                 />
@@ -194,7 +196,7 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
                     size="icon"
                     className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
                     onClick={() => setIsAISuggestionModalOpen(true)}
-                    aria-label="Get AI Suggestion for Synopsis"
+                    aria-label={t('create_novel_form_aria_label_ai_synopsis')}
                   >
                     <WandSparkles className="h-4 w-4" />
                   </Button>
@@ -206,63 +208,63 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start px-0 hover:bg-transparent text-sm">
                   {isDetailsOpen ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
-                  Additional Novel Details (Optional)
+                  {t('create_novel_form_collapsible_details_label')}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="newPointOfView">Point of View</Label>
+                  <Label htmlFor="newPointOfView">{t('create_novel_form_label_pov')}</Label>
                   <Input
                     id="newPointOfView"
                     value={pointOfView}
                     onChange={(e) => setPointOfView(e.target.value)}
-                    placeholder="e.g., First Person, Third Person Limited"
+                    placeholder={t('create_novel_form_placeholder_pov')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newGenre">Genre & Subgenre</Label>
+                  <Label htmlFor="newGenre">{t('create_novel_form_label_genre')}</Label>
                   <Input
                     id="newGenre"
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    placeholder="e.g., Fantasy - Urban Fantasy"
+                    placeholder={t('create_novel_form_placeholder_genre')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newTimePeriod">Time Period</Label>
+                  <Label htmlFor="newTimePeriod">{t('create_novel_form_label_time_period')}</Label>
                   <Input
                     id="newTimePeriod"
                     value={timePeriod}
                     onChange={(e) => setTimePeriod(e.target.value)}
-                    placeholder="e.g., Contemporary, Historical"
+                    placeholder={t('create_novel_form_placeholder_time_period')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newTargetAudience">Target Audience</Label>
+                  <Label htmlFor="newTargetAudience">{t('create_novel_form_label_target_audience')}</Label>
                   <Input
                     id="newTargetAudience"
                     value={targetAudience}
                     onChange={(e) => setTargetAudience(e.target.value)}
-                    placeholder="e.g., Young Adult, Adult"
+                    placeholder={t('create_novel_form_placeholder_target_audience')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newThemes">Themes</Label>
+                  <Label htmlFor="newThemes">{t('create_novel_form_label_themes')}</Label>
                   <Textarea
                     id="newThemes"
                     value={themes}
                     onChange={(e) => setThemes(e.target.value)}
-                    placeholder="e.g., Love, betrayal, redemption"
+                    placeholder={t('create_novel_form_placeholder_themes')}
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newTone">Tone</Label>
+                  <Label htmlFor="newTone">{t('create_novel_form_label_tone')}</Label>
                   <Textarea
                     id="newTone"
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
-                    placeholder="e.g., Dark, humorous, suspenseful"
+                    placeholder={t('create_novel_form_placeholder_tone')}
                     rows={3}
                   />
                 </div>
@@ -270,7 +272,7 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
             </Collapsible>
 
             <div className="space-y-2">
-              <Label htmlFor="newCoverImageInputFile">Cover Image</Label>
+              <Label htmlFor="newCoverImageInputFile">{t('create_novel_form_label_cover_image')}</Label>
               <Input
                 id="newCoverImageInputFile"
                 type="file"
@@ -289,16 +291,16 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  title="Click or drag image to change cover"
+                  title={t('create_novel_form_title_change_cover')}
                 >
                   <img
                     src={coverImage}
-                    alt="Cover Preview"
+                    alt={t('create_novel_form_alt_cover_preview')}
                     className="max-h-full max-w-full object-contain rounded"
                   />
                   {isDraggingOver && (
                     <div className="absolute inset-0 bg-primary/20 flex items-center justify-center rounded-md">
-                      <span className="text-primary font-medium">Drop to replace image</span>
+                      <span className="text-primary font-medium">{t('create_novel_form_text_drop_to_replace')}</span>
                     </div>
                   )}
                   <Button
@@ -308,7 +310,7 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
                       e.stopPropagation();
                       handleClearImage();
                     }}
-                    title="Remove Cover Image"
+                    title={t('create_novel_form_title_remove_cover')}
                     className="absolute bottom-1 right-1 h-7 w-7 transition-opacity shadow-md rounded-full"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -326,10 +328,10 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  title="Click or drag image to upload"
+                  title={t('create_novel_form_title_upload_cover')}
                 >
                   <UploadCloud className={`h-8 w-8 mb-1 ${isDraggingOver ? 'text-primary' : 'text-gray-400'}`} />
-                  <span>{isDraggingOver ? 'Drop image here' : 'Click or drag image to upload'}</span>
+                  <span>{isDraggingOver ? t('create_novel_form_text_drop_image_here') : t('create_novel_form_text_click_or_drag_upload')}</span>
                 </div>
               )}
             </div>
@@ -337,11 +339,11 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
+                {t('cancel')}
               </Button>
             </DialogClose>
             <Button type="button" onClick={handleSubmit}>
-              Create Novel
+              {t('create_novel_form_button_create_novel')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -357,9 +359,9 @@ const CreateNovelFormModal = ({ isOpen, onClose, onCreateNovel }) => {
           onAccept={(suggestion) => {
             setSynopsis(suggestion);
             setIsAISuggestionModalOpen(false);
-            toast({ title: "Synopsis Updated", description: "AI suggestion applied." });
+            toast({ title: t('create_novel_form_toast_synopsis_updated_title'), description: t('create_novel_form_toast_synopsis_updated_desc') });
           }}
-          fieldLabel="Novel Synopsis"
+          fieldLabel={t('create_novel_form_ai_modal_field_label_synopsis')}
           taskKeyForProfile={TASK_KEYS.NOVEL_DESC}
         />
       )}

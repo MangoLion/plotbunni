@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import i18n from '../i18n'; // Import i18n instance
 import {
   defaultLightPreset,
   defaultDarkPreset,
@@ -208,6 +209,7 @@ const loadSettings = () => {
         taskSettings: taskSettings,
     systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant",
     showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
+    language: parsed.language || 'en', // Load language
   };
 }
   } catch (error) {
@@ -226,6 +228,7 @@ const loadSettings = () => {
     taskSettings: createDefaultTaskSettings(defaultProfileId),
     systemPrompt: "You are an experienced creative writing assistant",
     showAiFeatures: true,
+    language: 'en', // Default language if loading fails
   };
 };
 
@@ -277,6 +280,9 @@ export const SettingsProvider = ({ children }) => {
   // AI Features Toggle state
   const [showAiFeatures, setShowAiFeatures] = useState(true);
 
+  // Language state
+  const [language, setLanguageState] = useState('en'); // Default language
+
 
   // Load settings on initial mount
   useEffect(() => {
@@ -294,6 +300,12 @@ export const SettingsProvider = ({ children }) => {
     setFontSizeState(loaded.fontSize || DEFAULT_FONT_SIZE);
     setSystemPrompt(loaded.systemPrompt);
     setShowAiFeatures(loaded.showAiFeatures !== undefined ? loaded.showAiFeatures : true);
+    setLanguageState(loaded.language);
+
+    // Sync i18next with loaded language setting
+    if (i18n.language !== loaded.language) {
+      i18n.changeLanguage(loaded.language);
+    }
 
     // Ensure task settings have valid profile IDs after profiles are loaded
     const updatedTaskSettings = { ...loaded.taskSettings };
@@ -326,9 +338,10 @@ export const SettingsProvider = ({ children }) => {
         taskSettings,
         systemPrompt,
         showAiFeatures,
+        language, // Save language
       });
     }
-  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, isLoaded]);
+  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, language, isLoaded]); // Add language to dependencies
 
   // OS theme listener
   useEffect(() => {
@@ -768,6 +781,17 @@ export const SettingsProvider = ({ children }) => {
     setShowAiFeatures(prev => !prev);
   }, []);
 
+  const setLanguage = useCallback((langCode) => {
+    // Get available languages directly from the i18n instance's configuration
+    const availableLanguages = Object.keys(i18n.options.resources || {});
+    if (availableLanguages.includes(langCode)) {
+      setLanguageState(langCode);
+      i18n.changeLanguage(langCode);
+    } else {
+      console.warn(`SettingsContext: Attempted to set unsupported language: "${langCode}". Supported languages are: ${availableLanguages.join(', ')}.`);
+    }
+  }, []); // i18n.options.resources is stable after i18n initialization, so no need to add to deps.
+
   const value = {
     // Existing profile values
     endpointProfiles,
@@ -815,6 +839,10 @@ export const SettingsProvider = ({ children }) => {
     // AI Features Toggle
     showAiFeatures,
     toggleAiFeatures,
+
+    // Language
+    language,
+    setLanguage,
   };
 
   return (

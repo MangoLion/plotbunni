@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label"; // Label might still be used for other parts
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { ThemeEditor } from './ThemeEditor';
 import FontSettingsControl from './FontSettingsControl'; // Import the new component
 
 const SettingsView = () => {
+  const { t } = useTranslation();
   const {
     endpointProfiles,
     activeProfileId,
@@ -66,35 +68,35 @@ const SettingsView = () => {
 
   // Helper to format task keys into readable names
   const formatTaskKey = (key) => {
-    if (!key) return "Unknown Task";
+    if (!key) return t('settings_unknown_task');
     const words = key.replace(/([A-Z])/g, ' $1').split(' ');
     return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   if (!isLoaded || !taskSettings) { // Check taskSettings too
-    return <div>Loading settings...</div>; // Or a spinner component
+    return <div>{t('settings_loading_message')}</div>; // Or a spinner component
   }
 
   return (
     <ScrollArea className="h-[calc(100vh-4rem)] p-6">
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold mb-6">Settings</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('settings_page_title')}</h1>
 
         <Tabs defaultValue="appearance" className="w-full"> {/* Changed default value */}
           <TabsList className="grid w-full grid-cols-3"> {/* Updated grid-cols */}
             <TabsTrigger value="appearance" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              Appearance
+              {t('settings_tab_appearance')}
             </TabsTrigger>
             {showAiFeatures && (
               <>
                 <TabsTrigger value="aiEndpoints" className="flex items-center gap-2"> {/* Renamed for clarity */}
                   <Cloud className="h-4 w-4" />
-                  AI Endpoints
+                  {t('settings_tab_ai_endpoints')}
                 </TabsTrigger>
                 <TabsTrigger value="taskPrompts" className="flex items-center gap-2"> {/* New Tab */}
                   <FileText className="h-4 w-4" />
-                  Task Prompts
+                  {t('settings_tab_task_prompts')}
                 </TabsTrigger>
               </>
             )}
@@ -106,8 +108,8 @@ const SettingsView = () => {
               <Separator />
               <Card>
                 <CardHeader>
-                  <CardTitle>Font Settings</CardTitle>
-                  <CardDescription>Customize the application's font family and base size.</CardDescription>
+                  <CardTitle>{t('settings_font_settings_title')}</CardTitle>
+                  <CardDescription>{t('settings_font_settings_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <FontSettingsControl />
@@ -116,22 +118,22 @@ const SettingsView = () => {
               <Separator />
               <Card>
                 <CardHeader>
-                  <CardTitle>AI Features</CardTitle>
-                  <CardDescription>Control the visibility of AI-assisted features throughout the application.</CardDescription>
+                  <CardTitle>{t('settings_ai_features_title')}</CardTitle>
+                  <CardDescription>{t('settings_ai_features_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between space-x-2">
                     <Label htmlFor="ai-features-toggle" className="flex flex-col space-y-1">
-                      <span>Show AI Wizard Buttons & Tabs</span>
+                      <span>{t('settings_ai_features_toggle_label')}</span>
                       <span className="font-normal leading-snug text-muted-foreground">
-                        Enable or disable AI helper buttons and AI-specific tabs in settings.
+                        {t('settings_ai_features_toggle_description')}
                       </span>
                     </Label>
                     <Switch
                       id="ai-features-toggle"
                       checked={showAiFeatures}
                       onCheckedChange={toggleAiFeatures}
-                      aria-label="Toggle AI features"
+                      aria-label={t('settings_ai_features_toggle_aria_label')}
                     />
                   </div>
                 </CardContent>
@@ -144,16 +146,16 @@ const SettingsView = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>AI Endpoint Configuration</CardTitle>
-                  <CardDescription>Manage connection profiles for AI services.</CardDescription>
+                  <CardTitle>{t('settings_ai_endpoint_config_title')}</CardTitle>
+                  <CardDescription>{t('settings_ai_endpoint_config_description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Profile Selection Dropdown */}
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="profileSelect" className="whitespace-nowrap">Active Profile:</Label>
+                    <Label htmlFor="profileSelect" className="whitespace-nowrap">{t('settings_active_profile_label')}</Label>
                     <Select value={activeProfileId || ''} onValueChange={selectProfile}>
                       <SelectTrigger id="profileSelect" className="flex-grow">
-                        <SelectValue placeholder="Select a profile..." />
+                        <SelectValue placeholder={t('settings_select_profile_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {endpointProfiles.map((profile) => (
@@ -163,19 +165,19 @@ const SettingsView = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon" onClick={addProfile} title="Add New Profile">
+                    <Button variant="outline" size="icon" onClick={addProfile} title={t('settings_add_new_profile_tooltip')}>
                       <PlusCircle className="h-4 w-4" />
                     </Button>
                     {activeProfile && (
                       <>
-                        <Button variant="outline" size="icon" onClick={() => handleEditClick(activeProfile)} title="Edit Selected Profile">
+                        <Button variant="outline" size="icon" onClick={() => handleEditClick(activeProfile)} title={t('settings_edit_profile_tooltip')}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="destructive"
                           size="icon"
                           onClick={() => handleDeleteClick(activeProfile)}
-                          title="Delete Selected Profile"
+                          title={t('settings_delete_profile_tooltip')}
                           disabled={endpointProfiles.length <= 1} // Disable delete if only one profile left
                         >
                           <Trash2 className="h-4 w-4" />
@@ -187,29 +189,29 @@ const SettingsView = () => {
                   {/* Display Selected Profile Details (Read-only view) */}
                   {activeProfile ? (
                     <div className="border p-4 rounded-md space-y-3 bg-muted/40">
-                      <h4 className="font-semibold text-md mb-2">Profile: {activeProfile.name}</h4>
+                      <h4 className="font-semibold text-md mb-2">{t('settings_profile_details_title_prefix')}{activeProfile.name}</h4>
                       <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                        <span className="font-medium col-span-1">Use Custom:</span>
-                        <span className="col-span-2">{activeProfile.useCustomEndpoint ? 'Yes' : 'No'}</span>
+                        <span className="font-medium col-span-1">{t('settings_profile_use_custom_label')}</span>
+                        <span className="col-span-2">{activeProfile.useCustomEndpoint ? t('common_yes') : t('common_no')}</span>
 
-                        <span className="font-medium col-span-1">Endpoint URL:</span>
+                        <span className="font-medium col-span-1">{t('settings_profile_endpoint_url_label')}</span>
                         <span className="col-span-2 break-all">{activeProfile.endpointUrl}</span>
 
-                        <span className="font-medium col-span-1">API Token:</span>
-                        <span className="col-span-2">{activeProfile.apiToken ? '********' : '(Not set)'}</span>
+                        <span className="font-medium col-span-1">{t('settings_profile_api_token_label')}</span>
+                        <span className="col-span-2">{activeProfile.apiToken ? '********' : t('settings_profile_api_token_not_set')}</span>
 
-                        <span className="font-medium col-span-1">Model Name:</span>
+                        <span className="font-medium col-span-1">{t('settings_profile_model_name_label')}</span>
                         <span className="col-span-2 break-all">{activeProfile.modelName}</span>
 
-                        <span className="font-medium col-span-1">Context Tokens:</span>
+                        <span className="font-medium col-span-1">{t('settings_profile_context_tokens_label')}</span>
                         <span className="col-span-2">{activeProfile.contextLength}</span>
 
-                        <span className="font-medium col-span-1">Max Output Tokens:</span>
+                        <span className="font-medium col-span-1">{t('settings_profile_max_output_tokens_label')}</span>
                         <span className="col-span-2">{activeProfile.maxOutputTokens}</span>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-center">No profile selected or available. Please add one.</p>
+                    <p className="text-muted-foreground text-center">{t('settings_no_profile_selected_message')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -218,11 +220,11 @@ const SettingsView = () => {
 
               {/* AI Feature Placeholders (Remain Non-Functional) */}
               <div>
-                <h3 className="text-lg font-medium">AI Feature Placeholders (Non-Functional)</h3>
+                <h3 className="text-lg font-medium">{t('settings_ai_feature_placeholders_title')}</h3>
                 <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
-                  <li>AI Chat for Brainstorming: (Coming Soon)</li>
-                  <li>AI Scene Generation (Scene Beats): (Coming Soon)</li>
-                  <li>AI Scene Summarization: (Coming Soon)</li>
+                  <li>{t('settings_ai_feature_placeholder_chat')}</li>
+                  <li>{t('settings_ai_feature_placeholder_scene_gen')}</li>
+                  <li>{t('settings_ai_feature_placeholder_scene_summary')}</li>
                 </ul>
               </div>
             </div>
@@ -232,7 +234,7 @@ const SettingsView = () => {
                   <div className="flex flex-col items-center justify-center space-y-3 text-center">
                     <EyeOff className="h-12 w-12 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      AI features are currently hidden. You can re-enable them in the "Appearance" settings tab.
+                      {t('settings_ai_features_hidden_message')}
                     </p>
                   </div>
                 </CardContent>
@@ -247,52 +249,52 @@ const SettingsView = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>AI Prompts</CardTitle>
-                    <CardDescription>Configure the AI profile and prompt for each automated task.</CardDescription>
+                    <CardTitle>{t('settings_ai_prompts_title')}</CardTitle>
+                    <CardDescription>{t('settings_ai_prompts_description')}</CardDescription>
                   </div>
-                  <Button variant="outline" onClick={() => setIsConfirmResetPromptsOpen(true)}>Reset All AI Prompts</Button>
+                  <Button variant="outline" onClick={() => setIsConfirmResetPromptsOpen(true)}>{t('settings_reset_all_ai_prompts_button')}</Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* System Prompt Textarea */}
                   <Card className="p-4">
-                    <CardTitle className="text-lg mb-3">Global System Prompt</CardTitle>
+                    <CardTitle className="text-lg mb-3">{t('settings_global_system_prompt_title')}</CardTitle>
                     <CardDescription className="mb-3">
-                      This prompt is sent to the AI before any task-specific prompt. Use it to set overall tone, persona, or provide global instructions.
+                      {t('settings_global_system_prompt_description')}
                     </CardDescription>
                     <div>
-                      <Label htmlFor="system-prompt" className="mb-1 block">System Prompt</Label>
+                      <Label htmlFor="system-prompt" className="mb-1 block">{t('settings_system_prompt_label')}</Label>
                       <Textarea
                         id="system-prompt"
                         value={systemPrompt}
                         onChange={(e) => setSystemPrompt(e.target.value)}
                         rows={8}
                         className="resize-y"
-                        placeholder="e.g., You are a helpful assistant for a novelist. Be creative and encouraging."
+                        placeholder={t('settings_system_prompt_placeholder')}
                       />
                     </div>
                   </Card>
 
                   <Separator /> 
                   
-                  <h3 className="text-xl font-semibold mt-6 mb-2">Task-Specific Prompts</h3>
+                  <h3 className="text-xl font-semibold mt-6 mb-2">{t('settings_task_specific_prompts_title')}</h3>
                   {Object.values(TASK_KEYS).map((taskKey) => {
                     const taskSetting = taskSettings[taskKey];
                     if (!taskSetting) {
                       // This should ideally not happen if context initializes correctly
-                      return <p key={taskKey}>Configuration for {formatTaskKey(taskKey)} is missing.</p>;
+                      return <p key={taskKey}>{t('settings_task_config_missing_message', { taskName: formatTaskKey(taskKey) })}</p>;
                     }
                     return (
                       <Card key={taskKey} className="p-4">
                         <CardTitle className="text-lg mb-3">{formatTaskKey(taskKey)}</CardTitle>
                         <div className="space-y-3">
                           <div>
-                            <Label htmlFor={`${taskKey}-profile`} className="mb-1 block">AI Endpoint Profile</Label>
+                            <Label htmlFor={`${taskKey}-profile`} className="mb-1 block">{t('settings_task_ai_endpoint_profile_label')}</Label>
                             <Select
                               value={taskSetting.profileId || ''}
                               onValueChange={(newProfileId) => updateTaskSetting(taskKey, 'profileId', newProfileId)}
                             >
                               <SelectTrigger id={`${taskKey}-profile`}>
-                                <SelectValue placeholder="Select a profile..." />
+                                <SelectValue placeholder={t('settings_select_profile_placeholder')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {endpointProfiles.map((profile) => (
@@ -304,14 +306,14 @@ const SettingsView = () => {
                             </Select>
                           </div>
                           <div>
-                            <Label htmlFor={`${taskKey}-prompt`} className="mb-1 block">AI Prompt</Label>
+                            <Label htmlFor={`${taskKey}-prompt`} className="mb-1 block">{t('settings_task_ai_prompt_label')}</Label>
                             <Textarea
                               id={`${taskKey}-prompt`}
                               value={taskSetting.prompt}
                               onChange={(e) => updateTaskSetting(taskKey, 'prompt', e.target.value)}
                               rows={6}
                               className="resize-y"
-                              placeholder={`Enter prompt for ${formatTaskKey(taskKey)}...`}
+                              placeholder={t('settings_task_ai_prompt_placeholder', { taskName: formatTaskKey(taskKey)})}
                             />
                           </div>
                         </div>
@@ -327,7 +329,7 @@ const SettingsView = () => {
                   <div className="flex flex-col items-center justify-center space-y-3 text-center">
                     <EyeOff className="h-12 w-12 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      AI features are currently hidden. You can re-enable them in the "Appearance" settings tab.
+                      {t('settings_ai_features_hidden_message')}
                     </p>
                   </div>
                 </CardContent>
@@ -352,18 +354,18 @@ const SettingsView = () => {
         isOpen={isConfirmDeleteOpen}
         onClose={() => setIsConfirmDeleteOpen(false)}
         onConfirm={confirmDelete}
-        title="Confirm Deletion"
-        description={`Are you sure you want to delete the profile "${profileToDelete?.name}"? This action cannot be undone.`}
+        title={t('settings_confirm_delete_profile_title')}
+        description={t('settings_confirm_delete_profile_description', { profileName: profileToDelete?.name })}
       />
 
       {/* Confirmation Modal for Resetting All Prompts */}
       <ConfirmModal
         open={isConfirmResetPromptsOpen}
         onOpenChange={setIsConfirmResetPromptsOpen}
-        title="Confirm Reset Prompts"
-        description="Are you sure you want to reset all AI task prompts to their default values? This action cannot be undone."
+        title={t('settings_confirm_reset_prompts_title')}
+        description={t('settings_confirm_reset_prompts_description')}
         onConfirm={resetAllTaskPrompts}
-        confirmText="Reset Prompts"
+        confirmText={t('settings_confirm_reset_prompts_button')}
       />
     </ScrollArea>
   );

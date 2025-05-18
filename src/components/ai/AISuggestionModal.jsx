@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 // import Markdown from 'react-markdown'; // Added Markdown
 import {
   Dialog,
@@ -36,6 +37,7 @@ export const AISuggestionModal = ({
   novelDataLevel,  // New prop for the context level achieved
   taskKeyForProfile,
 }) => {
+  const { t } = useTranslation();
   const {
     systemPrompt,
     endpointProfiles,
@@ -98,7 +100,7 @@ export const AISuggestionModal = ({
       setIsCurrentTextOpen(false);
       setIsEditingSuggestion(false); // Reset edit state
       // Initialize editable fields with current context/props
-      setEditableSystemPrompt(systemPrompt || "You are an experienced creative writing assistant.");
+      setEditableSystemPrompt(systemPrompt || t('ai_suggestion_modal_default_system_prompt'));
       setEditableNovelData(novelData || '');
 
       // Reset states for "Continue Generating"
@@ -173,11 +175,11 @@ useEffect(() => {
 
   const getActiveEndpointConfig = () => {
     if (!currentProfile) {
-      console.warn("No AI profile determined.");
+      console.warn(t('ai_novel_writer_error_no_profile')); // Re-use from novel writer
       return null;
     }
     if (!currentProfile.endpointUrl) {
-      console.warn(`AI Profile ${currentProfile.name} (ID: ${currentProfile.id}) has no endpoint URL configured.`);
+      console.warn(t('ai_novel_writer_error_profile_no_url', { profileName: currentProfile.name, profileId: currentProfile.id })); // Re-use from novel writer
       return null;
     }
 
@@ -205,7 +207,7 @@ useEffect(() => {
         // but system prompt and novel data should ideally exist if a suggestion was made.
         // For robustness, check if all are effectively empty or rely on aiResponse content.
         // If aiResponse is also empty, this button shouldn't have been shown.
-        setAiResponse(prev => prev + "\n\n--- Error: Cannot continue, original context not found. ---");
+        setAiResponse(prev => prev + t('ai_suggestion_modal_error_cannot_continue_context_not_found'));
         setIsLoading(false);
         return;
       }
@@ -230,7 +232,7 @@ useEffect(() => {
 
     const endpointConfig = getActiveEndpointConfig();
     if (!endpointConfig) {
-      setAiResponse((shouldClearResponseInitially ? '' : aiResponse) + "\n\n--- AI endpoint not configured. Please check settings. ---");
+      setAiResponse((shouldClearResponseInitially ? '' : aiResponse) + t('ai_suggestion_modal_error_endpoint_not_configured_suffix'));
       setActiveTab('suggestion');
       setIsLoading(false);
       return;
@@ -245,7 +247,7 @@ useEffect(() => {
     
     if (tempTotalTokens > maxContextTokensForPrompt) {
       setAiResponse((shouldClearResponseInitially ? '' : aiResponse) +
-        `\n\n--- Estimated prompt tokens (${tempTotalTokens}) for this request exceed the maximum allowed (${maxContextTokensForPrompt}). Please shorten your query or context. ---`);
+        t('ai_suggestion_modal_error_prompt_too_large_suffix', { tokens: tempTotalTokens, maxTokens: maxContextTokensForPrompt }));
       setActiveTab('suggestion');
       setIsLoading(false);
       return;
@@ -270,20 +272,20 @@ useEffect(() => {
     try {
       let userContent = "";
       if (novelDataForAPI && novelDataForAPI.trim() !== '') {
-        userContent += `Novel Data Context:\n${novelDataForAPI}\n\n---\n`;
+        userContent += t('ai_suggestion_modal_text_novel_data_context_prefix', { context: novelDataForAPI });
       }
-      userContent += `User Query:\n${queryForAPI}`;
+      userContent += t('ai_suggestion_modal_text_user_query_prefix', { query: queryForAPI });
 
       if (textToContinueWithForAPI && textToContinueWithForAPI.trim() !== '') {
         if (isContinuationOfCurrentSuggestion) {
           // When "Continue Generating" is clicked, always use this suffix
-          userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
+          userContent += t('ai_suggestion_modal_text_continue_suffix', { text: textToContinueWithForAPI });
         } else {
           // For initial suggestions from the Query tab, use the selected promptMode
           if (promptMode === 'continue') {
-            userContent += `\n\n---${textToContinueWithForAPI} (CONTINUE FROM HERE!)`;
+            userContent += t('ai_suggestion_modal_text_continue_suffix', { text: textToContinueWithForAPI });
           } else if (promptMode === 'modify') {
-            userContent += `\n\n---${textToContinueWithForAPI} (MODIFY THIS)`;
+            userContent += t('ai_suggestion_modal_text_modify_suffix', { text: textToContinueWithForAPI });
           }
           // For 'scratch', textToContinueWithForAPI is null, so this block is skipped.
         }
@@ -292,7 +294,7 @@ useEffect(() => {
       const payload = {
         model: endpointConfig.model,
         messages: [
-          { role: 'system', content: systemPromptForAPI || "You are a helpful assistant." },
+          { role: 'system', content: systemPromptForAPI || t('ai_chat_modal_default_system_prompt') },
           { role: 'user', content: userContent },
         ],
         stream: true,
@@ -311,14 +313,14 @@ useEffect(() => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        let errorMessage = `API Error: ${response.status}`;
+        let detailMessage = errorText;
         try {
             const errorJson = JSON.parse(errorText);
-            errorMessage += ` - ${errorJson.error?.message || errorJson.message || errorText}`;
+            detailMessage = errorJson.error?.message || errorJson.message || errorText;
         } catch (e) {
-            errorMessage += ` - ${errorText}`;
+            // Keep errorText as detailMessage
         }
-        throw new Error(errorMessage);
+        throw new Error(t('ai_suggestion_modal_error_api_generic', { status: response.status, message: detailMessage }));
       }
 
       const reader = response.body.getReader();
@@ -360,10 +362,10 @@ useEffect(() => {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        setAiResponse(prev => prev + "\n\n");
+        setAiResponse(prev => prev + "\n\n"); // Keep newline for visual separation if aborted
       } else {
         console.error('Streaming error:', error);
-        setAiResponse(prev => prev + `\n\n--- Error: ${error.message} ---`);
+        setAiResponse(prev => prev + t('ai_suggestion_modal_error_generic_suffix', { message: error.message }));
       }
     } finally {
       setIsLoading(false);
@@ -402,7 +404,7 @@ useEffect(() => {
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
       <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl w-[90vw] h-[85vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle>AI Suggestion for {fieldLabel || 'Text'}</DialogTitle>
+          <DialogTitle>{t('ai_suggestion_modal_dialog_title', { fieldLabel: fieldLabel || t('ai_suggestion_modal_default_field_label') })}</DialogTitle>
 
         </DialogHeader>
 
@@ -425,15 +427,15 @@ useEffect(() => {
         <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="py-2 border-b text-xs"> {/* Removed px-6 */}
           <CollapsibleTrigger asChild>
             <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground flex items-center">
-              Memory Usage Details
+              {t('ai_chat_modal_memory_usage_details_button')}
               {isMemoryDetailOpen ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-2 space-y-1 text-muted-foreground">
                 {estimatedTotalTokens > 0 && currentProfile ? (
                   <>
-                    <p>System Prompt: {(tokenBreakdown.system / estimatedTotalTokens * 100).toFixed(1)}% ({tokenBreakdown.system} tokens)</p>
-                    <p>Your Query: {(tokenBreakdown.query / estimatedTotalTokens * 100).toFixed(1)}% ({tokenBreakdown.query} tokens)</p>
+                    <p>{t('ai_suggestion_modal_memory_system_prompt_stats', { percentage: (tokenBreakdown.system / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.system })}</p>
+                    <p>{t('ai_suggestion_modal_memory_your_query_stats', { percentage: (tokenBreakdown.query / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.query })}</p>
                     {tokenBreakdown.novelData > 0 && (
                       <p className="flex items-center">
                         {novelDataLevel && novelDataLevel > 1 && novelDataLevel !== -1 && (
@@ -447,54 +449,54 @@ useEffect(() => {
                           novelDataLevel === 4 ? 'text-destructive' :
                           novelDataLevel === 2 || novelDataLevel === 3 ? 'text-yellow-600 dark:text-yellow-400' : ''
                         }>
-                          Novel Data Context (Lvl {novelDataLevel === -1 ? 'ERR' : novelDataLevel}): 
+                          {t('ai_novel_writer_memory_novel_context_stats_label', { level: novelDataLevel === -1 ? t('ai_novel_writer_memory_details_level_err') : novelDataLevel })}:
                         </span>
                         <span className="ml-1">
-                          {(tokenBreakdown.novelData / estimatedTotalTokens * 100).toFixed(1)}% ({tokenBreakdown.novelData} tokens)
+                          {t('ai_novel_writer_memory_novel_context_stats_tokens', { percentage: (tokenBreakdown.novelData / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.novelData })}
                         </span>
                       </p>
                     )}
                      {novelDataLevel && novelDataLevel > 1 && novelDataLevel !== -1 && (
                       <p className="text-xs text-yellow-600 dark:text-yellow-400 pl-4">
-                        (Context automatically reduced to fit model limits. Level 1 is most detailed.)
+                        {t('ai_novel_writer_memory_context_reduced_note')}
                       </p>
                     )}
                     {novelDataLevel === -1 && (
                        <p className="text-xs text-destructive pl-4">
-                        (Failed to generate context, likely too large even after trimming.)
+                        {t('ai_novel_writer_memory_context_failed_note')}
                       </p>
                     )}
                     {(promptMode === 'continue' || promptMode === 'modify') && tokenBreakdown.currentText > 0 && (
-                      <p>Current Text: {(tokenBreakdown.currentText / estimatedTotalTokens * 100).toFixed(1)}% ({tokenBreakdown.currentText} tokens)</p>
+                      <p>{t('ai_suggestion_modal_memory_current_text_stats', { percentage: (tokenBreakdown.currentText / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.currentText })}</p>
                     )}
-                    <p className="pt-1 border-t mt-1 font-semibold">Total Estimated Input: {estimatedTotalTokens} tokens</p>
-                    <p className="text-slate-500 dark:text-slate-400">Max Output Tokens (Model Setting): {currentProfile.maxOutputTokens || 'N/A'} tokens</p>
-                    <p className="text-slate-500 dark:text-slate-400">Safety Buffer: {50} tokens</p>
-                    <p>Available for Input Prompt: {maxContextTokensForPrompt} tokens</p>
-                    <p className="text-slate-500 dark:text-slate-400">Total Model Context Length: {currentProfile.contextLength || 'N/A'} tokens</p>
+                    <p className="pt-1 border-t mt-1 font-semibold">{t('ai_novel_writer_memory_total_input_tokens', { tokens: estimatedTotalTokens })}</p>
+                    <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_max_output_tokens', { tokens: currentProfile.maxOutputTokens || t('ai_novel_writer_memory_details_level_na') })}</p>
+                    <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_safety_buffer', { tokens: 50 })}</p>
+                    <p>{t('ai_novel_writer_memory_available_for_input', { tokens: maxContextTokensForPrompt })}</p>
+                    <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_total_model_context', { tokens: currentProfile.contextLength || t('ai_novel_writer_memory_details_level_na') })}</p>
                   </>
             ) : (
-              <p>No token details available yet. Ensure AI profile is configured.</p>
+              <p>{t('ai_novel_writer_memory_token_details_unavailable')}</p>
             )}
           </CollapsibleContent>
         </Collapsible>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col pb-1 pt-2"> {/* Removed flex-grow, overflow-hidden, px-6 */}
           <TabsList className="grid w-full grid-cols-2 mb-2">
-            <TabsTrigger value="query" disabled={isLoading}>Query</TabsTrigger>
-            <TabsTrigger value="suggestion">Suggestion</TabsTrigger>
+            <TabsTrigger value="query" disabled={isLoading}>{t('ai_suggestion_modal_tab_query')}</TabsTrigger>
+            <TabsTrigger value="suggestion">{t('ai_suggestion_modal_tab_suggestion')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="query" className="flex-grow space-y-3 py-1 pr-1"> {/* Removed overflow-y-auto */}
             <div className="pb-3">
               <Button onClick={handleGetSuggestion} className="w-full" disabled={isLoading}>
-                Get Suggestion
+                {t('ai_suggestion_modal_button_get_suggestion')}
               </Button>
             </div>
             <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen} className="space-y-1">
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
-                  System Prompt
+                  {t('ai_suggestion_modal_label_system_prompt')}
                   {isSystemPromptOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
@@ -504,7 +506,7 @@ useEffect(() => {
                   onChange={(e) => setEditableSystemPrompt(e.target.value)}
                   rows={3}
                   className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
-                  placeholder="Enter system prompt here..."
+                  placeholder={t('ai_suggestion_modal_placeholder_system_prompt')}
                 />
               </CollapsibleContent>
             </Collapsible>
@@ -515,12 +517,12 @@ useEffect(() => {
                 {/* The trigger text can still refer to the original novelData's properties like level */}
                 <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
                     <span>
-                      Novel Data Context 
-                      {/*novelDataLevel !== undefined && novelDataLevel > 0 && (
-                        <span className="text-xs text-muted-foreground ml-2">(Detail Lvl: {novelDataLevel})</span>
-                      )*/}
+                      {t('ai_suggestion_modal_label_novel_data_context')}
+                       {novelDataLevel !== undefined && novelDataLevel > 0 && (
+                        <span className="text-xs text-muted-foreground ml-2">{t('ai_suggestion_modal_label_novel_data_context_level', { level: novelDataLevel })}</span>
+                      )}
                        {novelDataLevel === -1 && (
-                        <span className="text-xs text-destructive ml-2">(Context Too Large)</span>
+                        <span className="text-xs text-destructive ml-2">{t('ai_suggestion_modal_memory_context_too_large_label')}</span>
                       )}
                     </span>
                     {isNovelDataOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -532,14 +534,14 @@ useEffect(() => {
                     onChange={(e) => setEditableNovelData(e.target.value)}
                     rows={5}
                     className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
-                    placeholder="Enter novel data context here. (This will be used for the AI prompt)"
+                    placeholder={t('ai_suggestion_modal_placeholder_novel_data_context')}
                   />
                 </CollapsibleContent>
               </Collapsible>
             {/* )} */} {/* Closing bracket for the original conditional rendering, now removed */}
             
             <div className="py-2 space-y-2">
-              <Label className="text-sm font-medium">AI Prompt Mode:</Label>
+              <Label className="text-sm font-medium">{t('ai_suggestion_modal_label_prompt_mode')}</Label>
               <RadioGroup
                 value={promptMode}
                 onValueChange={setPromptMode}
@@ -548,15 +550,15 @@ useEffect(() => {
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="scratch" id="r-scratch" />
-                  <Label htmlFor="r-scratch" className="font-normal">Write from scratch</Label>
+                  <Label htmlFor="r-scratch" className="font-normal">{t('ai_suggestion_modal_radio_write_from_scratch')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="continue" id="r-continue" disabled={!currentText || currentText.trim() === ''} />
-                  <Label htmlFor="r-continue" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>Continue from previous</Label>
+                  <Label htmlFor="r-continue" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>{t('ai_suggestion_modal_radio_continue_from_previous')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="modify" id="r-modify" disabled={!currentText || currentText.trim() === ''} />
-                  <Label htmlFor="r-modify" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>Modify previous</Label>
+                  <Label htmlFor="r-modify" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>{t('ai_suggestion_modal_radio_modify_previous')}</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -572,14 +574,14 @@ useEffect(() => {
                   className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left"
                   disabled={!(promptMode === 'continue' || promptMode === 'modify') || (!currentText || currentText.trim() === '')}
                 >
-                  Current {fieldLabel || 'Text'}
+                  {t('ai_suggestion_modal_label_current_text', { fieldLabel: fieldLabel || t('ai_suggestion_modal_default_field_label')})}
                   {((promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <Textarea
                   id="currentTextDisplay"
-                  value={currentText || `No current ${fieldLabel?.toLowerCase() || 'text'} available or relevant mode selected.`}
+                  value={currentText || t('ai_suggestion_modal_placeholder_no_current_text', {fieldLabel: fieldLabel?.toLowerCase() || t('ai_suggestion_modal_default_field_label').toLowerCase() })}
                   readOnly
                   rows={3}
                   className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
@@ -588,12 +590,12 @@ useEffect(() => {
             </Collapsible>
 
             <div className="space-y-1 pt-2">
-              <Label htmlFor="aiQueryInput">Your Query:</Label>
+              <Label htmlFor="aiQueryInput">{t('ai_suggestion_modal_label_your_query')}</Label>
               <Textarea
                 id="aiQueryInput"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g., Make this more concise, expand on this idea, write a short dialogue..."
+                placeholder={t('ai_suggestion_modal_placeholder_your_query')}
                 rows={5}
                 className="resize-none"
                 disabled={isLoading}
@@ -607,7 +609,7 @@ useEffect(() => {
               <div className="pt-2 pb-2 mb-2"> 
                 {isLoading ? (
                   <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
-                    Stop Generating
+                    {t('ai_chat_modal_tooltip_stop_generating')} 
                   </Button>
                 ) : (
                   // This branch is taken if !isLoading.
@@ -618,7 +620,7 @@ useEffect(() => {
                     className="w-full"
                     disabled={!lastSuccessfulEditableSystemPrompt} // Disable if no prior successful context
                   >
-                    Continue Generating
+                    {t('ai_suggestion_modal_button_continue_generating')}
                   </Button>
                 )}
               </div>
@@ -627,17 +629,17 @@ useEffect(() => {
             {/* Response Area: Takes up available space and scrolls */}
             <div className="flex-grow overflow-y-auto p-2"> {/* Added p-2 for consistency */}
               {isLoading && !aiResponse && (
-                <div className="w-full text-muted-foreground min-h-[100px]">Streaming suggestion...</div>
+                <div className="w-full text-muted-foreground min-h-[100px]">{t('ai_suggestion_modal_status_streaming')}</div>
               )}
               {isLoading && aiResponse && (
                  <div className="w-full whitespace-pre-wrap break-words min-h-[100px]">
                   {aiResponse}
-                  <span className="text-muted-foreground"> (streaming...)</span>
+                  <span className="text-muted-foreground">{t('ai_suggestion_modal_status_streaming_suffix')}</span>
                 </div>
               )}
               {!isLoading && !aiResponse && (
                 <div className="flex items-center justify-center h-full text-slate-500 min-h-[100px]">
-                  <p>No suggestion generated. Use the Query tab or check configuration.</p>
+                  <p>{t('ai_suggestion_modal_placeholder_no_suggestion')}</p>
                 </div>
               )}
               {!isLoading && aiResponse && (
@@ -673,10 +675,10 @@ useEffect(() => {
 
         <DialogFooter className="p-6 pt-4 border-t">
           <Button variant="outline" onClick={handleModalClose} disabled={isLoading && abortControllerRef.current && !abortControllerRef.current.signal.aborted}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={handleAccept} disabled={!aiResponse || isLoading || activeTab !== 'suggestion' || isEditingSuggestion}>
-            Accept Suggestion
+            {t('ai_suggestion_modal_button_accept_suggestion')}
           </Button>
         </DialogFooter>
       </DialogContent>

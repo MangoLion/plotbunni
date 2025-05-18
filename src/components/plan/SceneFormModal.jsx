@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WandSparkles } from 'lucide-react';
 import { AISuggestionModal } from '../ai/AISuggestionModal';
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateContextWithRetry } from '../../lib/aiContextUtils'; // Added
 
 const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
+  const { t } = useTranslation();
   const {
     addSceneToChapter,
     updateScene,
@@ -97,7 +99,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
 
   const handleSubmit = () => {
     if (!isEditing && !chapterId) {
-      console.error("Chapter ID is required to create a new scene.");
+      console.error(t('scene_form_modal_error_chapter_id_required'));
       // Potentially show an error to the user
       return;
     }
@@ -129,7 +131,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
   // Determine effective chapter and scene IDs for context generation
   const prepareAIContext = async () => {
     if (!acts || !chapters || !scenes || !concepts || !actOrder) {
-      setAiContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Base novel data not fully loaded." });
+      setAiContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('scene_form_modal_ai_context_error_data_not_loaded') });
       return;
     }
 
@@ -156,7 +158,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     
     const activeAIProfile = getActiveProfile();
     if (!activeAIProfile) {
-      setAiContext({ contextString: "", estimatedTokens: 0, level: 0, error: "No active AI profile found." });
+      setAiContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('scene_form_modal_ai_context_error_no_profile') });
       return;
     }
 
@@ -190,25 +192,25 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Scene' : 'Create New Scene'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('scene_form_modal_title_edit') : t('scene_form_modal_title_create')}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Update the details for this scene.' : `Add a new scene to ${chapterId ? 'the chapter' : 'the plan'}.`}
+            {isEditing ? t('scene_form_modal_desc_edit') : (chapterId ? t('scene_form_modal_desc_create_to_chapter') : t('scene_form_modal_desc_create_to_plan'))}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="scene-name" className="text-right">Name*</Label>
-            <Input id="scene-name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="Scene Name or Number" />
+            <Label htmlFor="scene-name" className="text-right">{t('scene_form_modal_label_name')}</Label>
+            <Input id="scene-name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder={t('scene_form_modal_placeholder_name')} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="scene-tags" className="text-right">Tags</Label>
-            <Input id="scene-tags" value={tags} onChange={(e) => setTags(e.target.value)} className="col-span-3" placeholder="e.g., action, dialogue (comma-separated)" />
+            <Label htmlFor="scene-tags" className="text-right">{t('scene_form_modal_label_tags')}</Label>
+            <Input id="scene-tags" value={tags} onChange={(e) => setTags(e.target.value)} className="col-span-3" placeholder={t('scene_form_modal_placeholder_tags')} />
           </div>
 
           <Tabs defaultValue="outline" className="w-full mt-4">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="outline">Outline</TabsTrigger>
-              <TabsTrigger value="concepts">Concepts</TabsTrigger>
+              <TabsTrigger value="outline">{t('scene_form_modal_tab_outline')}</TabsTrigger>
+              <TabsTrigger value="concepts">{t('scene_form_modal_tab_concepts')}</TabsTrigger>
             </TabsList>
             <TabsContent value="outline">
               <div className="grid grid-cols-1 gap-2 pt-4">
@@ -217,7 +219,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
                     id="scene-outline" // Changed id
                     value={synopsisText}
                     onChange={(e) => setSynopsisText(e.target.value)}
-                    placeholder="Brief summary of what happens in the scene (Outline)." // Updated placeholder
+                    placeholder={t('scene_form_modal_placeholder_outline_textarea')} // Updated placeholder
                     rows={6} // Increased rows
                     className={showAiFeatures ? "pr-10" : ""}
                   />
@@ -228,7 +230,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
                       size="icon"
                       className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
                       onClick={handleOpenAISuggestionModal}
-                      aria-label="Get AI Suggestion for Outline" // Changed aria-label
+                      aria-label={t('scene_form_modal_aria_label_ai_outline')} // Changed aria-label
                     >
                       <WandSparkles className="h-4 w-4" />
                     </Button>
@@ -239,7 +241,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
             <TabsContent value="concepts">
               <div className="pt-4">
                 <div className="flex items-center justify-between mb-1">
-                  <Label>Context (Relevant Concepts)</Label>
+                  <Label>{t('scene_form_modal_label_context_concepts')}</Label>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="auto-update-context"
@@ -250,7 +252,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
                       htmlFor="auto-update-context"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      Auto-update
+                      {t('scene_form_modal_label_auto_update_context')}
                     </label>
                   </div>
                 </div>
@@ -269,16 +271,16 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
                         {concept.name}
                       </label>
                     </div>
-                  )) : <p className="text-xs text-slate-500">No concepts available.</p>}
+                  )) : <p className="text-xs text-slate-500">{t('scene_form_modal_no_concepts_available')}</p>}
                 </ScrollArea>
               </div>
             </TabsContent>
           </Tabs>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
           <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>
-            {isEditing ? 'Save Changes' : 'Create Scene'}
+            {isEditing ? t('save_changes_button') : t('scene_form_modal_button_create')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -296,7 +298,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
             setSynopsisText(suggestion);
             setIsAISuggestionModalOpen(false);
           }}
-          fieldLabel="Scene Outline" // Changed
+          fieldLabel={t('scene_form_modal_ai_field_label_scene_outline')} // Changed
           // Pass taskKeyForProfile to ensure AISuggestionModal uses the correct profile for *its* token calculations
           // and API call if its internal logic relies on it directly (though it should get it from useSettings)
           taskKeyForProfile={TASK_KEYS.SYNOPSIS} 

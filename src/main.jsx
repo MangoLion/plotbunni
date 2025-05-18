@@ -1,5 +1,6 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense } from 'react' // Add Suspense
 import { createRoot } from 'react-dom/client'
+import './i18n'; // Import the i18n configuration
 import RootApp from './RootApp.jsx'; // Import the new RootApp
 import './index.css'
 // DataProvider will be used within RootApp or its children where needed,
@@ -7,7 +8,9 @@ import './index.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RootApp />
+    <Suspense fallback={<div>Loading...</div>}> {/* Add Suspense */}
+      <RootApp />
+    </Suspense>
   </StrictMode>,
 );
 

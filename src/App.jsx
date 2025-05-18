@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from './context/DataContext.jsx';
 import { useSettings } from './context/SettingsContext.jsx';
 import { getAllNovelMetadata } from '@/lib/indexedDb.js'; // Import for fetching novel name
@@ -18,11 +19,12 @@ import FontSettingsControl from '@/components/settings/FontSettingsControl';
 
 // App component now represents the Novel Editor for a specific novel
 function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayout
+  const { t } = useTranslation();
   // useData() will now get data for the specific novelId via context
   const { isDataLoaded, currentNovelId } = useData();
   const [activeMainTab, setActiveMainTab] = useState("plan");
   const [activeSidebarTab, setActiveSidebarTab] = useState("overview"); // New state for sidebar tabs
-  const [currentNovelName, setCurrentNovelName] = useState("Novel"); // State for novel name
+  const [currentNovelName, setCurrentNovelName] = useState(t('novel_editor_default_novel_name')); // State for novel name
   const [targetChapterId, setTargetChapterId] = useState(null); // State for scrolling target
   const [targetSceneId, setTargetSceneId] = useState(null); // State for specific scene scrolling
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // State for sidebar collapse
@@ -53,18 +55,18 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
           if (currentMeta) {
             setCurrentNovelName(currentMeta.name);
           } else {
-            setCurrentNovelName("Novel Not Found"); // Or some other appropriate fallback
+            setCurrentNovelName(t('novel_editor_novel_not_found')); // Or some other appropriate fallback
           }
         } catch (error) {
           console.error("Failed to fetch novel name:", error);
-          setCurrentNovelName("Novel"); // Fallback on error
+          setCurrentNovelName(t('novel_editor_default_novel_name')); // Fallback on error
         }
       };
       fetchNovelName();
     } else {
-      setCurrentNovelName("Novel"); // Default if no novelId
+      setCurrentNovelName(t('novel_editor_default_novel_name')); // Default if no novelId
     }
-  }, [novelId]); // Depend only on novelId prop
+  }, [novelId, t]); // Depend only on novelId prop and t
 
   useEffect(() => {
     // Set the default tab for mobile to "overview"
@@ -107,8 +109,8 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-background">
         <Rabbit className="h-12 w-12 animate-pulse text-primary mb-4" />
-        <p className="text-xl text-muted-foreground">Loading Novel Data...</p>
-        {novelId && <p className="text-sm text-muted-foreground mt-1">Novel ID: {novelId}</p>}
+        <p className="text-xl text-muted-foreground">{t('novel_editor_loading_data')}</p>
+        {novelId && <p className="text-sm text-muted-foreground mt-1">{t('novel_editor_novel_id_label', { novelId })}</p>}
       </div>
     );
   }
@@ -151,7 +153,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
     <div className="flex flex-col h-screen overflow-hidden">
       <header className="flex items-center justify-between p-3 border-b bg-background shadow-sm print:hidden">
         <div className="flex items-center min-w-0"> {/* Left side items: Home, Novel Name, Tabs */}
-          <Link to="/" className="p-2 rounded-md hover:bg-muted mr-2 flex-shrink-0" title="Back to My Novels">
+          <Link to="/" className="p-2 rounded-md hover:bg-muted mr-2 flex-shrink-0" title={t('back_to_novels')}>
             <Home className="h-5 w-5 text-foreground" />
           </Link>
 
@@ -162,14 +164,14 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
               size="icon"
               onClick={toggleSidebar}
               className="hidden md:flex mr-2 flex-shrink-0"
-              title="Show Sidebar"
+              title={t('novel_editor_show_sidebar_tooltip')}
             >
               <PanelLeftOpen className="h-5 w-5" />
             </Button>
           )}
           
           <h1 className="text-xl font-bold truncate min-w-0 max-w-[300px] flex items-center">
-            <span className="truncate">{currentNovelName || "Plot Bunni"}</span>
+            <span className="truncate">{currentNovelName || t('app_title')}</span>
             <Rabbit className="h-5 w-5 ml-2 flex-shrink-0 mr-2" /> {/* Bunny Icon next to novel name */}
           </h1>
           
@@ -180,25 +182,25 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
           >
             <TabsList className="justify-start">
               {/* Mobile-only tabs - icon only */}
-              <TabsTrigger value="overview" className="md:hidden p-2" title="Overview">
+              <TabsTrigger value="overview" className="md:hidden p-2" title={t('novel_editor_overview_tab')}>
                 <BookOpen className="h-5 w-5" />
               </TabsTrigger>
-              <TabsTrigger value="concepts" className="md:hidden p-2" title="Concepts" data-joyride="concepts-tab">
+              <TabsTrigger value="concepts" className="md:hidden p-2" title={t('novel_editor_concepts_tab_mobile_tooltip')} data-joyride="concepts-tab">
                 <Lightbulb className="h-5 w-5" />
               </TabsTrigger>
 
               {/* Tabs visible on all sizes, icon-only on mobile, icon + text on md+ */}
-              <TabsTrigger value="plan" className="text-sm md:text-base p-2 md:px-4 md:py-2" title="Plan" data-joyride="plan-tab">
+              <TabsTrigger value="plan" className="text-sm md:text-base p-2 md:px-4 md:py-2" title={t('novel_editor_plan_tab')} data-joyride="plan-tab">
                 <Clipboard className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Plan</span>
+                <span className="hidden md:inline">{t('novel_editor_plan_tab')}</span>
               </TabsTrigger>
-              <TabsTrigger value="write" className="text-sm md:text-base p-2 md:px-4 md:py-2" title="Write" data-joyride="write-tab">
+              <TabsTrigger value="write" className="text-sm md:text-base p-2 md:px-4 md:py-2" title={t('novel_editor_write_tab')} data-joyride="write-tab">
                 <Edit className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Write</span>
+                <span className="hidden md:inline">{t('novel_editor_write_tab')}</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="text-sm md:text-base p-2 md:px-4 md:py-2" title="Settings" data-joyride="settings-tab">
+              <TabsTrigger value="settings" className="text-sm md:text-base p-2 md:px-4 md:py-2" title={t('novel_editor_settings_tab')} data-joyride="settings-tab">
                 <Settings className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Settings</span>
+                <span className="hidden md:inline">{t('novel_editor_settings_tab')}</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -207,7 +209,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
         <div className="flex items-center"> {/* Right side items: Font Settings Popover, Theme Toggle */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="ml-2" title="Font Settings">
+              <Button variant="ghost" size="icon" className="ml-2" title={t('novel_editor_font_settings_tooltip')}>
                 <Text className="h-5 w-5" />
               </Button>
             </PopoverTrigger>
@@ -216,7 +218,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" onClick={handleThemeToggle} className="ml-2" title={`Switch to ${effectiveTheme === 'light' ? 'dark' : 'light'} mode`}>
+          <Button variant="ghost" size="icon" onClick={handleThemeToggle} className="ml-2" title={effectiveTheme === 'light' ? t('theme_toggle_tooltip_light') : t('theme_toggle_tooltip_dark')}>
             {effectiveTheme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
         </div>
@@ -247,10 +249,10 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                   <div className="flex items-center shrink-0 border-b"> {/* Parent for TabsList and Button */}
                     <TabsList className="shrink-0 rounded-none flex-grow">
                       <TabsTrigger value="overview" className="flex-1 rounded-none">
-                        <BookOpen className="mr-2 h-4 w-4" />Overview
+                        <BookOpen className="mr-2 h-4 w-4" />{t('novel_editor_overview_tab')}
                       </TabsTrigger>
                       <TabsTrigger value="concepts" className="flex-1 rounded-none" data-joyride="concepts-tab-desktop"> {/* Unique for desktop */}
-                        <Lightbulb className="mr-2 h-4 w-4" />Concept Cache
+                        <Lightbulb className="mr-2 h-4 w-4" />{t('novel_editor_concept_cache_tab')}
                       </TabsTrigger>
                     </TabsList>
                     {/* New Button (Hide Sidebar) */}
@@ -259,7 +261,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                       size="icon"
                       onClick={toggleSidebar}
                       className="hidden md:flex mx-1 flex-shrink-0" // Desktop only, with horizontal margin
-                      title="Hide Sidebar"
+                      title={t('novel_editor_hide_sidebar_tooltip')}
                     >
                       <PanelLeftClose className="h-5 w-5" />
                     </Button>

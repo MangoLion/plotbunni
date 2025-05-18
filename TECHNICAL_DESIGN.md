@@ -1,20 +1,20 @@
-# Plothare - Technical Design Document
+# Plot Bunni - Technical Design Document
 
 ## 1. Introduction
 
 ### 1.1. Project Goal
 
-Plothare aims to be an open-source novel writing tool designed to assist novelists in organizing their ideas, structuring their stories, and leveraging AI for brainstorming and drafting. The project emphasizes a manageable feature set for solo development, focusing on core needs like concept management, story planning, and (eventually) AI-powered assistance and mobile accessibility. This version reflects a refactor to support multiple novels.
+Plotbunni aims to be an open-source novel writing tool designed to assist novelists in organizing their ideas, structuring their stories, and leveraging AI for brainstorming and drafting. The project emphasizes a manageable feature set for solo development, focusing on core needs like concept management, story planning, and (eventually) AI-powered assistance and mobile accessibility. This version reflects a refactor to support multiple novels.
 
 ### 1.2. Document Purpose
 
-This document outlines the technical design and implementation details of Plothare. It covers the application architecture, directory structure, key components, data management strategies, and a roadmap for future development, reflecting its evolution to a multi-novel platform.
+This document outlines the technical design and implementation details of Plotbunni. It covers the application architecture, directory structure, key components, data management strategies, and a roadmap for future development, reflecting its evolution to a multi-novel platform.
 
 ## 2. Technical Design Overview
 
 ### 2.1. Architecture
 
-Plothare is a single-page application (SPA) built using **ReactJS** with **Vite** as the build tool. Client-side routing is managed by **React Router DOM**. The UI is constructed using **Shadcn UI** components (which internally use Tailwind CSS and Radix UI primitives) for a modern and accessible user interface.
+Plotbunni is a single-page application (SPA) built using **ReactJS** with **Vite** as the build tool. Client-side routing is managed by **React Router DOM**. The UI is constructed using **Shadcn UI** components (which internally use Tailwind CSS and Radix UI primitives) for a modern and accessible user interface.
 
 The core architecture revolves around:
 -   **Multi-Novel Structure**: The application's entry point (`/`) is the `NovelGridView`, which displays a list of all user novels and allows for creation, deletion, and renaming of novels. Selecting a novel navigates the user to the `NovelEditorView` (e.g., `/novel/:novelId`).
@@ -38,7 +38,7 @@ The core architecture revolves around:
 
 ### 2.3. Data Persistence (`indexedDb.js`, `DataContext.jsx`)
 
--   Custom helper functions in `src/lib/indexedDb.js` provide a Promise-based API for interacting with an IndexedDB database named `PlothareDB` and an object store `ProjectDataStore`.
+-   Custom helper functions in `src/lib/indexedDb.js` provide a Promise-based API for interacting with an IndexedDB database named `PlotbunniDB` and an object store `ProjectDataStore`.
 -   **Storage Strategy for Multi-Novel Support**:
     -   A dedicated key, `NOVELS_METADATA_KEY`, is used in the `ProjectDataStore` to store an array of `NovelMetadata` objects. Each metadata object typically contains `{ id: string, name: string, lastModified: string }`.
     -   Each novel's full data (concepts, plan structure, etc., conforming to the `NovelData` structure defined in `models.js`) is stored as a separate entry in the `ProjectDataStore` under a unique key, patterned as `novel_data_${novelId}`.
@@ -235,7 +235,7 @@ src/
 ### 4.4. `src/lib/indexedDb.js`
 -   **Purpose**: Provides a simplified interface for IndexedDB operations, refactored for multi-novel support.
 -   **Key Features**:
-    -   `openDB()`: Handles opening/upgrading the `PlothareDB` database and `ProjectDataStore` object store.
+    -   `openDB()`: Handles opening/upgrading the `PlotbunniDB` database and `ProjectDataStore` object store.
     -   `NOVELS_METADATA_KEY`: Constant for the key storing an array of all novel metadata.
     -   `getNovelDataKey(novelId)`: Helper to generate the specific key for a novel's data (e.g., `novel_data_uuid`).
     -   `getAllNovelMetadata()`: Fetches the array of novel metadata.
@@ -529,4 +529,4 @@ The application now supports a multi-novel architecture with the following featu
 -   **Advanced Export Formats**: (e.g., PDF, DOCX, more customization options beyond current Markdown/TXT).
 
 
-This roadmap provides a clear path for expanding Plothare beyond its current state.
+This roadmap provides a clear path for expanding Plotbunni beyond its current state.

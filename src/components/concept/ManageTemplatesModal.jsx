@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +18,7 @@ import TemplateFormModal from './TemplateFormModal';
 import ConfirmModal from '@/components/ui/ConfirmModal'; // For delete confirmation
 
 const ManageTemplatesModal = ({ open, onOpenChange }) => {
+  const { t } = useTranslation();
   const { conceptTemplates, addConceptTemplate, updateConceptTemplate, deleteConceptTemplate } = useData();
   const [isTemplateFormModalOpen, setIsTemplateFormModalOpen] = useState(false);
   const [templateToEdit, setTemplateToEdit] = useState(null);
@@ -63,14 +65,14 @@ const ManageTemplatesModal = ({ open, onOpenChange }) => {
   
   const getTemplateFieldsSummary = (templateData) => {
     const fields = [];
-    if (templateData.name) fields.push(`Name: "${templateData.name}"`);
-    if (templateData.aliases && templateData.aliases.length > 0) fields.push(`Aliases: ${templateData.aliases.join(', ')}`);
-    if (templateData.tags && templateData.tags.length > 0) fields.push(`Tags: ${templateData.tags.join(', ')}`);
-    if (templateData.description) fields.push(`Desc: ${templateData.description.substring(0, 30)}...`);
-    if (templateData.notes) fields.push(`Notes: ${templateData.notes.substring(0, 20)}...`);
-    if (templateData.priority) fields.push(`Priority: ${templateData.priority}`);
-    if (templateData.image) fields.push(`Image: Yes`);
-    return fields.length > 0 ? fields.join('; ') : 'No pre-filled fields.';
+    if (templateData.name) fields.push(t('manage_concept_templates_field_summary_name', { name: templateData.name }));
+    if (templateData.aliases && templateData.aliases.length > 0) fields.push(t('manage_concept_templates_field_summary_aliases', { aliases: templateData.aliases.join(', ') }));
+    if (templateData.tags && templateData.tags.length > 0) fields.push(t('manage_concept_templates_field_summary_tags', { tags: templateData.tags.join(', ') }));
+    if (templateData.description) fields.push(t('manage_concept_templates_field_summary_description', { description: templateData.description.substring(0, 30) }));
+    if (templateData.notes) fields.push(t('manage_concept_templates_field_summary_notes', { notes: templateData.notes.substring(0, 20) }));
+    if (templateData.priority) fields.push(t('manage_concept_templates_field_summary_priority', { priority: templateData.priority }));
+    if (templateData.image) fields.push(t('manage_concept_templates_field_summary_image_yes'));
+    return fields.length > 0 ? fields.join('; ') : t('manage_concept_templates_field_summary_no_fields');
   };
 
 
@@ -79,14 +81,14 @@ const ManageTemplatesModal = ({ open, onOpenChange }) => {
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Manage Concept Templates</DialogTitle>
+            <DialogTitle>{t('manage_concept_templates_title')}</DialogTitle>
             <DialogDescription>
-              Create, edit, or delete concept templates for this novel.
+              {t('manage_concept_templates_description')}
             </DialogDescription>
           </DialogHeader>
           <div className="my-4">
             <Button onClick={handleAddNewTemplate} variant="outline">
-              <PlusCircle className="h-4 w-4 mr-2" /> Add New Template
+              <PlusCircle className="h-4 w-4 mr-2" /> {t('manage_concept_templates_add_new_button')}
             </Button>
           </div>
           <ScrollArea className="h-[50vh] pr-3">
@@ -97,9 +99,9 @@ const ManageTemplatesModal = ({ open, onOpenChange }) => {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
                         {template.isDefault ? (
-                          <ShieldCheck className="h-4 w-4 mr-2 text-blue-500" titleAccess='Default Template' />
+                          <ShieldCheck className="h-4 w-4 mr-2 text-blue-500" titleAccess={t('manage_concept_templates_default_template_tooltip')} />
                         ) : (
-                          <FileText className="h-4 w-4 mr-2 text-gray-500" titleAccess='Custom Template' />
+                          <FileText className="h-4 w-4 mr-2 text-gray-500" titleAccess={t('manage_concept_templates_custom_template_tooltip')} />
                         )}
                         <CardTitle className="text-md font-medium">{template.name}</CardTitle>
                       </div>
@@ -115,18 +117,18 @@ const ManageTemplatesModal = ({ open, onOpenChange }) => {
                   </CardHeader>
                   <CardContent className="p-3 text-xs">
                     <p className="text-slate-600 line-clamp-2">
-                      Fields: {getTemplateFieldsSummary(template.templateData)}
+                      {t('manage_concept_templates_fields_prefix')}{getTemplateFieldsSummary(template.templateData)}
                     </p>
                   </CardContent>
                 </Card>
               ))
             ) : (
-              <p className="text-sm text-center text-slate-500 py-8">No concept templates defined for this novel yet.</p>
+              <p className="text-sm text-center text-slate-500 py-8">{t('manage_concept_templates_no_templates_message')}</p>
             )}
           </ScrollArea>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Close</Button>
+              <Button type="button" variant="outline">{t('manage_concept_templates_close_button')}</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -142,8 +144,8 @@ const ManageTemplatesModal = ({ open, onOpenChange }) => {
       <ConfirmModal
         open={isConfirmDeleteModalOpen}
         onOpenChange={setIsConfirmDeleteModalOpen}
-        title="Delete Concept Template"
-        description={`Are you sure you want to delete the template "${templateToDelete?.name}"? This action cannot be undone.`}
+        title={t('manage_concept_templates_delete_confirm_title')}
+        description={t('manage_concept_templates_delete_confirm_description', { templateName: templateToDelete?.name })}
         onConfirm={confirmDeleteTemplate}
       />
     </>

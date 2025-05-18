@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -35,6 +36,7 @@ Act 2: The Middle
             A difficult challenge is presented.`;
 
 const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
+  const { t } = useTranslation();
   const [outlineText, setOutlineText] = useState(EXAMPLE_OUTLINE);
   const [error, setError] = useState('');
   const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
@@ -78,7 +80,7 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
     setError('');
     const lines = outlineText.split('\n').filter(line => line.trim() !== '');
     if (lines.length === 0) {
-      setError('Outline text is empty.');
+      setError(t('import_outline_modal_error_empty'));
       return;
     }
 
@@ -101,32 +103,32 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
           currentChapter = null;
           currentScene = null;
         } else if (level === 1) { // Chapter
-          if (!currentAct) throw new Error('Chapter "' + content + '" found without a preceding Act.');
+          if (!currentAct) throw new Error(t('import_outline_modal_error_chapter_no_act', { content }));
           currentChapter = createChapter({ name: content });
           currentChapter.scenes = [];
           currentAct.chapters.push(currentChapter);
           currentScene = null;
         } else if (level === 2) { // Scene
-          if (!currentChapter) throw new Error('Scene "' + content + '" found without a preceding Chapter.');
+          if (!currentChapter) throw new Error(t('import_outline_modal_error_scene_no_chapter', { content }));
           currentScene = createScene({ name: content, synopsis: '' });
           currentChapter.scenes.push(currentScene);
         } else if (level === 3) { // Scene Synopsis
-          if (!currentScene) throw new Error('Synopsis line "' + content + '" found without a preceding Scene.');
+          if (!currentScene) throw new Error(t('import_outline_modal_error_synopsis_no_scene', { content }));
           currentScene.synopsis = (currentScene.synopsis ? currentScene.synopsis + '\n' : '') + content;
         } else if (content) {
-            throw new Error('Line with unexpected indentation: "' + line + '". Ensure consistent use of tabs or spaces (' + indentation.count + ' per level).');
+            throw new Error(t('import_outline_modal_error_indentation', { line, count: indentation.count }));
         }
       }
 
       if (newActs.length === 0) {
-        setError("No valid acts found in the outline.");
+        setError(t('import_outline_modal_error_no_acts'));
         return;
       }
       
       onImportConfirm(newActs, replaceExisting);
       onOpenChange(false);
     } catch (e) {
-      setError(e.message || "An error occurred during parsing.");
+      setError(e.message || t('import_outline_modal_error_parsing'));
       console.error("Parsing error:", e);
     }
   };
@@ -138,11 +140,9 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Import Outline</DialogTitle>
-          <DialogDescription>
-            Paste your novel outline below. Use indentation (tabs or spaces) to define acts, chapters, and scenes.
-            Example: Act (no indent), Chapter (1 indent), Scene (2 indents), Synopsis (3 indents).
-            You can also use the AI wand icon on the textarea to help generate an outline.
+          <DialogTitle>{t('import_outline_modal_title')}</DialogTitle>
+          <DialogDescription style={{ whiteSpace: 'pre-line' }}>
+            {t('import_outline_modal_description')}
           </DialogDescription>
         </DialogHeader>
         <div className="relative">
@@ -150,7 +150,7 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
             value={outlineText}
             onChange={(e) => setOutlineText(e.target.value)}
             rows={15}
-            placeholder="Paste your outline here, or use the AI wand to generate one..."
+            placeholder={t('import_outline_modal_placeholder_textarea')}
             className={`font-mono text-sm ${showAiFeatures ? "pr-10" : ""}`}
           />
           {showAiFeatures && (
@@ -160,7 +160,7 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
               size="icon"
               className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
               onClick={() => setIsAISuggestionModalOpen(true)}
-              aria-label="Get AI Suggestion for Outline"
+              aria-label={t('import_outline_modal_aria_label_ai_suggestion')}
             >
               <WandSparkles className="h-4 w-4" />
             </Button>
@@ -174,17 +174,17 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
             onCheckedChange={setReplaceExisting}
           />
           <Label htmlFor="replace-existing-outline" className="text-sm font-medium">
-            Replace existing outline
+            {t('import_outline_modal_checkbox_replace_existing')}
           </Label>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
-              Cancel
+              {t('cancel')}
             </Button>
           </DialogClose>
           <Button type="button" onClick={handleImport}>
-            Import
+            {t('import_outline_modal_button_import')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -193,7 +193,7 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
           isOpen={isAISuggestionModalOpen}
           onClose={() => setIsAISuggestionModalOpen(false)}
           currentText={outlineText}
-          initialQuery={taskSettings[TASK_KEYS.PLANNER_OUTLINE]?.prompt || "Generate a comprehensive plot outline for a new novel: (TYPE IN YOUR NOVEL IDEA HERE!!)"}
+          initialQuery={taskSettings[TASK_KEYS.PLANNER_OUTLINE]?.prompt || t('import_outline_modal_ai_initial_query')}
           novelData={novelDataContextForAI}
           novelDataTokens={novelDataTokensForAI}
           novelDataLevel={0} // Level 0 for simple, non-retry context
@@ -201,7 +201,7 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
             setOutlineText(suggestion);
             setIsAISuggestionModalOpen(false);
           }}
-          fieldLabel="Novel Outline"
+          fieldLabel={t('import_outline_modal_ai_field_label')}
           taskKeyForProfile={TASK_KEYS.PLANNER_OUTLINE}
         />
       )}

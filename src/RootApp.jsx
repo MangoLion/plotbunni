@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   createHashRouter,
   RouterProvider,
@@ -13,14 +14,15 @@ import { SettingsProvider } from './context/SettingsContext';
 // Extracts novelId from params and provides DataContext for that novel
 const NovelEditorLayout = () => {
   const { novelId } = useParams();
+  const { t } = useTranslation();
 
   if (!novelId) {
     // This case should ideally be handled by routing or a redirect
     // For now, show a message or redirect to home.
     return (
       <div>
-        <p>Error: No Novel ID provided.</p>
-        <a href="/">Go to Novels</a>
+        <p>{t('root_app_error_no_novel_id')}</p>
+        <a href="/">{t('root_app_go_to_novels_link')}</a>
       </div>
     );
   }

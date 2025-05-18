@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '@/context/DataContext';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,6 +11,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { createConcept } from '@/data/models'; // For duplicating concepts
 
 const ConceptCacheList = () => {
+  const { t } = useTranslation();
   const { concepts, conceptTemplates, addConcept, deleteConcept } = useData(); // Get novel-specific conceptTemplates and addConcept, add deleteConcept
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); // This should open CreateConceptModal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -18,7 +20,7 @@ const ConceptCacheList = () => {
   const [conceptIdToDelete, setConceptIdToDelete] = useState(null);
 
   const handleDuplicateConcept = (conceptToDuplicate) => {
-    const newName = `${conceptToDuplicate.name} (Copy)`;
+    const newName = `${conceptToDuplicate.name} ${t('concept_cache_duplicate_suffix')}`;
     // Create a new concept object, ensuring a new ID and updated timestamps
     const duplicatedConcept = createConcept({
       ...conceptToDuplicate, // Spread existing properties
@@ -53,7 +55,7 @@ const ConceptCacheList = () => {
 
   // Group concepts by template type
   const groupedConcepts = filteredConcepts.reduce((acc, concept) => {
-    let templateType = 'Other'; // Default to 'Other'
+    let templateType = t('concept_cache_default_group_name'); // Default to 'Other'
 
     // Attempt to find a matching template based on the concept's tags
     // This logic might need refinement if a concept could match multiple templates
@@ -80,8 +82,8 @@ const ConceptCacheList = () => {
 
   // Sort groups: templates first (alphabetical), then 'Other' last
   const sortedGroupKeys = Object.keys(groupedConcepts).sort((a, b) => {
-    if (a === 'Other') return 1;
-    if (b === 'Other') return -1;
+    if (a === t('concept_cache_default_group_name')) return 1;
+    if (b === t('concept_cache_default_group_name')) return -1;
     return a.localeCompare(b);
   });
 
@@ -91,13 +93,13 @@ const ConceptCacheList = () => {
         {/* This div now becomes the direct child of ScrollArea, ScrollArea's p-4 will apply to it */}
         <div> 
           <div className="flex justify-between items-center mb-3 p-2"> 
-            <h2 className="text-lg font-semibold text-foreground">Concept Cache</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('concept_cache_title')}</h2>
             <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => console.log("Filter clicked (Not Implemented)")} title="Filter (Not Implemented)">
+            <Button variant="ghost" size="icon" onClick={() => console.log("Filter clicked (Not Implemented)")} title={t('concept_cache_tooltip_filter_not_implemented')}>
               <Filter className="h-4 w-4" />
             </Button>
             {/* This button should open CreateConceptModal, not ConceptFormModal directly for creation */}
-            <Button variant="ghost" size="icon" onClick={() => setIsCreateModalOpen(true)} title="Create New Concept">
+            <Button variant="ghost" size="icon" onClick={() => setIsCreateModalOpen(true)} title={t('concept_cache_tooltip_create_new')}>
               <PlusCircle className="h-5 w-5" />
             </Button>
           </div>
@@ -105,7 +107,7 @@ const ConceptCacheList = () => {
       <div className="px-2 mb-3">
         <Input
           type="text"
-          placeholder="Search concepts..."
+          placeholder={t('concept_cache_placeholder_search')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full"
@@ -146,7 +148,7 @@ const ConceptCacheList = () => {
                       e.stopPropagation(); // Prevent triggering the edit modal
                       handleDuplicateConcept(concept);
                     }}
-                    title={`Duplicate "${concept.name}"`}
+                    title={t('concept_cache_tooltip_duplicate_concept', { conceptName: concept.name })}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -158,7 +160,7 @@ const ConceptCacheList = () => {
                       e.stopPropagation(); // Prevent triggering the edit modal
                       handleDeleteConcept(concept.id);
                     }}
-                    title={`Delete "${concept.name}"`}
+                    title={t('concept_cache_tooltip_delete_concept', { conceptName: concept.name })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -167,7 +169,7 @@ const ConceptCacheList = () => {
             </div>
           ))
         ) : (
-          <p className="p-2 text-sm text-muted-foreground">No concepts found. Click '+' to add one.</p>
+          <p className="p-2 text-sm text-muted-foreground">{t('concept_cache_no_concepts_message')}</p>
         )}
         </div>
       </ScrollArea>
@@ -194,11 +196,11 @@ const ConceptCacheList = () => {
       <ConfirmModal
         open={isConfirmModalOpen}
         onOpenChange={setIsConfirmModalOpen}
-        title="Confirm Deletion"
-        description="Are you sure you want to delete this concept? This action cannot be undone."
+        title={t('concept_cache_confirm_delete_title')}
+        description={t('concept_cache_confirm_delete_description')}
         onConfirm={executeDeleteConcept}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
       />
     </>
   );

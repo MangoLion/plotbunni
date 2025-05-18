@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../context/SettingsContext';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -92,6 +93,7 @@ const hexToHsl = (hex) => {
 
 // Component to display small color swatches
 const ThemeColorSwatches = ({ colors }) => {
+  const { t } = useTranslation();
   const swatchColors = [
     colors?.['primary'] || '0 0% 50%', // Default to gray if not found
     colors?.['secondary'] || '0 0% 60%',
@@ -103,12 +105,16 @@ const ThemeColorSwatches = ({ colors }) => {
     <div className="flex space-x-1 mr-2">
       {swatchColors.map((hslString, index) => {
         const { h, s, l } = parseHslString(hslString);
+        const colorName = Object.keys(colors || {}).find(key => colors[key] === hslString);
+        const titleText = colorName 
+          ? `${formatVariableName(colorName)}: ${hslString}` 
+          : `${t('theme_editor_color_swatch_title', { index: index + 1 })}: ${hslString}`;
         return (
           <div
             key={index}
             className="w-3 h-3 rounded-sm border border-neutral-400"
             style={{ backgroundColor: `hsl(${h} ${s}% ${l}%)` }}
-            title={`${formatVariableName(Object.keys(colors || {}).find(key => colors[key] === hslString) || `Color ${index + 1}`)}: ${hslString}`}
+            title={titleText}
           />
         );
       })}
@@ -125,6 +131,7 @@ const formatVariableName = (varName) => {
 };
 
 const ColorEditorRow = ({ mode, variableName, hslValue, onUpdateColor }) => {
+  const { t } = useTranslation();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   // Ensure hslValue is a string before parsing, default to a safe value if not.
@@ -170,8 +177,8 @@ const ColorEditorRow = ({ mode, variableName, hslValue, onUpdateColor }) => {
         <PopoverContent className="w-auto p-0" align="start">
           <HexColorPicker color={currentHex} onChange={handleColorPickerChange} />
           <div className="p-2 border-t text-xs text-muted-foreground bg-background">
-            <p>HEX: {currentHex}</p>
-            <p>HSL: {safeHslValue}</p>
+            <p>{t('theme_editor_hex_label')} {currentHex}</p>
+            <p>{t('theme_editor_hsl_label')} {safeHslValue}</p>
           </div>
         </PopoverContent>
       </Popover>
@@ -180,6 +187,7 @@ const ColorEditorRow = ({ mode, variableName, hslValue, onUpdateColor }) => {
 };
 
 const ThemeCustomizationSection = ({ mode, title }) => {
+  const { t } = useTranslation();
   const {
     getAvailablePresets,
     applyPreset,
@@ -196,7 +204,7 @@ const ThemeCustomizationSection = ({ mode, title }) => {
   const currentColors = getCurrentColors(mode);
 
   if (!currentColors) {
-    return <p>Loading theme colors...</p>;
+    return <p>{t('theme_editor_loading_colors')}</p>;
   }
 
   const colorVariables = Object.keys(currentColors);
@@ -211,14 +219,14 @@ const ThemeCustomizationSection = ({ mode, title }) => {
     <Card className="h-full">
       <CardHeader className="pb-3">
         <CardTitle>{title}</CardTitle>
-        <CardDescription>Select a preset or customize colors</CardDescription>
+        <CardDescription>{t('theme_editor_customize_section_description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <Label htmlFor={`${mode}-preset-select`} className="block mb-1 text-sm font-medium">Select Preset</Label>
+          <Label htmlFor={`${mode}-preset-select`} className="block mb-1 text-sm font-medium">{t('theme_editor_select_preset_label')}</Label>
           <Select onValueChange={handlePresetChange} value={currentPresetId}> {/* Add value prop */}
             <SelectTrigger id={`${mode}-preset-select`} className="w-full">
-              <SelectValue placeholder={`Select a ${mode} preset`} />
+              <SelectValue placeholder={t('theme_editor_select_preset_placeholder', { mode: mode })} />
             </SelectTrigger>
             <SelectContent>
               {presets.map(preset => (
@@ -239,18 +247,16 @@ const ThemeCustomizationSection = ({ mode, title }) => {
           className="border rounded-md p-2 mb-4"
         >
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Edit HSL Color Values</h4>
+            <h4 className="text-sm font-medium">{t('theme_editor_edit_hsl_title')}</h4>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
                 <ChevronsUpDown className="h-4 w-4" />
-                <span className="sr-only">Toggle color editor</span>
+                <span className="sr-only">{t('theme_editor_toggle_color_editor_sr')}</span>
               </Button>
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent className="mt-2">
-            <p className="text-xs text-muted-foreground mb-2">
-              Enter HSL values in format: <code>hue saturation% lightness%</code> (e.g., <code>210 100% 50%</code>)
-            </p>
+            <p className="text-xs text-muted-foreground mb-2" dangerouslySetInnerHTML={{ __html: t('theme_editor_hsl_format_instruction') }} />
             <div className="max-h-[300px] overflow-y-auto pr-2">
               {colorVariables.map(varName => (
                 <ColorEditorRow
@@ -266,7 +272,7 @@ const ThemeCustomizationSection = ({ mode, title }) => {
         </Collapsible>
 
         <Button variant="outline" size="sm" onClick={() => resetThemeToDefault(mode)}>
-          Reset to Default
+          {t('theme_editor_reset_to_default_button')}
         </Button>
       </CardContent>
     </Card>
@@ -274,33 +280,34 @@ const ThemeCustomizationSection = ({ mode, title }) => {
 };
 
 export const ThemeEditor = () => {
+  const { t } = useTranslation();
   const { themeMode, setThemeMode } = useSettings();
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Theme Settings</CardTitle>
-          <CardDescription>Choose your preferred theme mode and customize colors</CardDescription>
+          <CardTitle>{t('theme_editor_main_title')}</CardTitle>
+          <CardDescription>{t('theme_editor_main_description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-6">
-            <Label htmlFor="theme-mode-select" className="block mb-1 text-sm font-medium">Theme Mode</Label>
+            <Label htmlFor="theme-mode-select" className="block mb-1 text-sm font-medium">{t('theme_editor_theme_mode_label')}</Label>
             <Select value={themeMode} onValueChange={setThemeMode}>
               <SelectTrigger id="theme-mode-select" className="w-full md:w-1/2">
-                <SelectValue placeholder="Select theme mode" />
+                <SelectValue placeholder={t('theme_editor_select_theme_mode_placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="light">Light Mode</SelectItem>
-                <SelectItem value="dark">Dark Mode</SelectItem>
-                <SelectItem value="system">Use System Setting</SelectItem>
+                <SelectItem value="light">{t('theme_editor_light_mode_option')}</SelectItem>
+                <SelectItem value="dark">{t('theme_editor_dark_mode_option')}</SelectItem>
+                <SelectItem value="system">{t('theme_editor_system_mode_option')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ThemeCustomizationSection mode="light" title="Light Theme" />
-            <ThemeCustomizationSection mode="dark" title="Dark Theme" />
+            <ThemeCustomizationSection mode="light" title={t('theme_editor_light_theme_title')} />
+            <ThemeCustomizationSection mode="dark" title={t('theme_editor_dark_theme_title')} />
           </div>
         </CardContent>
       </Card>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ pdfMake.vfs = pdfFonts;
 
 
 export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
+  const { t } = useTranslation();
   const [exportFormat, setExportFormat] = useState('markdown'); // 'markdown', 'txt', 'pdf', or 'zip'
   const [includeToc, setIncludeToc] = useState(true);
   const [showActSceneNames, setShowActSceneNames] = useState(true);
@@ -51,7 +53,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
 
   const generateContent = () => {
     if (!isDataLoaded || !novelData || !novelData.novelName || !novelData.acts || !novelData.chapters || !novelData.scenes || !novelData.actOrder) {
-      toast({ title: "Error", description: "Novel data not fully loaded or critical parts are missing.", variant: "destructive" });
+      toast({ title: t('export_modal_toast_error_title'), description: t('export_modal_toast_error_data_missing_desc'), variant: "destructive" });
       return null;
     }
 
@@ -61,14 +63,14 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
 
     // Title and Author
     if (isMarkdown) {
-      content += `# ${novelName || 'Untitled Novel'}\n\n`;
+      content += `# ${novelName || t('export_modal_content_untitled_novel')}\n\n`;
       if (authorName) {
-        content += `## By ${authorName}\n\n`;
+        content += `## ${t('export_modal_content_by_author', { authorName })}\n\n`;
       }
     } else { // txt
-      content += `${novelName || 'Untitled Novel'}\n`;
+      content += `${novelName || t('export_modal_content_untitled_novel')}\n`;
       if (authorName) {
-        content += `By ${authorName}\n`;
+        content += `${t('export_modal_content_by_author', { authorName })}\n`;
       }
       content += "\n";
     }
@@ -76,43 +78,43 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
     // Synopsis
     if (synopsis) {
       if (isMarkdown) {
-        content += `### Synopsis\n\n${synopsis}\n\n`;
+        content += `### ${t('export_modal_content_synopsis_heading')}\n\n${synopsis}\n\n`;
       } else { // txt
-        content += `Synopsis:\n${synopsis}\n\n`;
+        content += `${t('export_modal_content_synopsis_heading')}:\n${synopsis}\n\n`;
       }
     }
     
     // Table of Contents
     if (includeToc) {
       if (isMarkdown) {
-        content += "## Table of Contents\n\n";
+        content += `## ${t('export_modal_content_toc_heading')}\n\n`;
       } else { // txt
-        content += "Table of Contents\n-----------------\n";
+        content += `${t('export_modal_content_toc_heading')}\n-----------------\n`;
       }
       actOrder.forEach(actId => {
         const act = acts[actId];
         if (act) {
           if (isMarkdown) {
-            content += `- ${showActSceneNames ? (act.name || 'Unnamed Act') : 'Act'}\n`;
+            content += `- ${showActSceneNames ? (act.name || t('export_modal_content_unnamed_act')) : t('export_modal_act_placeholder')}\n`;
           } else { // txt
-            content += `  ${showActSceneNames ? (act.name || 'Unnamed Act') : 'Act'}\n`;
+            content += `  ${showActSceneNames ? (act.name || t('export_modal_content_unnamed_act')) : t('export_modal_act_placeholder')}\n`;
           }
           (act.chapterOrder || []).forEach(chapterId => {
             const chapter = chapters[chapterId];
             if (chapter) {
               if (isMarkdown) {
-                content += `  - ${showActSceneNames ? (chapter.name || 'Unnamed Chapter') : 'Chapter'}\n`;
+                content += `  - ${showActSceneNames ? (chapter.name || t('export_modal_content_unnamed_chapter')) : t('export_modal_chapter_placeholder')}\n`;
               } else { // txt
-                content += `    ${showActSceneNames ? (chapter.name || 'Unnamed Chapter') : 'Chapter'}\n`;
+                content += `    ${showActSceneNames ? (chapter.name || t('export_modal_content_unnamed_chapter')) : t('export_modal_chapter_placeholder')}\n`;
               }
               if (showActSceneNames) {
                 (chapter.sceneOrder || []).forEach(sceneId => {
                     const scene = scenes[sceneId];
                     if(scene) {
                         if (isMarkdown) {
-                            content += `    - ${scene.name || 'Unnamed Scene'}\n`;
+                            content += `    - ${scene.name || t('export_modal_content_unnamed_scene')}\n`;
                         } else { // txt
-                            content += `      ${scene.name || 'Unnamed Scene'}\n`;
+                            content += `      ${scene.name || t('export_modal_content_unnamed_scene')}\n`;
                         }
                     }
                 });
@@ -130,9 +132,9 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
       if (act) {
         if (showActSceneNames) {
           if (isMarkdown) {
-            content += `## ${act.name || 'Unnamed Act'}\n\n`;
+            content += `## ${act.name || t('export_modal_content_unnamed_act')}\n\n`;
           } else { // txt
-            content += `${act.name || 'Unnamed Act'}\n==================\n\n`;
+            content += `${act.name || t('export_modal_content_unnamed_act')}\n==================\n\n`;
           }
         }
         (act.chapterOrder || []).forEach(chapterId => {
@@ -140,9 +142,9 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
           if (chapter) {
             if (showActSceneNames) {
               if (isMarkdown) {
-                content += `### ${chapter.name || 'Unnamed Chapter'}\n\n`;
+                content += `### ${chapter.name || t('export_modal_content_unnamed_chapter')}\n\n`;
               } else { // txt
-                content += `${chapter.name || 'Unnamed Chapter'}\n------------------\n\n`;
+                content += `${chapter.name || t('export_modal_content_unnamed_chapter')}\n------------------\n\n`;
               }
             }
             (chapter.sceneOrder || []).forEach(sceneId => {
@@ -150,17 +152,17 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
               if (scene) {
                 if (showActSceneNames) {
                   if (isMarkdown) {
-                    content += `#### ${scene.name || 'Unnamed Scene'}\n\n`;
+                    content += `#### ${scene.name || t('export_modal_content_unnamed_scene')}\n\n`;
                   } else { // txt
-                    content += `${scene.name || 'Unnamed Scene'}\n\n`;
+                    content += `${scene.name || t('export_modal_content_unnamed_scene')}\n\n`;
                   }
                 }
                 if (scene.content) {
                   content += `${scene.content}\n\n`;
                 } else if (isMarkdown) {
-                  content += `*(No content for this scene.)*\n\n`;
+                  content += `${t('export_modal_content_no_scene_content_md')}\n\n`;
                 } else { // txt
-                  content += `(No content for this scene.)\n\n`;
+                  content += `${t('export_modal_content_no_scene_content_txt')}\n\n`;
                 }
               }
             });
@@ -173,7 +175,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
 
   const generatePdfDocDefinition = () => {
     if (!isDataLoaded || !novelData || !novelData.novelName || !novelData.acts || !novelData.chapters || !novelData.scenes || !novelData.actOrder) {
-      toast({ title: "Error", description: "Novel data not fully loaded or critical parts are missing.", variant: "destructive" });
+      toast({ title: t('export_modal_toast_error_title'), description: t('export_modal_toast_error_data_missing_desc'), variant: "destructive" });
       return null;
     }
     // pdfMake is now imported, so no need for typeof pdfMake === 'undefined' check here.
@@ -186,9 +188,9 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
     const content = [];
 
     // Cover Page
-    content.push({ text: novelName || 'Untitled Novel', style: 'coverTitle' });
+    content.push({ text: novelName || t('export_modal_content_untitled_novel'), style: 'coverTitle' });
     if (authorName) {
-      content.push({ text: `By ${authorName}`, style: 'coverSubtitle' });
+      content.push({ text: t('export_modal_content_by_author', { authorName }), style: 'coverSubtitle' });
     }
     content.push({ text: '', pageBreak: 'after' });
 
@@ -196,7 +198,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
     if (includeToc) {
       const tocContent = {
         toc: {
-          title: { text: 'Table of Contents', style: 'tocTitle' }
+          title: { text: t('export_modal_content_toc_heading'), style: 'tocTitle' }
         }
       };
       content.push(tocContent);
@@ -205,7 +207,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
     
     // Synopsis (after ToC, before first chapter)
     if (synopsis) {
-        content.push({ text: 'Synopsis', style: 'synopsisHeading', pageBreak: 'before' });
+        content.push({ text: t('export_modal_content_synopsis_heading'), style: 'synopsisHeading', pageBreak: 'before' });
         content.push({ text: synopsis, style: 'paragraph' });
         content.push({ text: '', pageBreak: 'after' });
     }
@@ -216,24 +218,24 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
       const act = acts[actId];
       if (act) {
         if (showActSceneNames) {
-          content.push({ text: act.name || 'Unnamed Act', style: 'actHeading', tocItem: includeToc, pageBreak: 'before' });
+          content.push({ text: act.name || t('export_modal_content_unnamed_act'), style: 'actHeading', tocItem: includeToc, pageBreak: 'before' });
         }
         (act.chapterOrder || []).forEach(chapterId => {
           const chapter = chapters[chapterId];
           if (chapter) {
             if (showActSceneNames) {
-              content.push({ text: chapter.name || 'Unnamed Chapter', style: 'chapterHeading', tocItem: includeToc });
+              content.push({ text: chapter.name || t('export_modal_content_unnamed_chapter'), style: 'chapterHeading', tocItem: includeToc });
             }
             (chapter.sceneOrder || []).forEach(sceneId => {
               const scene = scenes[sceneId];
               if (scene) {
                 if (showActSceneNames) {
-                  content.push({ text: scene.name || 'Unnamed Scene', style: 'sceneHeading', tocItem: includeToc });
+                  content.push({ text: scene.name || t('export_modal_content_unnamed_scene'), style: 'sceneHeading', tocItem: includeToc });
                 }
                 if (scene.content) {
                   content.push({ text: scene.content, style: 'paragraph' });
                 } else {
-                  content.push({ text: '(No content for this scene.)', style: 'paragraph', italics: true });
+                  content.push({ text: t('export_modal_content_no_scene_content_txt'), style: 'paragraph', italics: true });
                 }
               }
             });
@@ -244,8 +246,8 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
 
     return {
       info: {
-        title: novelName || 'Untitled Novel',
-        author: authorName || 'Unknown Author',
+        title: novelName || t('export_modal_content_untitled_novel'),
+        author: authorName || t('export_modal_pdf_unknown_author'),
       },
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
@@ -271,7 +273,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
 
   const generateZipFile = async () => {
     if (!isDataLoaded || !novelData || !novelData.novelName || !novelData.acts || !novelData.chapters || !novelData.scenes || !novelData.actOrder) {
-      toast({ title: "Error", description: "Novel data not fully loaded or critical parts are missing.", variant: "destructive" });
+      toast({ title: t('export_modal_toast_error_title'), description: t('export_modal_toast_error_data_missing_desc'), variant: "destructive" });
       return;
     }
 
@@ -281,7 +283,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
 
     // Create metadata.md for Pandoc
     let metadataContent = "---\n";
-    metadataContent += `title: ${novelName || 'Untitled Novel'}\n`;
+    metadataContent += `title: ${novelName || t('export_modal_content_untitled_novel')}\n`;
     if (authorName) {
       metadataContent += `author: ${authorName}\n`;
     }
@@ -292,20 +294,20 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
     }
     metadataContent += "---\n\n";
     if (includeToc) {
-        metadataContent += "# Table of Contents\n\n";
+        metadataContent += `# ${t('export_modal_content_toc_heading')}\n\n`;
         actOrder.forEach(actId => {
             const act = acts[actId];
             if (act) {
-                metadataContent += `- ${showActSceneNames ? (act.name || 'Unnamed Act') : 'Act'}\n`;
+                metadataContent += `- ${showActSceneNames ? (act.name || t('export_modal_content_unnamed_act')) : t('export_modal_act_placeholder')}\n`;
                 (act.chapterOrder || []).forEach(chapterId => {
                     const chapter = chapters[chapterId];
                     if (chapter) {
-                        metadataContent += `  - ${showActSceneNames ? (chapter.name || 'Unnamed Chapter') : 'Chapter'}\n`;
+                        metadataContent += `  - ${showActSceneNames ? (chapter.name || t('export_modal_content_unnamed_chapter')) : t('export_modal_chapter_placeholder')}\n`;
                          if (showActSceneNames) {
                             (chapter.sceneOrder || []).forEach(sceneId => {
                                 const scene = scenes[sceneId];
                                 if(scene) {
-                                    metadataContent += `    - ${scene.name || 'Unnamed Scene'}\n`;
+                                    metadataContent += `    - ${scene.name || t('export_modal_content_unnamed_scene')}\n`;
                                 }
                             });
                         }
@@ -328,23 +330,23 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
           if (chapter) {
             let chapterContent = "";
             if (showActSceneNames) {
-              chapterContent += `# ${chapter.name || 'Unnamed Chapter'}\n\n`;
+              chapterContent += `# ${chapter.name || t('export_modal_content_unnamed_chapter')}\n\n`;
             }
             (chapter.sceneOrder || []).forEach(sceneId => {
               const scene = scenes[sceneId];
               if (scene) {
                 if (showActSceneNames) {
-                  chapterContent += `## ${scene.name || 'Unnamed Scene'}\n\n`;
+                  chapterContent += `## ${scene.name || t('export_modal_content_unnamed_scene')}\n\n`;
                 }
                 if (scene.content) {
                   chapterContent += `${scene.content}\n\n`;
                 } else {
-                  chapterContent += `*(No content for this scene.)*\n\n`;
+                  chapterContent += `${t('export_modal_content_no_scene_content_md')}\n\n`;
                 }
               }
             });
             // Sanitize chapter name for filename
-            const safeChapterName = (chapter.name || 'Unnamed Chapter').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const safeChapterName = (chapter.name || t('export_modal_content_unnamed_chapter')).replace(/[^a-z0-9]/gi, '_').toLowerCase();
             const chapterFileName = `${String(chapterIndex).padStart(2, '0')}-${safeChapterName}.md`;
             novelFolder.file(chapterFileName, chapterContent);
             chapterIndex++;
@@ -360,11 +362,11 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
         fileName: `${novelName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'novel'}.zip`,
         fileType: 'application/zip',
       });
-      toast({ title: "Exported", description: "ZIP file has been generated and downloaded." });
+      toast({ title: t('export_modal_toast_exported_title'), description: t('export_modal_toast_zip_exported_desc') });
       onClose();
     } catch (error) {
       console.error("Error generating ZIP:", error);
-      toast({ title: "ZIP Export Error", description: "Could not generate ZIP. Check console for details.", variant: "destructive" });
+      toast({ title: t('export_modal_toast_zip_error_title'), description: t('export_modal_toast_zip_error_desc'), variant: "destructive" });
     }
   };
 
@@ -374,11 +376,11 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
       if (docDefinition) {
         try {
           pdfMake.createPdf(docDefinition).download(`${novelData.novelName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'novel'}.pdf`);
-          toast({ title: "Exported", description: "PDF has been generated and downloaded." });
+          toast({ title: t('export_modal_toast_exported_title'), description: t('export_modal_toast_pdf_exported_desc') });
           onClose();
         } catch (error) {
           console.error("Error generating PDF:", error);
-          toast({ title: "PDF Export Error", description: "Could not generate PDF. Check console for details.", variant: "destructive" });
+          toast({ title: t('export_modal_toast_pdf_error_title'), description: t('export_modal_toast_pdf_error_desc'), variant: "destructive" });
         }
       }
       return;
@@ -402,7 +404,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
       fileName,
       fileType,
     });
-    toast({ title: "Exported", description: `${fileName} has been downloaded.` });
+    toast({ title: t('export_modal_toast_exported_title'), description: t('export_modal_toast_file_downloaded_desc', { fileName }) });
     onClose();
   };
 
@@ -410,15 +412,15 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Export Novel</DialogTitle>
+          <DialogTitle>{t('export_modal_dialog_title')}</DialogTitle>
           <DialogDescription>
-            Choose your export settings.
+            {t('export_modal_dialog_description')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="exportFormat" className="text-right col-span-1">
-              Format
+              {t('export_modal_label_format')}
             </Label>
             <RadioGroup
               id="exportFormat"
@@ -429,19 +431,19 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
             >
               <div className="flex items-center space-x-2"> {/* Ensured space-x-2 for item and label */}
                 <RadioGroupItem value="markdown" id="r_markdown" />
-                <Label htmlFor="r_markdown">Markdown (.md)</Label>
+                <Label htmlFor="r_markdown">{t('export_modal_radio_label_markdown')}</Label>
               </div>
               <div className="flex items-center space-x-2"> {/* Ensured space-x-2 for item and label */}
                 <RadioGroupItem value="txt" id="r_txt" />
-                <Label htmlFor="r_txt">Text (.txt)</Label>
+                <Label htmlFor="r_txt">{t('export_modal_radio_label_text')}</Label>
               </div>
               <div className="flex items-center space-x-2"> {/* Ensured space-x-2 for item and label */}
                 <RadioGroupItem value="pdf" id="r_pdf" />
-                <Label htmlFor="r_pdf">PDF (.pdf)</Label>
+                <Label htmlFor="r_pdf">{t('export_modal_radio_label_pdf')}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="zip" id="r_zip" />
-                <Label htmlFor="r_zip">ZIP (Markdown Chapters)</Label>
+                <Label htmlFor="r_zip">{t('export_modal_radio_label_zip')}</Label>
               </div>
             </RadioGroup>
           </div>
@@ -453,7 +455,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
               onCheckedChange={setIncludeToc}
             />
             <Label htmlFor="includeToc" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Include Table of Contents (Outline)
+              {t('export_modal_checkbox_label_include_toc')}
             </Label>
           </div>
           <div className="flex items-center space-x-2 col-span-4">
@@ -463,13 +465,13 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
               onCheckedChange={setShowActSceneNames}
             />
             <Label htmlFor="showActSceneNames" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Show Act and Scene Names/Headings
+              {t('export_modal_checkbox_label_show_headings')}
             </Label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleExport} disabled={!isDataLoaded}>Export</Button>
+          <Button variant="outline" onClick={onClose}>{t('cancel')}</Button>
+          <Button onClick={handleExport} disabled={!isDataLoaded}>{t('export_modal_button_export')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

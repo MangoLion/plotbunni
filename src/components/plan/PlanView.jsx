@@ -1,4 +1,5 @@
 import React, { useState, useEffect  } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '@/context/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { useSettings } from '@/context/SettingsContext'; // Import useSettings
 
 
 const SceneCard = ({ scene, conceptsMap, chapterId, onDeleteScene }) => {
+  const { t } = useTranslation();
   // conceptsMap is a map of conceptId -> conceptObject for easy name lookup
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -33,8 +35,8 @@ const SceneCard = ({ scene, conceptsMap, chapterId, onDeleteScene }) => {
       <ConfirmModal
         open={isConfirmModalOpen}
         onOpenChange={setIsConfirmModalOpen}
-        title="Delete Scene"
-        description={`Are you sure you want to delete scene "${scene.name}"?`}
+        title={t('plan_view_scene_card_confirm_delete_title')}
+        description={t('plan_view_scene_card_confirm_delete_description', { sceneName: scene.name })}
         onConfirm={confirmDelete}
       />
       <Card className="mb-2 shadow-sm">
@@ -51,14 +53,14 @@ const SceneCard = ({ scene, conceptsMap, chapterId, onDeleteScene }) => {
             </div>
           </div>
           {scene.tags && scene.tags.length > 0 && (
-            <CardDescription className="text-xs pt-1">Tags: {scene.tags.join(', ')}</CardDescription>
+            <CardDescription className="text-xs pt-1">{t('plan_view_scene_card_tags_prefix')}{scene.tags.join(', ')}</CardDescription>
           )}
         </CardHeader>
         <CardContent className="p-3 text-xs">
-          <p className="line-clamp-3 mb-1">{scene.synopsis || "No synopsis."}</p>
+          <p className="line-clamp-3 mb-1">{scene.synopsis || t('plan_view_scene_card_no_synopsis')}</p>
           {scene.context && scene.context.length > 0 && (
             <p className="text-slate-600">
-              Context: {scene.context.map(id => conceptsMap[id]?.name || id).join(', ')}
+              {t('plan_view_scene_card_context_prefix')}{scene.context.map(id => conceptsMap[id]?.name || id).join(', ')}
             </p>
           )}
         </CardContent>
@@ -75,6 +77,7 @@ const SceneCard = ({ scene, conceptsMap, chapterId, onDeleteScene }) => {
 
 // Accept onSwitchToWriteTab prop
 const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onDeleteScene, onSwitchToWriteTab }) => {
+  const { t } = useTranslation();
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -94,8 +97,8 @@ const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onD
       <ConfirmModal
         open={isConfirmModalOpen}
         onOpenChange={setIsConfirmModalOpen}
-        title="Delete Chapter"
-        description={`Are you sure you want to delete chapter "${chapter.name}"? This will also delete all its scenes.`}
+        title={t('plan_view_chapter_card_confirm_delete_title')}
+        description={t('plan_view_chapter_card_confirm_delete_description', { chapterName: chapter.name })}
         onConfirm={confirmDelete}
       />
       {/* Responsive width: 1 column on small, 2 on sm, 3 on lg */}
@@ -118,13 +121,13 @@ const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onD
           {chapterScenes.length > 0 ? (
             chapterScenes.map(scene => <SceneCard key={scene.id} scene={scene} conceptsMap={conceptsMap} chapterId={chapter.id} onDeleteScene={onDeleteScene} />)
           ) : (
-            <p className="text-xs text-slate-500 p-2">No scenes in this chapter yet.</p>
+            <p className="text-xs text-slate-500 p-2">{t('plan_view_chapter_card_no_scenes')}</p>
           )}
         </ScrollArea>
         {/* Container for buttons */}
         <div className="flex items-center border-t mt-auto">
           <Button className="w-1/3 rounded-r-none" onClick={() => setIsSceneModalOpen(true)}>
-            <PlusCircle className="h-4 w-4 mr-2" /> Scene
+            <PlusCircle className="h-4 w-4 mr-2" /> {t('plan_view_chapter_card_button_add_scene')}
           </Button>
           {chapterScenes.length <= 1 ? (
             <Button 
@@ -132,7 +135,7 @@ const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onD
               variant="outline"
               onClick={() => onSwitchToWriteTab(chapter.id, chapterScenes.length === 1 ? chapterScenes[0].id : null)}
             >
-              <PenTool className="h-4 w-4 mr-2" /> Write
+              <PenTool className="h-4 w-4 mr-2" /> {t('plan_view_chapter_card_button_write')}
             </Button>
           ) : (
             <DropdownMenu>
@@ -141,13 +144,13 @@ const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onD
                   className="w-2/3 rounded-l-none border-primary flex items-center justify-center" 
                   variant="outline"
                 >
-                  <PenTool className="h-4 w-4 mr-2" /> Write <ChevronDown className="h-4 w-4 ml-1" />
+                  <PenTool className="h-4 w-4 mr-2" /> {t('plan_view_chapter_card_button_write')} <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[--radix-dropdown-menu-trigger-width]">
                 {chapterScenes.map(scene => (
                   <DropdownMenuItem key={scene.id} onClick={() => onSwitchToWriteTab(chapter.id, scene.id)}>
-                    {scene.name || "Unnamed Scene"}
+                    {scene.name || t('ai_novel_writer_unnamed_scene')}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -163,6 +166,7 @@ const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onD
 
 // Accept onSwitchToWriteTab prop
 const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteChapter, onDeleteScene, onSwitchToWriteTab }) => {
+  const { t } = useTranslation();
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
   const [isActModalOpen, setIsActModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -182,8 +186,8 @@ const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteC
       <ConfirmModal
         open={isConfirmModalOpen}
         onOpenChange={setIsConfirmModalOpen}
-        title="Delete Act"
-        description={`Are you sure you want to delete act "${act.name}"? This will also delete all its chapters and scenes.`}
+        title={t('plan_view_act_section_confirm_delete_title')}
+        description={t('plan_view_act_section_confirm_delete_description', { actName: act.name })}
         onConfirm={confirmDelete}
       />
       <div className="mb-6 w-full" style={{ minHeight: '200px' }}>
@@ -193,7 +197,7 @@ const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteC
           </h2>
           <div className="flex items-center gap-2"> {/* Added flex container for buttons */}
             <Button onClick={() => setIsChapterModalOpen(true)} size="sm" variant="outline">
-              <PlusCircle className="h-4 w-4 mr-2" /> Add Chapter
+              <PlusCircle className="h-4 w-4 mr-2" /> {t('plan_view_act_section_button_add_chapter')}
             </Button>
             <Button variant="ghost" size="icon" onClick={handleDelete} className="text-primary hover:text-primary-foreground hover:bg-destructive/90">
               <Trash2 className="h-5 w-5" />
@@ -217,7 +221,7 @@ const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteC
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-500 p-2">No chapters in this act yet. Click "Add Chapter".</p>
+          <p className="text-sm text-slate-500 p-2">{t('plan_view_act_section_no_chapters', { addChapterButtonText: t('plan_view_act_section_button_add_chapter') })}</p>
         )}
       </div>
       <ChapterFormModal open={isChapterModalOpen} onOpenChange={setIsChapterModalOpen} actId={act.id} />
@@ -228,6 +232,7 @@ const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteC
 
 // Accept onSwitchToWriteTab and novelId props from App.jsx
 const PlanView = ({ onSwitchToWriteTab, novelId }) => {
+  const { t } = useTranslation();
   const {
     acts, chapters, scenes, concepts, actOrder,
     addAct: addActToContext,
@@ -396,13 +401,13 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
   return (
     <ScrollArea className="h-[calc(100vh-4rem)] p-4"> {/* Fixed height calculation: viewport height minus header */}
       <div className="flex items-center gap-4 mb-6"> {/* Use flex, align items center, add gap, keep bottom margin */}
-        <h1 className="text-2xl font-bold">Story Plan</h1>
+        <h1 className="text-2xl font-bold">{t('plan_view_title')}</h1>
         <Button 
           onClick={() => setIsImportModalOpen(true)} 
           variant={orderedActs.length === 0 ? "default" : "outline"} 
           size={orderedActs.length === 0 ? "default" : "sm"}
         >
-          <NotebookPen  className="h-4 w-4 mr-2" /> Import Outline
+          <NotebookPen  className="h-4 w-4 mr-2" /> {t('plan_view_button_import_outline')}
         </Button>
       </div>
 
@@ -423,7 +428,7 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
         ))
       ) : (
         <div className="text-center py-10">
-          <p className="text-slate-500 mb-4">Your story plan is empty.</p>
+          <p className="text-slate-500 mb-4">{t('plan_view_empty_message')}</p>
           {/* Add New Act button will be below if no acts, or after all acts if they exist */}
         </div>
       )}
@@ -431,7 +436,7 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
       {/* "Add New Act" button, left-aligned, under all acts or under the empty message */}
       <div className="mt-6 p-2">
         <Button onClick={() => setIsActModalOpen(true)} variant="outline">
-          <PlusCircle className="h-4 w-4 mr-2" /> Add New Act
+          <PlusCircle className="h-4 w-4 mr-2" /> {t('plan_view_button_add_act')}
         </Button>
       </div>
       
@@ -449,7 +454,7 @@ const PlanView = ({ onSwitchToWriteTab, novelId }) => {
             size="icon"
             className="rounded-full w-12 h-12 shadow-lg hover:scale-105 transition-transform"
             onClick={() => setIsAIChatModalOpen(true)}
-            title="Open AI Chat"
+            title={t('plan_view_fab_ai_chat_title')}
           >
             <MessageSquare className="h-6 w-6" />
           </Button>

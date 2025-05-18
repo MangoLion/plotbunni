@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Import useTranslation
 import NovelCard from './NovelCard';
 import AddNewNovelCard from './AddNewNovelCard';
 import CreateNovelFormModal from './CreateNovelFormModal';
 import SettingsView from '@/components/settings/SettingsView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Rabbit, Sun, Moon, UploadCloud, Settings } from 'lucide-react';
+import { Search, Rabbit, Sun, Moon, UploadCloud, Settings, Languages } from 'lucide-react'; // Add Languages icon
 import { useSettings } from '@/context/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,12 +28,19 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import * as idb from '@/lib/indexedDb';
 import { getDefaultConceptTemplates } from '@/data/models';
 
 const NovelGridView = () => {
+  const { t, i18n } = useTranslation(); // Initialize useTranslation
   const [novels, setNovels] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -42,26 +50,28 @@ const NovelGridView = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingNovel, setEditingNovel] = useState(null); // { id, name }
+  const [editingNovel, setEditingNovel] = useState(null);
   const [editNovelName, setEditNovelName] = useState('');
 
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [novelToDelete, setNovelToDelete] = useState(null); // novelId
+  const [novelToDelete, setNovelToDelete] = useState(null);
 
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
-  // Get theme settings from context
-  const { themeMode, activeOsTheme, setThemeMode } = useSettings();
-
-  // Determine the effective theme for the toggle button display
+  // Updated to use setLanguage from context
+  const { themeMode, activeOsTheme, setThemeMode, language: currentLanguage, setLanguage } = useSettings();
   const effectiveTheme = themeMode === 'system' ? activeOsTheme : themeMode;
 
-  // Toggle between explicit light and dark modes
   const handleThemeToggle = () => {
     const nextTheme = effectiveTheme === 'light' ? 'dark' : 'light';
-    setThemeMode(nextTheme); // Use the context function to set the mode
+    setThemeMode(nextTheme);
+  };
+
+  // changeLanguage function now uses setLanguage from context
+  const changeLanguage = (lng) => {
+    setLanguage(lng); // This will also call i18n.changeLanguage internally via context
   };
 
   const fetchNovels = useCallback(async () => {
@@ -69,8 +79,6 @@ const NovelGridView = () => {
     setError(null);
     try {
       const novelMetadatas = await idb.getAllNovelMetadata();
-      
-      // Fetch full data for each novel to get coverImage and synopsis
       const enrichedNovels = await Promise.all(
         novelMetadatas.map(async (meta) => {
           const novelData = await idb.getNovelData(meta.id);
@@ -81,17 +89,15 @@ const NovelGridView = () => {
           };
         })
       );
-
-      // Sort by lastModified date, newest first
       enrichedNovels.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
       setNovels(enrichedNovels);
     } catch (err) {
       console.error("Error fetching novels:", err);
-      setError("Failed to load novels. Please try refreshing the page.");
+      setError(t('error_load_novels'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]); // Add t to dependencies
 
   useEffect(() => {
     fetchNovels();
@@ -104,8 +110,8 @@ const NovelGridView = () => {
   const handleCreateNovelWithDetails = async (novelDetails) => {
     if (!novelDetails.novelName || !novelDetails.novelName.trim()) {
       toast({
-        title: "Novel Name Required",
-        description: "Please provide a name for your novel.",
+        title: t('novel_name_required_title'),
+        description: t('novel_name_required_desc'),
         variant: "destructive",
       });
       return;
@@ -113,9 +119,8 @@ const NovelGridView = () => {
     setIsLoading(true);
     try {
       const newNovelMeta = await idb.createNovel(novelDetails.novelName.trim());
-      
       const fullNovelData = {
-        id: newNovelMeta.id, // Ensure ID is part of the saved data structure if models.js expects it
+        id: newNovelMeta.id,
         authorName: novelDetails.authorName || '',
         synopsis: novelDetails.synopsis || '',
         coverImage: novelDetails.coverImage || null,
@@ -134,24 +139,22 @@ const NovelGridView = () => {
         creation_date: Date.now(),
         last_modified_date: Date.now(),
       };
-
       await idb.saveNovelData(newNovelMeta.id, fullNovelData);
-      
       setIsCreateFormModalOpen(false);
       toast({
-        title: "Novel Created!",
-        description: `"${novelDetails.novelName.trim()}" has been successfully created.`,
+        title: t('novel_created_title'),
+        description: t('novel_created_desc', { novelName: novelDetails.novelName.trim() }),
       });
-      await fetchNovels(); // Refresh the list to show the new novel
-      navigate(`/novel/${newNovelMeta.id}`); // Navigate to the new novel
+      await fetchNovels();
+      navigate(`/novel/${newNovelMeta.id}`);
     } catch (err) {
       console.error("Error creating novel with details:", err);
       toast({
-        title: "Creation Failed",
-        description: `Could not create novel. ${err.message}`,
+        title: t('creation_failed_title'),
+        description: t('creation_failed_desc', { errorMessage: err.message }),
         variant: "destructive",
       });
-      setError("Failed to create novel.");
+      setError(t('error_create_novel'));
     } finally {
       setIsLoading(false);
     }
@@ -163,10 +166,10 @@ const NovelGridView = () => {
       await idb.deleteNovel(novelToDelete);
       setNovelToDelete(null);
       setIsDeleteAlertOpen(false);
-      fetchNovels(); // Refresh the list
+      fetchNovels();
     } catch (err) {
       console.error("Error deleting novel:", err);
-      setError("Failed to delete novel.");
+      setError(t('error_delete_novel'));
     }
   };
   
@@ -183,7 +186,8 @@ const NovelGridView = () => {
 
   const handleEditNovel = async () => {
     if (!editingNovel || !editNovelName.trim()) {
-      alert("Novel name cannot be empty.");
+      // Using alert for simplicity as in original, can be changed to toast
+      alert(t('novel_name_required_desc')); 
       return;
     }
     try {
@@ -193,7 +197,7 @@ const NovelGridView = () => {
       fetchNovels();
     } catch (err) {
       console.error("Error updating novel name:", err);
-      setError("Failed to update novel name.");
+      setError(t('error_update_novel'));
     }
   };
 
@@ -206,8 +210,8 @@ const NovelGridView = () => {
     if (file) {
       if (file.type !== 'application/json') {
         toast({
-          title: "Invalid File Type",
-          description: "Please upload a valid JSON file.",
+          title: t('invalid_file_type_title'),
+          description: t('invalid_file_type_desc'),
           variant: "destructive",
         });
         return;
@@ -219,12 +223,11 @@ const NovelGridView = () => {
       } catch (err) {
         console.error("Error reading or parsing file:", err);
         toast({
-          title: "Import Error",
-          description: "Failed to read or parse the JSON file. Ensure it's valid.",
+          title: t('import_error_title'),
+          description: t('import_error_parse_desc'),
           variant: "destructive",
         });
       } finally {
-        // Reset file input to allow uploading the same file again if needed
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -235,23 +238,14 @@ const NovelGridView = () => {
   const handleImportNovel = async (importedData) => {
     if (!importedData || typeof importedData.novelName !== 'string') {
       toast({
-        title: "Invalid JSON Format",
-        description: "The JSON file is missing 'novelName' or is improperly formatted.",
+        title: t('invalid_json_format_title'),
+        description: t('invalid_json_format_desc'),
         variant: "destructive",
       });
       return;
     }
-
     try {
-      // 1. Create novel metadata
       const newNovelMeta = await idb.createNovel(importedData.novelName);
-      
-      // 2. Prepare the full novel data object for saving
-      // The structure exported by NovelOverviewTab is:
-      // { novelName, authorName, synopsis, coverImage, concepts, acts, chapters, scenes, actOrder }
-      // The structure expected by saveNovelData is:
-      // { authorName, synopsis, coverImage, concepts, acts, chapters, scenes, actOrder }
-      // novelName is handled by createNovel.
       const novelDataToSave = {
         authorName: importedData.authorName || '',
         synopsis: importedData.synopsis || '',
@@ -262,20 +256,17 @@ const NovelGridView = () => {
         scenes: importedData.scenes || {},
         actOrder: importedData.actOrder || [],
       };
-
-      // 3. Save the full novel data
       await idb.saveNovelData(newNovelMeta.id, novelDataToSave);
-
       toast({
-        title: "Import Successful",
-        description: `Novel "${importedData.novelName}" has been imported.`,
+        title: t('import_successful_title'),
+        description: t('import_successful_desc', { novelName: importedData.novelName }),
       });
-      fetchNovels(); // Refresh the list
+      fetchNovels();
     } catch (err) {
       console.error("Error importing novel:", err);
       toast({
-        title: "Import Error",
-        description: `Failed to import novel. ${err.message}`,
+        title: t('import_error_title'),
+        description: t('import_error_general_desc', { errorMessage: err.message }),
         variant: "destructive",
       });
     }
@@ -286,7 +277,7 @@ const NovelGridView = () => {
   );
 
   if (isLoading) {
-    return <div className="p-4 text-center">Loading novels...</div>;
+    return <div className="p-4 text-center">{t('loading_novels')}</div>;
   }
 
   return (
@@ -294,9 +285,33 @@ const NovelGridView = () => {
       <header className="flex items-center justify-between p-4 border-b bg-background shadow-sm">
         <div className="flex items-center">
           <Rabbit className="h-7 w-7 mr-2 text-primary" />
-          <h1 className="text-2xl font-bold">Plot Bunni <span className="hidden sm:inline">- My Novels</span></h1>
+          <h1 className="text-2xl font-bold">{t('app_title')} <span className="hidden sm:inline">- {t('my_novels_header').split(' - ')[1]}</span></h1>
         </div>
         <div className="flex items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="ml-2" title={t('language_switcher_tooltip')}>
+                <Languages className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => changeLanguage('en')} disabled={currentLanguage === 'en'}>
+                English
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeLanguage('es')} disabled={currentLanguage === 'es'}>
+                Espanol
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeLanguage('cn')} disabled={currentLanguage === 'cn'}>
+                中文
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeLanguage('de')} disabled={currentLanguage === 'de'}>
+                Deutsch
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeLanguage('rus')} disabled={currentLanguage === 'rus'}>
+                Pусский
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <input
             type="file"
             ref={fileInputRef}
@@ -304,26 +319,26 @@ const NovelGridView = () => {
             accept=".json"
             className="hidden"
           />
-          <Button variant="ghost" size="icon" onClick={triggerFileUpload} className="ml-2" title="Upload Novel JSON">
+          <Button variant="ghost" size="icon" onClick={triggerFileUpload} className="ml-2" title={t('upload_novel_tooltip')}>
             <UploadCloud className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsSettingsModalOpen(true)} className="ml-2" title="Open Settings">
+          <Button variant="ghost" size="icon" onClick={() => setIsSettingsModalOpen(true)} className="ml-2" title={t('settings_tooltip')}>
             <Settings className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleThemeToggle} className="ml-2" title={`Switch to ${effectiveTheme === 'light' ? 'dark' : 'light'} mode`}>
+          <Button variant="ghost" size="icon" onClick={handleThemeToggle} className="ml-2" title={effectiveTheme === 'light' ? t('theme_toggle_tooltip_light') : t('theme_toggle_tooltip_dark')}>
             {effectiveTheme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
         </div>
       </header>
 
       <main className="flex-grow p-4 md:p-6">
-        <ScrollArea className="h-[calc(100vh-4rem)] p-4">
+        <ScrollArea className="h-[calc(100vh-4rem)] p-4"> {/* Adjusted height if header changes */}
           <div className="mb-6 flex items-center gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search novels by name..."
+              placeholder={t('search_novels_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-full"
@@ -346,85 +361,77 @@ const NovelGridView = () => {
           <AddNewNovelCard onClick={() => setIsCreateFormModalOpen(true)} />
         </div>
 
-        {novels.length === 0 && !isLoading && ( // Show if no novels exist at all
-          <div className="text-center py-10 mt-[-2rem]"> {/* Adjust margin if grid has AddNewNovelCard already */}
+        {novels.length === 0 && !isLoading && (
+          <div className="text-center py-10 mt-[-2rem]">
             <p className="text-xl text-muted-foreground">
-              No novels yet. Click the '+' card to create your first one!
+              {t('no_novels_yet')}
             </p>
           </div>
         )}
 
-        {novels.length > 0 && filteredNovels.length === 0 && searchTerm && ( // Show if novels exist but none match search
+        {novels.length > 0 && filteredNovels.length === 0 && searchTerm && (
            <div className="text-center py-10">
             <p className="text-xl text-muted-foreground">
-              No novels match your search for "{searchTerm}".
+              {t('no_novels_match_search', { searchTerm: searchTerm })}
             </p>
           </div>
         )}
         </ScrollArea>
       </main>
 
-      {/* Create Novel Form Modal (New) */}
       <CreateNovelFormModal
         isOpen={isCreateFormModalOpen}
         onClose={() => setIsCreateFormModalOpen(false)}
         onCreateNovel={handleCreateNovelWithDetails}
       />
 
-      {/* Settings Modal */}
       <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
-        <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0"> {/* Adjusted for better SettingsView display */}
-          {/* DialogHeader can be minimal or removed if SettingsView has its own title */}
-          <DialogHeader className="p-6 pb-0 sr-only"> {/* Keep for accessibility, hide visually if redundant */}
-            <DialogTitle>Application Settings</DialogTitle>
-            <DialogDescription>Configure application settings.</DialogDescription>
+        <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-0 sr-only">
+            <DialogTitle>{t('settings_dialog_title')}</DialogTitle>
+            <DialogDescription>{t('settings_dialog_desc')}</DialogDescription>
           </DialogHeader>
-          {/* SettingsView will provide its own scrollability and padding */}
-          <div className="flex-grow overflow-hidden"> {/* This div ensures SettingsView's ScrollArea works correctly */}
+          <div className="flex-grow overflow-hidden">
             <SettingsView />
           </div>
-          {/* No explicit DialogFooter needed if SettingsView handles its own actions or if it's just for display */}
         </DialogContent>
       </Dialog>
       
-      {/* Edit Novel Name Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename Novel</DialogTitle>
-            <DialogDescription>Enter a new name for your novel.</DialogDescription>
+            <DialogTitle>{t('rename_novel_dialog_title')}</DialogTitle>
+            <DialogDescription>{t('rename_novel_dialog_desc')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <Label htmlFor="edit-novel-name">Novel Name</Label>
+            <Label htmlFor="edit-novel-name">{t('novel_name_label')}</Label>
             <Input
               id="edit-novel-name"
               value={editNovelName}
               onChange={(e) => setEditNovelName(e.target.value)}
-              placeholder="e.g., The Great Adventure"
+              placeholder={t('novel_name_placeholder')}
               autoFocus
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsEditModalOpen(false); setEditingNovel(null); }}>Cancel</Button>
-            <Button onClick={handleEditNovel}>Save Changes</Button>
+            <Button variant="outline" onClick={() => { setIsEditModalOpen(false); setEditingNovel(null); }}>{t('cancel')}</Button>
+            <Button onClick={handleEditNovel}>{t('save_changes_button')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Alert */}
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirm_delete_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the novel
-              "{novels.find(n => n.id === novelToDelete)?.name}" and all its data.
+              {t('confirm_delete_desc', { novelName: novels.find(n => n.id === novelToDelete)?.name || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNovelToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setNovelToDelete(null)}>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteNovel} className="bg-destructive hover:bg-destructive/90">
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

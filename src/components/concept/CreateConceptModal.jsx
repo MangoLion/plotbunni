@@ -1,4 +1,5 @@
 import React, { useState, useEffect  } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +25,7 @@ import ManageTemplatesModal from './ManageTemplatesModal'; // Import ManageTempl
 const NO_TEMPLATE_VALUE = "__no_template__"; // Constant for "None" option
 
 const CreateConceptModal = ({ children, open, onOpenChange }) => {
+  const { t } = useTranslation();
   const { addConcept, conceptTemplates } = useData(); // Get conceptTemplates
   const [name, setName] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState(NO_TEMPLATE_VALUE); // Default to NO_TEMPLATE_VALUE
@@ -109,21 +111,21 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
         {children && <DialogTrigger asChild>{children}</DialogTrigger>}
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
-            <DialogTitle>Create New Concept</DialogTitle>
+            <DialogTitle>{t('concept_cache_tooltip_create_new')}</DialogTitle>
             <DialogDescription>
-              Fill in the details for your new concept, optionally starting from a template. Click save when you're done.
+              {t('create_concept_modal_description')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="template" className="text-right">Template</Label>
+              <Label htmlFor="template" className="text-right">{t('concept_form_modal_label_template')}</Label>
               <div className="col-span-2">
                 <Select value={selectedTemplateId} onValueChange={applyTemplate}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a template (optional)" />
+                    <SelectValue placeholder={t('create_concept_modal_placeholder_template')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NO_TEMPLATE_VALUE}>None</SelectItem>
+                    <SelectItem value={NO_TEMPLATE_VALUE}>{t('concept_form_modal_template_none')}</SelectItem>
                     {conceptTemplates && conceptTemplates.map(template => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
@@ -133,45 +135,45 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
                 </Select>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsManageTemplatesModalOpen(true)} className="col-span-1">
-                <Settings className="h-4 w-4 mr-1 sm:mr-2" /> Manage
+                <Settings className="h-4 w-4 mr-1 sm:mr-2" /> {t('concept_form_modal_button_manage_templates')}
               </Button>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name*</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="Concept Name (e.g., The Oracle)" />
+              <Label htmlFor="name" className="text-right">{t('concept_form_modal_label_name_required')}</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder={t('concept_form_modal_placeholder_name')} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="aliases" className="text-right">Aliases</Label>
-            <Input id="aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} className="col-span-3" placeholder="e.g., Seer, Prophet (comma-separated)" />
+            <Label htmlFor="aliases" className="text-right">{t('concept_form_modal_label_aliases')}</Label>
+            <Input id="aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} className="col-span-3" placeholder={t('concept_form_modal_placeholder_aliases')} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tags" className="text-right">Tags</Label>
-            <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} className="col-span-3" placeholder="e.g., character, prophecy, location (comma-separated)" />
+            <Label htmlFor="tags" className="text-right">{t('concept_form_modal_label_tags')}</Label>
+            <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} className="col-span-3" placeholder={t('concept_form_modal_placeholder_tags')} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="priority" className="text-right">Priority</Label>
+            <Label htmlFor="priority" className="text-right">{t('concept_form_modal_label_priority')}</Label>
             <Input id="priority" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detailed explanation of the concept (AI visible)" rows={4}/>
+            <Label htmlFor="description">{t('concept_form_modal_tab_description')}</Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('concept_form_modal_placeholder_description')} rows={4}/>
           </div>
           <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Concept notes (not shown to AI)" rows={3}/>
+            <Label htmlFor="notes">{t('concept_form_modal_tab_notes')}</Label>
+            <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('concept_form_modal_placeholder_notes')} rows={3}/>
           </div>
 
           {/* Image Upload/URL Section */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="image">Image</Label>
+            <Label htmlFor="image">{t('concept_form_modal_label_image')}</Label>
             <div className="flex items-center gap-2">
               {useImageUrl ? (
                 <Input
                   id="image-url"
                   value={image}
                   onChange={(e) => setImage(e.target.value)}
-                  placeholder="Optional: URL for an image"
+                  placeholder={t('concept_form_modal_placeholder_image_url')}
                   className="flex-grow"
                 />
               ) : (
@@ -200,7 +202,7 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setImage('')}
-                  title="Clear Image"
+                  title={t('concept_form_modal_tooltip_clear_image')}
                 >
                   <CircleX className="h-4 w-4" />
                 </Button>
@@ -208,7 +210,7 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
             </div>
             {/* Toggle between URL and File Upload */}
             <div className="flex items-center justify-between">
-              <Label htmlFor="image-type-switch">{useImageUrl ? 'Use Image URL' : 'Upload Image (Base64)'}</Label>
+              <Label htmlFor="image-type-switch">{useImageUrl ? t('concept_form_modal_label_image_type_url') : t('concept_form_modal_label_image_type_upload')}</Label>
               <Switch
                 id="image-type-switch"
                 checked={useImageUrl}
@@ -220,15 +222,15 @@ const CreateConceptModal = ({ children, open, onOpenChange }) => {
           {/* Display Image if exists */}
           {image && (
             <div className="flex justify-center mt-2">
-              <img src={image} alt="Concept Preview" className="max-w-full max-h-48 object-contain" />
+              <img src={image} alt={t('create_concept_modal_alt_text_concept_preview')} className="max-w-full max-h-48 object-contain" />
             </div>
           )}
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">Cancel</Button>
+            <Button type="button" variant="outline">{t('cancel')}</Button>
           </DialogClose>
-          <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>Save Concept</Button>
+          <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>{t('concept_form_modal_button_save_concept')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +17,7 @@ import { useData } from '@/context/DataContext';
 import { createConceptTemplate } from '@/data/models'; // We'll use this if creating a new one
 
 const TemplateFormModal = ({ open, onOpenChange, templateToEdit, onSave }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   // templateData fields
   const [templateNameField, setTemplateNameField] = useState(''); // Name field within templateData
@@ -73,56 +75,56 @@ const TemplateFormModal = ({ open, onOpenChange, templateToEdit, onSave }) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>{templateToEdit ? 'Edit Concept Template' : 'Create New Concept Template'}</DialogTitle>
+          <DialogTitle>{templateToEdit ? t('template_form_modal_title_edit') : t('template_form_modal_title_create')}</DialogTitle>
           <DialogDescription>
-            {templateToEdit ? 'Modify the details of this concept template.' : 'Define a new template for creating concepts.'}
+            {templateToEdit ? t('template_form_modal_description_edit') : t('template_form_modal_description_create')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="template-display-name" className="text-right">Template Name*</Label>
-            <Input id="template-display-name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="Display Name (e.g., Character, Location)" />
+            <Label htmlFor="template-display-name" className="text-right">{t('template_form_modal_label_template_name_required')}</Label>
+            <Input id="template-display-name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder={t('template_form_modal_placeholder_template_name')} />
           </div>
           
-          <p className="text-sm text-muted-foreground col-span-full pt-2 pb-1">Pre-filled Concept Fields:</p>
+          <p className="text-sm text-muted-foreground col-span-full pt-2 pb-1">{t('template_form_modal_text_prefilled_fields')}</p>
 
           <div className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-2">
-            <Label htmlFor="template-concept-name" className="text-right whitespace-nowrap">Name</Label>
-            <Input id="template-concept-name" value={templateNameField} onChange={(e) => setTemplateNameField(e.target.value)} placeholder="Default Concept Name (optional)" />
+            <Label htmlFor="template-concept-name" className="text-right whitespace-nowrap">{t('template_form_modal_label_concept_name')}</Label>
+            <Input id="template-concept-name" value={templateNameField} onChange={(e) => setTemplateNameField(e.target.value)} placeholder={t('template_form_modal_placeholder_concept_name')} />
           </div>
           <div className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-2">
-            <Label htmlFor="template-aliases" className="text-right whitespace-nowrap">Aliases</Label>
-            <Input id="template-aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="e.g., Seer, Prophet (comma-separated)" />
+            <Label htmlFor="template-aliases" className="text-right whitespace-nowrap">{t('template_form_modal_label_aliases')}</Label>
+            <Input id="template-aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder={t('template_form_modal_placeholder_aliases')} />
           </div>
           <div className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-2">
-            <Label htmlFor="template-tags" className="text-right whitespace-nowrap">Tags</Label>
-            <Input id="template-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., protagonist, magical (comma-separated)" />
+            <Label htmlFor="template-tags" className="text-right whitespace-nowrap">{t('template_form_modal_label_tags')}</Label>
+            <Input id="template-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('template_form_modal_placeholder_tags')} />
           </div>
           <div className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-2">
-            <Label htmlFor="template-priority" className="text-right whitespace-nowrap">Priority</Label>
+            <Label htmlFor="template-priority" className="text-right whitespace-nowrap">{t('template_form_modal_label_priority')}</Label>
             <Input id="template-priority" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
           </div>
           
           {/* Description and Notes remain full width */}
           <div className="grid grid-cols-1 gap-y-1 mt-2">
-            <Label htmlFor="template-description">Description (Pre-filled)</Label>
-            <Textarea id="template-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Default description for concepts using this template." rows={3}/>
+            <Label htmlFor="template-description">{t('template_form_modal_label_description_prefilled')}</Label>
+            <Textarea id="template-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('template_form_modal_placeholder_description')} rows={3}/>
           </div>
           <div className="grid grid-cols-1 gap-y-1 mt-2">
-            <Label htmlFor="template-notes">Notes (Pre-filled)</Label>
-            <Textarea id="template-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Default notes for concepts using this template." rows={2}/>
+            <Label htmlFor="template-notes">{t('template_form_modal_label_notes_prefilled')}</Label>
+            <Textarea id="template-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('template_form_modal_placeholder_notes')} rows={2}/>
           </div>
 
           <div className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-2 mt-2">
-            <Label htmlFor="template-image" className="text-right whitespace-nowrap">Image URL</Label>
-            <Input id="template-image" value={image} onChange={(e) => setImage(e.target.value)} placeholder="Optional: Default image URL or Base64" />
+            <Label htmlFor="template-image" className="text-right whitespace-nowrap">{t('template_form_modal_label_image_url')}</Label>
+            <Input id="template-image" value={image} onChange={(e) => setImage(e.target.value)} placeholder={t('template_form_modal_placeholder_image_url')} />
           </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">Cancel</Button>
+            <Button type="button" variant="outline">{t('cancel')}</Button>
           </DialogClose>
-          <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>Save Template</Button>
+          <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>{t('template_form_modal_button_save_template')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

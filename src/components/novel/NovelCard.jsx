@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, Edit3 } from 'lucide-react';
@@ -15,6 +16,7 @@ import { Trash2, Edit3 } from 'lucide-react';
  * @param {function} props.onEditNovel - Callback function for edit icon, passed novelId.
  */
 const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
+  const { t } = useTranslation();
   const { id, name, coverImage } = novel;
 
   const handleCardClick = () => {
@@ -40,7 +42,7 @@ const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
         {coverImage ? (
           <img 
             src={coverImage} 
-            alt={`${name} cover`} 
+            alt={t('novel_card_cover_alt', { name })}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
           />
         ) : (
@@ -50,10 +52,10 @@ const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
         )}
         {/* Icon buttons positioned over the image */}
         <div className="absolute top-2 right-2 z-10 flex space-x-1.5 bg-black/20 p-1 rounded-md backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-          <Button variant="ghost" size="icon" onClick={handleEditClick} title="Rename Novel" className="h-7 w-7 text-white hover:bg-white/20 hover:text-white">
+          <Button variant="ghost" size="icon" onClick={handleEditClick} title={t('novel_card_rename_tooltip')} className="h-7 w-7 text-white hover:bg-white/20 hover:text-white">
             <Edit3 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleDeleteClick} title="Delete Novel" className="h-7 w-7 text-white hover:bg-red-500/50 hover:text-white">
+          <Button variant="ghost" size="icon" onClick={handleDeleteClick} title={t('novel_card_delete_tooltip')} className="h-7 w-7 text-white hover:bg-red-500/50 hover:text-white">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -64,7 +66,7 @@ const NovelCard = ({ novel, onOpenNovel, onDeleteNovel, onEditNovel }) => {
               className="text-white text-sm md:text-base lg:text-lg font-semibold text-center text-wrap" /* Adjusted text sizes for responsiveness */
               title={name}
             >
-              {name || 'Untitled Novel'}
+              {name || t('novel_card_untitled_novel')}
             </h2>
           </div>
         </div>

@@ -9,9 +9,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'; // Assuming this is the correct path
+import { useTranslation } from 'react-i18next';
 
-const ConfirmModal = ({ open, onOpenChange, title, description, onConfirm, confirmText = "Confirm", cancelText = "Cancel" }) => {
+const ConfirmModal = ({ open, onOpenChange, title, description, onConfirm, confirmText, cancelText }) => {
+  const { t } = useTranslation();
   if (!open) return null;
+
+  const finalConfirmText = confirmText || t('confirm');
+  const finalCancelText = cancelText || t('cancel');
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -21,12 +26,12 @@ const ConfirmModal = ({ open, onOpenChange, title, description, onConfirm, confi
           {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => onOpenChange(false)}>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>{finalCancelText}</AlertDialogCancel>
           <AlertDialogAction onClick={() => {
             onConfirm();
             onOpenChange(false);
           }}>
-            {confirmText}
+            {finalConfirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

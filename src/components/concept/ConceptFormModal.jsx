@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ import ManageTemplatesModal from './ManageTemplatesModal'; // Import ManageTempl
 const NO_TEMPLATE_VALUE = "__no_template__"; // Constant for "None" option
 
 const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
+  const { t } = useTranslation();
   const { addConcept, updateConcept, conceptTemplates } = useData(); // Get conceptTemplates from DataContext
   const [name, setName] = useState('');
   const [aliases, setAliases] = useState(''); // Comma-separated
@@ -138,23 +140,23 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
           }}
         >
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Concept' : 'Create New Concept'}</DialogTitle>
+            <DialogTitle>{isEditing ? t('concept_form_modal_title_edit') : t('concept_cache_tooltip_create_new')}</DialogTitle>
             <DialogDescription>
-              {isEditing ? 'Update the details for this concept.' : "Fill in the details for your new concept. Click save when you're done."}
+              {isEditing ? t('concept_form_modal_description_edit') : t('concept_form_modal_description_create')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             {/* Template Selector - Only show if not editing */}
             {!isEditing && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="concept-form-template" className="text-right">Template</Label>
+              <Label htmlFor="concept-form-template" className="text-right">{t('concept_form_modal_label_template')}</Label>
               <div className="col-span-2">
                 <Select value={selectedTemplateId} onValueChange={applyTemplate}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Apply a template (optional)" />
+                    <SelectValue placeholder={t('concept_form_modal_placeholder_template')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NO_TEMPLATE_VALUE}>None</SelectItem>
+                    <SelectItem value={NO_TEMPLATE_VALUE}>{t('concept_form_modal_template_none')}</SelectItem>
                     {conceptTemplates && conceptTemplates.map(template => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name} {template.isDefault ? '' : ''}
@@ -164,17 +166,17 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
                 </Select>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsManageTemplatesModalOpen(true)} className="col-span-1">
-                <Settings className="h-4 w-4 mr-1 sm:mr-2" /> Manage
+                <Settings className="h-4 w-4 mr-1 sm:mr-2" /> {t('concept_form_modal_button_manage_templates')}
               </Button>
             </div>
             )}
             
             {/* Name Field */}
             <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Name*</Label>
+            <Label htmlFor="name">{t('concept_form_modal_label_name_required')}</Label>
             <div className="flex items-center gap-2">
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="flex-grow" placeholder="Concept Name (e.g., The Oracle)" />
-              <Button variant="ghost" size="icon" onClick={() => setShowAliases(!showAliases)} title="Toggle Aliases Field">
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="flex-grow" placeholder={t('concept_form_modal_placeholder_name')} />
+              <Button variant="ghost" size="icon" onClick={() => setShowAliases(!showAliases)} title={t('concept_form_modal_tooltip_toggle_aliases')}>
                 <UserRoundPen className="h-4 w-4" />
               </Button>
             </div>
@@ -183,45 +185,45 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
           {/* Aliases Field (conditionally rendered) */}
           {showAliases && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="aliases">Aliases</Label>
-              <Input id="aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="e.g., Seer, Prophet (comma-separated)" />
+              <Label htmlFor="aliases">{t('concept_form_modal_label_aliases')}</Label>
+              <Input id="aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder={t('concept_form_modal_placeholder_aliases')} />
             </div>
           )}
 
           {/* Tags Field */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="tags">Tags</Label>
-            <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., character, prophecy, location (comma-separated)" />
+            <Label htmlFor="tags">{t('concept_form_modal_label_tags')}</Label>
+            <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('concept_form_modal_placeholder_tags')} />
           </div>
 
           {/* Description and Notes Tabs */}
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="description">{t('concept_form_modal_tab_description')}</TabsTrigger>
+              <TabsTrigger value="notes">{t('concept_form_modal_tab_notes')}</TabsTrigger>
             </TabsList>
             <TabsContent value="description">
               <div className="flex flex-col gap-2">
-                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detailed explanation of the concept (AI visible)" rows={4}/>
+                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('concept_form_modal_placeholder_description')} rows={4}/>
               </div>
             </TabsContent>
             <TabsContent value="notes">
               <div className="flex flex-col gap-2">
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Concept notes (not shown to AI)" rows={3}/>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('concept_form_modal_placeholder_notes')} rows={3}/>
               </div>
             </TabsContent>
           </Tabs>
 
           {/* Image Upload/URL Section */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="image">Image</Label>
+            <Label htmlFor="image">{t('concept_form_modal_label_image')}</Label>
             <div className="flex items-center gap-2"> {/* Added flex container */}
               {useImageUrl ? (
                 <Input
                   id="image"
                   value={image}
                   onChange={(e) => setImage(e.target.value)}
-                  placeholder="Optional: URL for an image"
+                  placeholder={t('concept_form_modal_placeholder_image_url')}
                   className="flex-grow"
                 />
               ) : (
@@ -250,7 +252,7 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setImage('')}
-                  title="Clear Image"
+                  title={t('concept_form_modal_tooltip_clear_image')}
                 >
                   <CircleX className="h-4 w-4" />
                 </Button>
@@ -258,7 +260,7 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
             </div>
             {/* Toggle between URL and File Upload */}
             <div className="flex items-center justify-between">
-              <Label htmlFor="image-type-switch">{useImageUrl ? 'Use Image URL' : 'Upload Image (Base64)'}</Label>
+              <Label htmlFor="image-type-switch">{useImageUrl ? t('concept_form_modal_label_image_type_url') : t('concept_form_modal_label_image_type_upload')}</Label>
               <Switch
                 id="image-type-switch"
                 checked={useImageUrl}
@@ -270,23 +272,23 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
           {/* Display Image if exists */}
           {image && (
             <div className="flex justify-center mt-2">
-              <img src={image} alt="Concept Image" className="max-w-full max-h-48 object-contain" />
+              <img src={image} alt={t('concept_form_modal_alt_text_concept_image')} className="max-w-full max-h-48 object-contain" />
             </div>
           )}
 
           {/* Priority field moved to bottom */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="priority">Priority</Label>
+            <Label htmlFor="priority">{t('concept_form_modal_label_priority')}</Label>
             <Input id="priority" type="number" value={priority} onChange={(e) => setPriority(Number(e.target.value))} />
           </div>
 
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
           </DialogClose>
           <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>
-            {isEditing ? 'Save Changes' : 'Save Concept'}
+            {isEditing ? t('save_changes_button') : t('concept_form_modal_button_save_concept')}
           </Button>
         </DialogFooter>
       </DialogContent>

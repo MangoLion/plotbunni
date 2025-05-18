@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Markdown from 'react-markdown';
 import {
   Dialog,
@@ -56,6 +57,7 @@ export const AIChatModal = ({
   setUserInput,
   onResetChat,
 }) => {
+  const { t } = useTranslation();
   const { systemPrompt, endpointProfiles, activeProfileId: globalActiveProfileId, taskSettings, TASK_KEYS, getActiveProfile } = useSettings();
   const { actOrder, acts, chapters, scenes, concepts, novelSynopsis } = useData();
 
@@ -135,7 +137,7 @@ export const AIChatModal = ({
   // For simplicity, making generateInitialContext a useCallback itself.
   const generateInitialContext = useCallback(async () => {
     if (!currentProfile || !actOrder || !acts || !chapters || !scenes || !concepts) {
-        setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "AI Profile or core novel data not ready." });
+        setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('ai_chat_modal_error_profile_or_data_unavailable') });
         setActuallySentNovelContextTokens(0);
         return;
     }
@@ -247,12 +249,12 @@ export const AIChatModal = ({
                 contextTargetData = scenesInRangeIds.length === 1 ? { targetSceneId: scenesInRangeIds[0], targetChapterId: scenesInRangeDetails[0].chapterId } : {};
 
             } else {
-                setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Selected scene range resulted in no content." });
+                setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('ai_chat_modal_error_range_no_content') });
                 setActuallySentNovelContextTokens(0);
                 return;
             }
         } else if (effectiveStartSceneId || effectiveEndSceneId) { // Range selected but resulted in no scenes
-            setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "Selected scene range is invalid or empty." });
+            setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('ai_chat_modal_error_range_invalid_or_empty') });
             setActuallySentNovelContextTokens(0);
             return;
         }
@@ -273,20 +275,20 @@ export const AIChatModal = ({
         targetData: contextTargetData,
         aiProfile: currentProfile,
         systemPromptText: systemPrompt,
-        userQueryText: taskSettings[TASK_KEYS.CHATTING]?.prompt || "Chat about the novel.",
+        userQueryText: taskSettings[TASK_KEYS.CHATTING]?.prompt || t('ai_chat_modal_default_chat_prompt'),
     });
     setInitialNovelContext(contextResult);
     setActuallySentNovelContextTokens(contextResult.estimatedTokens);
-  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId]);
+  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId, t]);
 
   const regenerateContextCallback = useCallback(async () => {
     if (!currentProfile || !actOrder || !acts || !chapters || !scenes || !concepts) {
-      setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: "AI Profile or core novel data not ready." });
+      setInitialNovelContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('ai_chat_modal_error_profile_or_data_unavailable') });
       setActuallySentNovelContextTokens(0);
       return;
     }
     await generateInitialContext();
-  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId, generateInitialContext]); 
+  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId, generateInitialContext, t]);
 
   useEffect(() => {
     if (isOpen && currentProfile) {
@@ -341,12 +343,12 @@ export const AIChatModal = ({
     const endpointConfig = getActiveProfile(taskSettings[TASK_KEYS.CHATTING]?.profileId || globalActiveProfileId);
 
     if (!endpointConfig || !endpointConfig.endpointUrl) {
-      setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: "AI endpoint not configured." }]);
+      setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
       setIsLoading(false);
       return;
     }
 
-    const baseSystemPrompt = systemPrompt || "You are a helpful assistant.";
+    const baseSystemPrompt = systemPrompt || t('ai_chat_modal_default_system_prompt');
     const baseSystemPromptTokens = tokenCount(baseSystemPrompt);
     const currentUserInputTokens = tokenCount(currentInputContent);
     const fullChatHistoryTokens = tokenCount(currentChatHistory.map(msg => msg.content).join('\n'));
@@ -396,7 +398,7 @@ export const AIChatModal = ({
         setChatMessages(prev => [...prev, {
             id: Date.now(),
             role: 'ai',
-            content: `Prompt too large (${finalPayloadTokenEstimate} / ${maxContextTokensForPrompt}). Try shortening input or resetting chat history if it's very long.`
+            content: t('ai_chat_modal_error_prompt_too_large', { currentTokens: finalPayloadTokenEstimate, maxTokens: maxContextTokensForPrompt })
         }]);
         setIsLoading(false);
         return;
@@ -407,7 +409,7 @@ export const AIChatModal = ({
     setUserInput(''); 
     
     const aiMessageId = Date.now() + 1;
-    setChatMessages(prev => [...prev, { id: aiMessageId, role: 'ai', content: '...' }]);
+    setChatMessages(prev => [...prev, { id: aiMessageId, role: 'ai', content: t('ai_chat_modal_thinking_indicator') }]);
 
     try {
       const messagesPayload = [];
@@ -488,10 +490,10 @@ export const AIChatModal = ({
             }
         }
     } catch (error) {
-      const errorMessage = error.name === 'AbortError' ? "Chat stopped." : `Error: ${error.message}`;
+      const errorKey = error.name === 'AbortError' ? t('ai_chat_modal_chat_stopped') : t('ai_chat_modal_error_generic', { errorMessage: error.message });
       setChatMessages(prev => prev.map(msg => {
         if (msg.id === aiMessageId) {
-            return { ...msg, content: (msg.content === '...' ? '' : msg.content) + `\n\n--- ${errorMessage} ---` };
+            return { ...msg, content: (msg.content === t('ai_chat_modal_thinking_indicator') ? '' : msg.content) + `\n\n--- ${errorKey} ---` };
         }
         return msg;
       }));
@@ -536,23 +538,23 @@ export const AIChatModal = ({
                   <Button variant="ghost" className="w-full justify-start px-0 hover:bg-transparent -ml-1">
                     {isRangeSelectorOpen ? <ChevronDown className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4 mr-2" />}
                     <Settings2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                    Select Scene Range for AI Context (Optional)
+                    {t('ai_chat_modal_scene_range_selector_title')}
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="startScene" className="text-xs">Start Scene</Label>
+                      <Label htmlFor="startScene" className="text-xs">{t('ai_chat_modal_label_start_scene')}</Label>
                       <Select 
                         value={selectedStartSceneId} 
                         onValueChange={(value) => setSelectedStartSceneId(value)} 
                         disabled={isLoading}
                       >
                         <SelectTrigger id="startScene">
-                          <SelectValue placeholder="From First Scene" />
+                          <SelectValue placeholder={t('ai_chat_modal_placeholder_from_first_scene')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>From First Scene</SelectItem>
+                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>{t('ai_chat_modal_placeholder_from_first_scene')}</SelectItem>
                           {sceneOptions.map(option => (
                             <SelectItem key={`start-${option.value}`} value={option.value}>
                               {option.label}
@@ -562,17 +564,17 @@ export const AIChatModal = ({
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="endScene" className="text-xs">End Scene</Label>
+                      <Label htmlFor="endScene" className="text-xs">{t('ai_chat_modal_label_end_scene')}</Label>
                       <Select 
                         value={selectedEndSceneId} 
                         onValueChange={(value) => setSelectedEndSceneId(value)} 
                         disabled={isLoading}
                       >
                         <SelectTrigger id="endScene">
-                          <SelectValue placeholder="To Last Scene" />
+                          <SelectValue placeholder={t('ai_chat_modal_placeholder_to_last_scene')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>To Last Scene</SelectItem>
+                          <SelectItem value={DEFAULT_SCENE_OPTION_VALUE}>{t('ai_chat_modal_placeholder_to_last_scene')}</SelectItem>
                           {sceneOptions.map(option => (
                             <SelectItem key={`end-${option.value}`} value={option.value}>
                               {option.label}
@@ -584,7 +586,7 @@ export const AIChatModal = ({
                   </div>
                   {isStartAfterEnd() && (
                     <p className="text-xs text-destructive text-center pt-1">
-                      Warning: Start scene is after the end scene. Context might be limited or unexpected.
+                      {t('ai_chat_modal_warning_start_after_end')}
                     </p>
                   )}
                 </CollapsibleContent>
@@ -601,34 +603,36 @@ export const AIChatModal = ({
                   }`}
                 />
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsConfirmResetModalOpen(true)} title="Reset Chat History" className="ml-2 flex-shrink-0">
+              <Button variant="ghost" size="icon" onClick={() => setIsConfirmResetModalOpen(true)} title={t('ai_chat_modal_tooltip_reset_chat_history')} className="ml-2 flex-shrink-0">
                 <RefreshCcw className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </Button>
             </div>
             <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="text-xs">
               <CollapsibleTrigger asChild>
                 <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground flex items-center">
-                  Memory Usage Details {isMemoryDetailOpen ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
+                  {t('ai_chat_modal_memory_usage_details_button')} {isMemoryDetailOpen ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-1 space-y-0.5 text-muted-foreground">
                 {currentProfile ? (
                   <>
-                    <p>System Prompt: {tokenBreakdown.system} tokens</p>
+                    <p>{t('ai_chat_modal_memory_system_prompt', { tokens: tokenBreakdown.system })}</p>
                     <p className="flex items-center">
                       {initialNovelContext.level === -1 && <TriangleAlert className="h-3 w-3 mr-1 text-destructive" />}
                       {initialNovelContext.level > 1 && initialNovelContext.level !== -1 && tokenBreakdown.novelData < initialNovelContext.estimatedTokens && <TriangleAlert className="h-3 w-3 mr-1 text-yellow-500" />}
                       <span className={cn(initialNovelContext.level === -1 && 'text-destructive', initialNovelContext.level > 1 && tokenBreakdown.novelData < initialNovelContext.estimatedTokens && 'text-yellow-600 dark:text-yellow-400')}>
-                        Novel Context (Lvl {initialNovelContext.level === -1 ? 'ERR' : initialNovelContext.level}{tokenBreakdown.novelData < initialNovelContext.estimatedTokens && initialNovelContext.estimatedTokens > 0 ? '*' : ''}):
+                        {initialNovelContext.level === -1 
+                          ? t('ai_chat_modal_memory_novel_context_label_error', { isTruncated: tokenBreakdown.novelData < initialNovelContext.estimatedTokens && initialNovelContext.estimatedTokens > 0 ? '*' : '' })
+                          : t('ai_chat_modal_memory_novel_context_label', { level: initialNovelContext.level, isTruncated: tokenBreakdown.novelData < initialNovelContext.estimatedTokens && initialNovelContext.estimatedTokens > 0 ? '*' : '' })}
                       </span>
-                      <span className="ml-1">{tokenBreakdown.novelData} tokens (Original: {initialNovelContext.estimatedTokens})</span>
+                      <span className="ml-1">{t('ai_chat_modal_memory_novel_context_tokens', { tokens: tokenBreakdown.novelData, originalTokens: initialNovelContext.estimatedTokens })}</span>
                     </p>
-                    <p>Chat History: {tokenBreakdown.chatHistory} tokens</p>
-                    <p>Current Input: {tokenBreakdown.userInput} tokens</p>
-                    <p className="pt-1 border-t mt-1 font-semibold">Est. Total (UI): {estimatedTotalTokensForDisplay} tokens / {maxContextTokensForPrompt} available</p>
-                    {tokenBreakdown.novelData < initialNovelContext.estimatedTokens && initialNovelContext.estimatedTokens > 0 && <p className="text-xs text-yellow-600 dark:text-yellow-400">(*Novel context truncated to fit chat history)</p>}
+                    <p>{t('ai_chat_modal_memory_chat_history', { tokens: tokenBreakdown.chatHistory })}</p>
+                    <p>{t('ai_chat_modal_memory_current_input', { tokens: tokenBreakdown.userInput })}</p>
+                    <p className="pt-1 border-t mt-1 font-semibold">{t('ai_chat_modal_memory_estimated_total', { estimatedTokens: estimatedTotalTokensForDisplay, maxTokens: maxContextTokensForPrompt })}</p>
+                    {tokenBreakdown.novelData < initialNovelContext.estimatedTokens && initialNovelContext.estimatedTokens > 0 && <p className="text-xs text-yellow-600 dark:text-yellow-400">{t('ai_chat_modal_memory_novel_context_truncated_note')}</p>}
                   </>
-                ) : <p>AI Profile not loaded.</p>}
+                ) : <p>{t('ai_chat_modal_memory_profile_not_loaded')}</p>}
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -636,15 +640,15 @@ export const AIChatModal = ({
           <ScrollArea ref={chatAreaRef} className="flex-grow p-4 space-y-4 bg-muted/20">
             {chatMessages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={cn("max-w-[75%] p-3 rounded-lg shadow", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background border', msg.content === '...' && 'italic text-muted-foreground')}>
+                <div className={cn("max-w-[75%] p-3 rounded-lg shadow", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background border', msg.content === t('ai_chat_modal_thinking_indicator') && 'italic text-muted-foreground')}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center">
                       {msg.role === 'ai' && <Bot className="h-4 w-4 mr-2 text-muted-foreground" />}
                       {msg.role === 'user' && <User className="h-4 w-4 mr-2 text-muted-background" />}
-                      <span className="text-xs font-medium">{msg.role === 'user' ? 'You' : 'AI Assistant'}</span>
+                      <span className="text-xs font-medium">{msg.role === 'user' ? t('ai_chat_modal_user_role_label') : t('ai_chat_modal_ai_role_label')}</span>
                     </div>
                     {editingMessageId !== msg.id && !isLoading && (
-                      <Button variant="ghost" size="iconSm" className="h-6 w-6 opacity-50 hover:opacity-100" onClick={() => { setEditingMessageId(msg.id); setEditText(msg.content);}} title="Edit message">
+                      <Button variant="ghost" size="iconSm" className="h-6 w-6 opacity-50 hover:opacity-100" onClick={() => { setEditingMessageId(msg.id); setEditText(msg.content);}} title={t('ai_chat_modal_tooltip_edit_message')}>
                         <Edit2 className="h-3 w-3" />
                       </Button>
                     )}
@@ -654,10 +658,10 @@ export const AIChatModal = ({
                       <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={Math.max(3, editText.split('\n').length)} className="text-sm mb-2" />
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => { setEditingMessageId(null); setEditText(""); }}>
-                          <XCircle className="h-4 w-4 mr-1" /> Cancel
+                          <XCircle className="h-4 w-4 mr-1" /> {t('cancel')}
                         </Button>
                         <Button size="sm" onClick={() => { setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, content: editText } : m)); setEditingMessageId(null); setEditText(""); }}>
-                          <Check className="h-4 w-4 mr-1" /> Save
+                          <Check className="h-4 w-4 mr-1" /> {t('ai_chat_modal_button_save_message')}
                         </Button>
                       </div>
                     </div>
@@ -672,27 +676,27 @@ export const AIChatModal = ({
                 </div>
               </div>
             ))}
-            {isLoading && chatMessages.length > 0 && chatMessages[chatMessages.length -1]?.content === '...' && ( /* Show thinking only if placeholder is last */
-                 <div className="flex justify-start"> <div className="max-w-[75%] p-3 rounded-lg shadow bg-background border italic text-muted-foreground"> <Bot className="h-4 w-4 mr-2 inline-block" /> Thinking...</div></div>
+            {isLoading && chatMessages.length > 0 && chatMessages[chatMessages.length -1]?.content === t('ai_chat_modal_thinking_indicator') && ( /* Show thinking only if placeholder is last */
+                 <div className="flex justify-start"> <div className="max-w-[75%] p-3 rounded-lg shadow bg-background border italic text-muted-foreground"> <Bot className="h-4 w-4 mr-2 inline-block" /> {t('ai_chat_modal_status_thinking')}</div></div>
             )}
           </ScrollArea>
 
           <div className="p-4 border-t">
             <div className="flex items-start space-x-2">
-              <Textarea value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="Ask a question or type your message..." className="flex-grow resize-none" rows={2} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} disabled={isLoading || editingMessageId !== null} />
+              <Textarea value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder={t('ai_chat_modal_placeholder_user_input')} className="flex-grow resize-none" rows={2} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} disabled={isLoading || editingMessageId !== null} />
               {isLoading ? (
-                <Button onClick={() => abortControllerRef.current?.abort()} variant="destructive" className="h-full" title="Stop Generating">
-                  <StopCircle className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">Stop</span>
+                <Button onClick={() => abortControllerRef.current?.abort()} variant="destructive" className="h-full" title={t('ai_chat_modal_tooltip_stop_generating')}>
+                  <StopCircle className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">{t('ai_chat_modal_button_stop')}</span>
                 </Button>
               ) : (
                 <Button onClick={handleSendMessage} disabled={!userInput.trim() || editingMessageId !== null} className="h-full">
-                  <Send className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">Send</span>
+                  <Send className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">{t('ai_chat_modal_button_send_message')}</span>
                 </Button>
               )}
             </div>
           </div>
         </div>
-        <ConfirmModal open={isConfirmResetModalOpen} onOpenChange={setIsConfirmResetModalOpen} title="Confirm Chat Reset" description="Are you sure you want to clear the entire chat history for this novel? This action cannot be undone." onConfirm={onResetChat} confirmText="Yes, Reset Chat" />
+        <ConfirmModal open={isConfirmResetModalOpen} onOpenChange={setIsConfirmResetModalOpen} title={t('ai_chat_modal_confirm_reset_title')} description={t('ai_chat_modal_confirm_reset_description')} onConfirm={onResetChat} confirmText={t('ai_chat_modal_confirm_reset_button_confirm')} />
       </DialogContent>
     </Dialog>
   );
