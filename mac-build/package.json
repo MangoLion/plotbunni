@@ -1,0 +1,32 @@
+{
+  "name": "plot-bunni",
+  "version": "1.0.0",
+  "description": "Plot Bunni - A Novel Writing App",
+  "main": "build/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "node scripts/prepare-build.js && electron-builder --mac",
+    "build:dir": "node scripts/prepare-build.js && electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.plotbunni.app",
+    "productName": "Plot Bunni",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "resources/**/*"
+    ],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "resources/icon.icns",
+      "category": "public.app-category.productivity"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
+    "fs-extra": "^11.2.0"
+  }
+}

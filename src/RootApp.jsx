@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  createBrowserRouter,
+  createHashRouter,
   RouterProvider,
   useParams,
 } from 'react-router-dom';
@@ -33,7 +33,7 @@ const NovelEditorLayout = () => {
   );
 };
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
     element: <NovelGridView />,
