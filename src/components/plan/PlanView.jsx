@@ -65,7 +65,7 @@ const SceneCard = ({ scene, conceptsMap, chapterId, actId, onDeleteScene, showRe
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <CardTitle className="text-sm font-medium truncate cursor-pointer hover:text-primary" onClick={() => setIsSceneModalOpen(true)}>{scene.name}</CardTitle>
+              <CardTitle className="text-sm font-medium cursor-pointer hover:text-primary" onClick={() => setIsSceneModalOpen(true)}>{scene.name}</CardTitle>
             </div>
             <div className="flex gap-1">
               {/* Edit button removed, title is now clickable */}
@@ -152,7 +152,7 @@ const ChapterCard = ({ chapter, scenes, conceptsMap, actId, onDeleteChapter, onD
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <CardTitle className="text-base flex-grow text-center truncate cursor-pointer hover:text-primary" onClick={() => setIsChapterModalOpen(true)}>{chapter.name}</CardTitle>
+              <CardTitle className="text-base flex-grow text-center cursor-pointer hover:text-primary" onClick={() => setIsChapterModalOpen(true)}>{chapter.name}</CardTitle>
             </div>
             <div className="flex gap-1">
               {/* Edit button removed, title is now clickable */}
@@ -238,7 +238,7 @@ const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteC
       />
       <div className="mb-6 w-full" style={{ minHeight: '200px' }}>
         <div className="p-2 flex justify-between items-center">
-          <div className="flex items-center flex-grow min-w-0">
+          <div className="flex items-center flex-grow min-w-0 flex-wrap"> {/* Added flex-wrap here */}
             {showReorderControls && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -262,7 +262,7 @@ const ActSection = ({ act, chapters, scenes, conceptsMap, onDeleteAct, onDeleteC
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <h2 className="text-xl font-semibold hover:text-primary cursor-pointer truncate" onClick={() => setIsActModalOpen(true)}>
+            <h2 className="text-xl font-semibold hover:text-primary cursor-pointer" onClick={() => setIsActModalOpen(true)}>
               {act.name}
             </h2>
             <Button onClick={() => setIsChapterModalOpen(true)} size="sm" variant="outline" className="ml-2">

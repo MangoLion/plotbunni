@@ -238,7 +238,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
                     id="scene-outline" // Changed id
                     value={synopsisText}
                     onChange={(e) => setSynopsisText(e.target.value)}
-                    placeholder={t('scene_form_modal_placeholder_outline_textarea')} // Updated placeholder
+                    placeholder={t('scene_form_modal_placeholder_outline_textarea')}
                     rows={6} // Increased rows
                     className={showAiFeatures ? "pr-10" : ""}
                   />
@@ -297,14 +297,13 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
           </Tabs>
         </div>
         <DialogFooter className="flex justify-between w-full">
-          <div>
+          <div className="flex items-center gap-2">
             {isEditing && sceneToEdit && chapterId && (
-              <Button type="button" variant="destructive" size="icon" onClick={() => setIsConfirmDeleteOpen(true)} className="mr-auto" title={t('tooltip_delete_scene')}>
+              <Button type="button" variant="destructive" size="icon" onClick={() => setIsConfirmDeleteOpen(true)} title={t('tooltip_delete_scene')}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-          </div>
-          <div className="flex gap-2">
+            <div className="flex-grow"></div>
             <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
             <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>
               {isEditing ? t('save_changes_button') : t('scene_form_modal_button_create')}

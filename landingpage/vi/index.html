@@ -1,51 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plot Bunni - Your AI-Powered Novel Writing Companion</title>
+    <title>Plot Bunni - Người bạn đồng hành viết tiểu thuyết được hỗ trợ bởi AI của bạn</title>
 
-    <!-- Open Graph / Facebook Meta Tags -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://plotbunni.com/">
-    <meta property="og:title" content="Plot Bunni - Your AI-Powered Novel Writing Companion">
-    <meta property="og:description" content="An open-source novel writing tool to organize ideas, structure stories, and leverage AI for brainstorming and drafting. Access it directly in your browser, works seamlessly on your desktop and mobile devices!">
+    <meta property="og:url" content="https://plotbunni.com/index_vn.html">
+    <meta property="og:title" content="Plot Bunni - Người bạn đồng hành viết tiểu thuyết được hỗ trợ bởi AI của bạn">
+    <meta property="og:description" content="Một công cụ viết tiểu thuyết mã nguồn mở để tổ chức ý tưởng, cấu trúc câu chuyện và tận dụng AI để động não và phác thảo. Truy cập trực tiếp trong trình duyệt của bạn, hoạt động liền mạch trên máy tính để bàn và thiết bị di động!">
     <meta property="og:image" content="https://plotbunni.com/rabbit.svg">
 
-    <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://plotbunni.com/">
-    <meta name="twitter:title" content="Plot Bunni - Your AI-Powered Novel Writing Companion">
-    <meta name="twitter:description" content="An open-source novel writing tool to organize ideas, structure stories, and leverage AI for brainstorming and drafting. Access it directly in your browser, works seamlessly on your desktop and mobile devices!">
+    <meta name="twitter:url" content="https://plotbunni.com/index_vn.html">
+    <meta name="twitter:title" content="Plot Bunni - Người bạn đồng hành viết tiểu thuyết được hỗ trợ bởi AI của bạn">
+    <meta name="twitter:description" content="Một công cụ viết tiểu thuyết mã nguồn mở để tổ chức ý tưởng, cấu trúc câu chuyện và tận dụng AI để động não và phác thảo. Truy cập trực tiếp trong trình duyệt của bạn, hoạt động liền mạch trên máy tính để bàn và thiết bị di động!">
     <meta name="twitter:image" content="https://plotbunni.com/rabbit.svg">
 
-    <link rel="alternate" hreflang="en" href="https://plotbunni.com/" />
-    <link rel="alternate" hreflang="de" href="https://plotbunni.com/de/" />
-    <link rel="alternate" hreflang="ru" href="https://plotbunni.com/ru/" />
-    <link rel="alternate" hreflang="zh" href="https://plotbunni.com/zh/" />
-    <link rel="alternate" hreflang="vi" href="https://plotbunni.com/vi/" />
-    <link rel="alternate" hreflang="x-default" href="https://plotbunni.com/" />
+    <link rel="alternate" hreflang="en" href="https://plotbunni.com/index.html" />
+    <link rel="alternate" hreflang="de" href="https://plotbunni.com/index_de.html" />
+    <link rel="alternate" hreflang="ru" href="https://plotbunni.com/index_ru.html" />
+    <link rel="alternate" hreflang="zh" href="https://plotbunni.com/index_zh.html" />
+    <link rel="alternate" hreflang="vi" href="https://plotbunni.com/index_vn.html" />
+    <link rel="alternate" hreflang="x-default" href="https://plotbunni.com/index.html" />
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="rabbit.svg" type="image/svg+xml">
-        <script>
-        // Language detection - for redirection from the main page (index.html)
-        (function() {
-            var userLang = navigator.language || navigator.userLanguage;
-            // Redirect to language-specific subdirectories
-            if (userLang.startsWith('de')) {
-                window.location.replace('/de/');
-            } else if (userLang.startsWith('ru')) {
-                window.location.replace('/ru/');
-            } else if (userLang.startsWith('zh')) {
-                window.location.replace('/zh/');
-            } else if (userLang.startsWith('vi')) {
-                window.location.replace('/vi/');
-            }
-            // If English or other unsupported language, stay on the current page (index.html)
-        })();
-    </script>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="icon" href="../rabbit.svg" type="image/svg+xml">
     <script>
         // Tailwind dark mode configuration
         tailwind.config = {
@@ -94,15 +75,14 @@
     </style>
 </head>
 <body class="bg-pb-background text-pb-foreground font-sans antialiased">
-    <!-- Header -->
     <header class="sticky top-0 z-50 w-full border-b border-pb-border bg-pb-background/95 backdrop-blur supports-[backdrop-filter]:bg-pb-background/60">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-            <a href="#" class="flex items-center space-x-2">
-                <img src="rabbit.svg" alt="Plot Bunni Logo" class="h-8 w-8 dark:filter dark:brightness-0 dark:invert">
+            <a href="index_vn.html" class="flex items-center space-x-2">
+                <img src="../rabbit.svg" alt="Logo Plot Bunni" class="h-8 w-8 dark:filter dark:brightness-0 dark:invert">
                 <span class="font-bold text-xl text-pb-primary">Plot Bunni</span>
             </a>
             <nav class="flex items-center space-x-4">
-                <a href="https://github.com/MangoLion/plotbunni" target="_blank" rel="noopener noreferrer" class="text-pb-muted-foreground hover:text-pb-foreground" title="GitHub Repository">
+                <a href="https://github.com/MangoLion/plotbunni" target="_blank" rel="noopener noreferrer" class="text-pb-muted-foreground hover:text-pb-foreground" title="Kho lưu trữ GitHub">
                     <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
                     </svg>
@@ -112,28 +92,26 @@
                         <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
                     </svg>
                 </a>
-                <button id="theme-switcher" class="text-pb-muted-foreground hover:text-pb-foreground" title="Toggle Theme">
-                    <!-- Sun icon -->
+                <button id="theme-switcher" class="text-pb-muted-foreground hover:text-pb-foreground" title="Chuyển đổi Chủ đề">
                     <svg id="theme-icon-light" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    <!-- Moon icon (hidden by default) -->
                     <svg id="theme-icon-dark" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                 </button>
+                <a href="index.html" class="text-pb-muted-foreground hover:text-pb-foreground text-sm" title="Chuyển sang tiếng Anh">EN</a>
             </nav>
         </div>
     </header>
 
-    <!-- Hero Section -->
     <section class="section-spacing bg-pb-card text-pb-card-foreground">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-pb-primary">
                 Plot Bunni
             </h1>
             <p class="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-pb-muted-foreground">
-                An open-source novel writing tool to organize ideas, structure stories, and leverage AI for brainstorming and drafting. Access it directly in your browser, works seamlessly on your desktop and mobile devices!
+                Một công cụ viết tiểu thuyết mã nguồn mở để tổ chức ý tưởng, cấu trúc câu chuyện và tận dụng AI để động não và phác thảo. Truy cập trực tiếp trong trình duyệt của bạn, hoạt động liền mạch trên máy tính để bàn và thiết bị di động!
             </p>
             <div class="mt-10 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
                 <a href="https://app.plotbunni.com" target="_blank"
@@ -144,118 +122,116 @@
                         <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
                         <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
                     </svg>
-                    Launch App
+                    Khởi chạy Ứng dụng
                 </a>
                 <a href="https://github.com/MangoLion/plotbunni" target="_blank" rel="noopener noreferrer"
                    class="inline-flex items-center justify-center px-8 py-4 border border-pb-primary text-lg font-semibold rounded-lg text-pb-foreground bg-pb-card hover:bg-pb-muted shadow-lg transform hover:scale-105 transition-transform duration-150 ease-in-out">
                     <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
                     </svg>
-                    Fork on GitHub
+                    Fork trên GitHub
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- Features Section -->
     <main class="container mx-auto px-4 sm:px-6 lg:px-8 section-spacing">
-        <h2 class="text-3xl font-bold tracking-tight text-center text-pb-primary mb-12 sm:mb-16">Features</h2>
+        <h2 class="text-3xl font-bold tracking-tight text-center text-pb-primary mb-12 sm:mb-16">Tính năng</h2>
 
         <div class="space-y-16">
-            <!-- Feature 1: Overview & Planning -->
             <div class="grid md:grid-cols-2 gap-8 items-center">
                 <div class="order-2 md:order-1">
-                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Comprehensive Novel Overview & Planning</h3>
+                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Tổng quan & Kế hoạch Tiểu thuyết Toàn diện</h3>
                     <p class="text-pb-muted-foreground mb-4">
-                        Visualize your novel's structure at a glance. Manage acts, chapters, and scenes with an intuitive planning interface. Link story elements and keep your plot organized.
+                        Hình dung cấu trúc tiểu thuyết của bạn trong nháy mắt. Quản lý các hồi, chương và cảnh với giao diện lập kế hoạch trực quan. Liên kết các yếu tố câu chuyện và giữ cho cốt truyện của bạn được tổ chức.
                     </p>
                     <ul class="list-disc list-inside text-pb-foreground space-y-1">
-                        <li>Centralized novel management grid.</li>
-                        <li>Hierarchical story planning (acts, chapters, scenes).</li>
-                        <li>Detailed novel information: synopsis, author, cover.</li>
-                        <li>Import story outlines from text.</li>
+                        <li>Lưới quản lý tiểu thuyết tập trung.</li>
+                        <li>Lập kế hoạch câu chuyện theo cấp bậc (hồi, chương, cảnh).</li>
+                        <li>Thông tin tiểu thuyết chi tiết: tóm tắt, tác giả, bìa.</li>
+                        <li>Nhập dàn ý câu chuyện từ văn bản.</li>
                     </ul>
                 </div>
                 <div class="order-1 md:order-2">
-                    <img src="overview_plan_light.png" alt="Novel Overview and Planning Interface" class="rounded-lg shadow-xl themed-image light-image">
-                    <img src="overview_plan_dark.png" alt="Novel Overview and Planning Interface (Dark)" class="rounded-lg shadow-xl themed-image dark-image hidden">
+                    <img src="../overview_plan_light.png" alt="Giao diện Tổng quan và Kế hoạch Tiểu thuyết" class="rounded-lg shadow-xl themed-image light-image">
+                    <img src="../overview_plan_dark.png" alt="Giao diện Tổng quan và Kế hoạch Tiểu thuyết (Tối)" class="rounded-lg shadow-xl themed-image dark-image hidden">
                 </div>
             </div>
 
-            <!-- Feature 2: Concept Cache & Writing Environment -->
             <div class="grid md:grid-cols-2 gap-8 items-center">
                 <div>
-                    <img src="concept_write_light.png" alt="Concept Cache and Writing Environment" class="rounded-lg shadow-xl themed-image light-image">
-                    <img src="concept_write_dark.png" alt="Concept Cache and Writing Environment (Dark)" class="rounded-lg shadow-xl themed-image dark-image hidden">
+                    <img src="../concept_write_light.png" alt="Bộ nhớ đệm Khái niệm và Môi trường Viết" class="rounded-lg shadow-xl themed-image light-image">
+                    <img src="../concept_write_dark.png" alt="Bộ nhớ đệm Khái niệm và Môi trường Viết (Tối)" class="rounded-lg shadow-xl themed-image dark-image hidden">
                 </div>
                 <div>
-                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Rich Concept Management & Focused Writing</h3>
+                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Quản lý Khái niệm Phong phú & Viết tập trung</h3>
                     <p class="text-pb-muted-foreground mb-4">
-                        Organize all your story's building blocks—characters, locations, lore, and more—in one place. Then, immerse yourself in a distraction-free writing space designed for focus, with helpful tools like Markdown support and easy navigation.
+                        Tổ chức tất cả các khối xây dựng câu chuyện của bạn—nhân vật, địa điểm, truyền thuyết, v.v.—ở một nơi. Sau đó, đắm mình trong không gian viết không bị phân tâm được thiết kế để tập trung, với các công cụ hữu ích như hỗ trợ Markdown và điều hướng dễ dàng.
                     </p>
                     <ul class="list-disc list-inside text-pb-foreground space-y-1">
-                        <li>Easily manage all your story elements, such as characters, locations, and lore.</li>
-                        <li>Write your story scene by scene using a flexible editor with Markdown support for formatting.</li>
-                        <li>Enjoy a seamless writing flow with text areas that grow with your content and built-in formatting assistance.</li>
-                        <li>Jump to any part of your novel quickly using an intuitive outline navigator.</li>
+                        <li>Dễ dàng quản lý tất cả các yếu tố câu chuyện của bạn, chẳng hạn như nhân vật, địa điểm và truyền thuyết.</li>
+                        <li>Viết câu chuyện của bạn từng cảnh một bằng trình chỉnh sửa linh hoạt có hỗ trợ Markdown để định dạng.</li>
+                        <li>Tận hưởng quy trình viết liền mạch với các vùng văn bản phát triển cùng nội dung của bạn và hỗ trợ định dạng tích hợp.</li>
+                        <li>Chuyển đến bất kỳ phần nào của tiểu thuyết một cách nhanh chóng bằng trình điều hướng dàn ý trực quan.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Feature 4: Customization & Data -->
             <div class="grid md:grid-cols-2 gap-8 items-center">
                 <div class="md:order-2">
-                    <img src="themes_light.png" alt="Theme Customization Options" class="rounded-lg shadow-xl themed-image light-image">
-                    <img src="themes_dark.png" alt="Theme Customization Options (Dark)" class="rounded-lg shadow-xl themed-image dark-image hidden">
+                    <img src="../themes_light.png" alt="Tùy chọn Tùy chỉnh Chủ đề" class="rounded-lg shadow-xl themed-image light-image">
+                    <img src="../themes_dark.png" alt="Tùy chọn Tùy chỉnh Chủ đề (Tối)" class="rounded-lg shadow-xl themed-image dark-image hidden">
                 </div>
                 <div class="md:order-1">
-                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Deep Customization & Local Data</h3>
+                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Tùy chỉnh sâu & Dữ liệu cục bộ</h3>
                     <p class="text-pb-muted-foreground mb-4">
-                        Tailor Plotbunni to your liking with extensive theme options, including light/dark modes, presets, and individual color customization. All your data stays secure and accessible offline, stored locally in your browser.
+                        Điều chỉnh Plotbunni theo ý thích của bạn với các tùy chọn chủ đề phong phú, bao gồm chế độ sáng/tối, cài đặt sẵn và tùy chỉnh màu riêng lẻ. Tất cả dữ liệu của bạn được giữ an toàn và có thể truy cập ngoại tuyến, được lưu trữ cục bộ trong trình duyệt của bạn.
                     </p>
                     <ul class="list-disc list-inside text-pb-foreground space-y-1">
-                        <li>Light, Dark, and System theme modes.</li>
-                        <li>Predefined theme presets (Sepia, Paper, etc.).</li>
-                        <li>Full control over individual theme colors.</li>
-                        <li>Local data storage via IndexedDB for offline access.</li>
-                        <li>Export novel projects (JSON) and content (Markdown, Text, PDF).</li>
+                        <li>Chế độ chủ đề Sáng, Tối và Hệ thống.</li>
+                        <li>Các cài đặt sẵn chủ đề được xác định trước (Nâu đỏ, Giấy, v.v.).</li>
+                        <li>Toàn quyền kiểm soát các màu chủ đề riêng lẻ.</li>
+                        <li>Lưu trữ dữ liệu cục bộ qua IndexedDB để truy cập ngoại tuyến.</li>
+                        <li>Xuất các dự án tiểu thuyết (JSON) và nội dung (Markdown, Văn bản, PDF).</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Feature 3: AI-Powered Assistance -->
             <div class="grid md:grid-cols-2 gap-8 items-center">
                  <div class="order-1 md:order-2">
-                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Intelligent AI Assistance</h3>
+                    <h3 class="text-2xl font-semibold text-pb-accent dark:text-pb-accent-foreground mb-3">Hỗ trợ AI Thông minh</h3>
                     <p class="text-pb-muted-foreground mb-4">
-                        Break through writer's block with AI-powered suggestions for scene synopses, outlines, descriptions, and full scene text. Configure AI models and prompts to fit your needs.
+                        Vượt qua trở ngại của người viết với các đề xuất được hỗ trợ bởi AI cho tóm tắt cảnh, dàn ý, mô tả và toàn bộ văn bản cảnh. Định cấu hình các mô hình AI và lời nhắc cho phù hợp với nhu cầu của bạn.
                     </p>
                     <ul class="list-disc list-inside text-pb-foreground space-y-1">
-                        <li>Contextual AI text suggestions.</li>
-                        <li>AI Novel Writer for drafting entire sections.*</li>
-                        <li>Customizable AI endpoint profiles and prompts.</li>
-                        <li>Live streaming of AI suggestions.</li>
+                        <li>Đề xuất văn bản AI theo ngữ cảnh.</li>
+                        <li>Người viết Tiểu thuyết AI để phác thảo toàn bộ các phần.*</li>
+                        <li>Hồ sơ điểm cuối AI và lời nhắc có thể tùy chỉnh.</li>
+                        <li>Truyền trực tiếp các đề xuất AI.</li>
                     </ul>
-                    <p class="text-xs text-pb-muted-foreground mt-2">*AI Novel Writer is experimental and best for rapid prototyping.</p>
+                    <p class="text-xs text-pb-muted-foreground mt-2">*Người viết Tiểu thuyết AI đang trong giai đoạn thử nghiệm và phù hợp nhất để tạo mẫu nhanh.</p>
                 </div>
                 <div class="order-2 md:order-1">
-                    <img src="chat_light.png" alt="AI Chat for Brainstorming" class="rounded-lg shadow-xl themed-image light-image mb-4">
-                    <img src="chat_dark.png" alt="AI Chat for Brainstorming (Dark)" class="rounded-lg shadow-xl themed-image dark-image hidden mb-4">
-                    <img src="ai_writer_light.png" alt="AI Novel Writer Interface" class="rounded-lg shadow-xl themed-image light-image">
-                    <img src="ai_writer_dark.png" alt="AI Novel Writer Interface (Dark)" class="rounded-lg shadow-xl themed-image dark-image hidden">
+                    <img src="../chat_light.png" alt="Trò chuyện AI để Động não" class="rounded-lg shadow-xl themed-image light-image mb-4">
+                    <img src="../chat_dark.png" alt="Trò chuyện AI để Động não (Tối)" class="rounded-lg shadow-xl themed-image dark-image hidden mb-4">
+                    <img src="../ai_writer_light.png" alt="Giao diện Người viết Tiểu thuyết AI" class="rounded-lg shadow-xl themed-image light-image">
+                    <img src="../ai_writer_dark.png" alt="Giao diện Người viết Tiểu thuyết AI (Tối)" class="rounded-lg shadow-xl themed-image dark-image hidden">
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="border-t border-pb-border bg-pb-card text-pb-card-foreground">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-pb-muted-foreground">
-            <p>&copy; <span id="current-year"></span> Plot Bunni. All rights reserved.</p>
-            <p class="mt-1">Inspired by novelists, built for storytellers.</p>
+            <p>&copy; <span id="current-year"></span> Plot Bunni. Bảo lưu mọi quyền.</p>
+            <p class="mt-1">Lấy cảm hứng từ các tiểu thuyết gia, xây dựng cho những người kể chuyện.</p>
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="../script.js"></script>
+    <script>
+        // Ensure the theme switcher and year update still work
+        // (Assuming script.js handles these based on IDs)
+    </script>
 </body>
 </html>

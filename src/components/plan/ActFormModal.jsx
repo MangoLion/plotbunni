@@ -78,14 +78,13 @@ const ActFormModal = ({ open, onOpenChange, actToEdit }) => {
             </div>
           </div>
           <DialogFooter className="flex justify-between w-full">
-            <div>
+            <div className="flex items-center gap-2">
               {isEditing && (
-                <Button type="button" variant="destructive" size="icon" onClick={() => setIsConfirmDeleteOpen(true)} className="mr-auto" title={t('tooltip_delete_act')}>
+                <Button type="button" variant="destructive" size="icon" onClick={() => setIsConfirmDeleteOpen(true)} title={t('tooltip_delete_act')}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
-            </div>
-            <div className="flex gap-2">
+              <div className="flex-grow"></div>
               <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
               <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>
                 {isEditing ? t('save_changes_button') : t('act_form_modal_button_create')}

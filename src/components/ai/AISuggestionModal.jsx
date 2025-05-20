@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FullscreenTextareaEditModal } from './FullscreenTextareaEditModal'; // Added
 // import Markdown from 'react-markdown'; // Added Markdown
 import {
   Dialog,
@@ -53,6 +54,15 @@ export const AISuggestionModal = ({
   const abortControllerRef = useRef(null);
   const suggestionTextareaRef = useRef(null); // Added ref for suggestion textarea
   const [isEditingSuggestion, setIsEditingSuggestion] = useState(false); // Added for editable suggestion
+
+  // State for FullscreenTextareaEditModal
+  const [isFullscreenEditModalOpen, setIsFullscreenEditModalOpen] = useState(false);
+  const [fullscreenEditModalConfig, setFullscreenEditModalConfig] = useState({
+    initialValue: '',
+    onSave: () => {},
+    title: '',
+    textareaId: '',
+  });
 
   // State for "Continue Generating" feature
   const [lastSuccessfulQuery, setLastSuccessfulQuery] = useState('');
@@ -172,6 +182,20 @@ useEffect(() => {
     }
   }, [aiResponse, isEditingSuggestion]); // Rerun when aiResponse changes or editing mode toggles
 
+  const isMobileDevice = () => {
+    // Simple check, can be made more robust if needed
+    return window.innerWidth < 768; // md breakpoint in Tailwind is 768px
+  };
+
+  const openFullscreenEditor = (value, onSaveCallback, title, id) => {
+    setFullscreenEditModalConfig({
+      initialValue: value,
+      onSave: onSaveCallback,
+      title: title,
+      textareaId: id,
+    });
+    setIsFullscreenEditModalOpen(true);
+  };
 
   const getActiveEndpointConfig = () => {
     if (!currentProfile) {
@@ -503,7 +527,22 @@ useEffect(() => {
               <CollapsibleContent>
                 <Textarea
                   value={editableSystemPrompt}
-                  onChange={(e) => setEditableSystemPrompt(e.target.value)}
+                  onChange={(e) => {
+                    if (!isMobileDevice()) {
+                      setEditableSystemPrompt(e.target.value);
+                    }
+                  }}
+                  onClick={() => {
+                    if (isMobileDevice()) {
+                      openFullscreenEditor(
+                        editableSystemPrompt,
+                        (newValue) => setEditableSystemPrompt(newValue),
+                        t('ai_suggestion_modal_label_system_prompt'),
+                        'fullscreen-system-prompt'
+                      );
+                    }
+                  }}
+                  readOnly={isMobileDevice()}
                   rows={3}
                   className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
                   placeholder={t('ai_suggestion_modal_placeholder_system_prompt')}
@@ -530,8 +569,23 @@ useEffect(() => {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <Textarea
-                    value={editableNovelData} 
-                    onChange={(e) => setEditableNovelData(e.target.value)}
+                    value={editableNovelData}
+                    onChange={(e) => {
+                      if (!isMobileDevice()) {
+                        setEditableNovelData(e.target.value);
+                      }
+                    }}
+                    onClick={() => {
+                      if (isMobileDevice()) {
+                        openFullscreenEditor(
+                          editableNovelData,
+                          (newValue) => setEditableNovelData(newValue),
+                          t('ai_suggestion_modal_label_novel_data_context'),
+                          'fullscreen-novel-data'
+                        );
+                      }
+                    }}
+                    readOnly={isMobileDevice()}
                     rows={5}
                     className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
                     placeholder={t('ai_suggestion_modal_placeholder_novel_data_context')}
@@ -591,17 +645,32 @@ useEffect(() => {
 
             <div className="space-y-1 pt-2">
               <Label htmlFor="aiQueryInput">{t('ai_suggestion_modal_label_your_query')}</Label>
-              <Textarea
-                id="aiQueryInput"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('ai_suggestion_modal_placeholder_your_query')}
-                rows={5}
-                className="resize-none"
-                disabled={isLoading}
-              />
-            </div>
-          </TabsContent>
+                <Textarea
+                  id="aiQueryInput"
+                  value={query}
+                  onChange={(e) => {
+                    if (!isMobileDevice()) {
+                      setQuery(e.target.value);
+                    }
+                  }}
+                  onClick={() => {
+                    if (isMobileDevice()) {
+                      openFullscreenEditor(
+                        query,
+                        (newValue) => setQuery(newValue),
+                        t('ai_suggestion_modal_label_your_query'),
+                        'fullscreen-query-input'
+                      );
+                    }
+                  }}
+                  readOnly={isMobileDevice()}
+                  placeholder={t('ai_suggestion_modal_placeholder_your_query')}
+                  rows={5}
+                  className="resize-none"
+                  disabled={isLoading}
+                />
+              </div>
+            </TabsContent>
 
           <TabsContent value="suggestion" className="flex flex-col flex-grow py-1 pr-1">
             {/* Buttons Area: Moved to the top of the tab content */}
@@ -643,24 +712,69 @@ useEffect(() => {
                 </div>
               )}
               {!isLoading && aiResponse && (
-                isEditingSuggestion ? (
+                isEditingSuggestion ? ( // This block is for when editing is active (desktop or mobile before fullscreen)
                   <Textarea
-                    ref={suggestionTextareaRef} // Assign ref
+                    ref={suggestionTextareaRef}
                     value={aiResponse}
-                    onChange={(e) => setAiResponse(e.target.value)}
-                    onBlur={() => setIsEditingSuggestion(false)}
-                    autoFocus
-                    className="w-full min-h-[100px] resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 border border-input bg-background rounded-md p-3" // Added overflow-hidden
+                    onChange={(e) => {
+                      if (!isMobileDevice()) {
+                        setAiResponse(e.target.value);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!isMobileDevice()) setIsEditingSuggestion(false);
+                    }}
+                    onClick={() => { // For mobile, clicking the already-editing textarea also opens fullscreen
+                      if (isMobileDevice()) {
+                        openFullscreenEditor(
+                          aiResponse,
+                          (newValue) => {
+                            setAiResponse(newValue);
+                            setIsEditingSuggestion(false); // Close inline edit after save from fullscreen
+                          },
+                          t('ai_suggestion_modal_tab_suggestion'),
+                          'fullscreen-ai-suggestion'
+                        );
+                      }
+                    }}
+                    readOnly={isMobileDevice()}
+                    autoFocus={!isMobileDevice()} // Only autofocus on desktop
+                    className="w-full min-h-[100px] resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 border border-input bg-background rounded-md p-3"
                   />
-                ) : (
+                ) : ( // This block is for when suggestion is displayed (not in edit mode)
                   <div
                     onClick={() => {
-                      if (!isLoading) setIsEditingSuggestion(true);
+                      if (!isLoading) {
+                        if (isMobileDevice()) {
+                          openFullscreenEditor(
+                            aiResponse,
+                            (newValue) => setAiResponse(newValue),
+                            t('ai_suggestion_modal_tab_suggestion'),
+                            'fullscreen-ai-suggestion'
+                          );
+                        } else {
+                          setIsEditingSuggestion(true);
+                        }
+                      }
                     }}
-                    className="w-full p-2 whitespace-pre-wrap break-words min-h-[100px]" // Removed interactive styling classes
+                    className="w-full p-2 whitespace-pre-wrap break-words min-h-[100px] cursor-text" // Added cursor-text for better UX
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => { if (!isLoading && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsEditingSuggestion(true); }}}
+                    onKeyDown={(e) => { 
+                      if (!isLoading && (e.key === 'Enter' || e.key === ' ')) { 
+                        e.preventDefault(); 
+                        if (isMobileDevice()) {
+                          openFullscreenEditor(
+                            aiResponse,
+                            (newValue) => setAiResponse(newValue),
+                            t('ai_suggestion_modal_tab_suggestion'),
+                            'fullscreen-ai-suggestion'
+                          );
+                        } else {
+                          setIsEditingSuggestion(true);
+                        }
+                      }
+                    }}
                   >
                     {aiResponse}
                   </div>
@@ -682,6 +796,16 @@ useEffect(() => {
           </Button>
         </DialogFooter>
       </DialogContent>
+      {isFullscreenEditModalOpen && (
+        <FullscreenTextareaEditModal
+          isOpen={isFullscreenEditModalOpen}
+          onClose={() => setIsFullscreenEditModalOpen(false)}
+          initialValue={fullscreenEditModalConfig.initialValue}
+          onSave={fullscreenEditModalConfig.onSave}
+          title={fullscreenEditModalConfig.title}
+          textareaId={fullscreenEditModalConfig.textareaId}
+        />
+      )}
     </Dialog>
   );
 };
