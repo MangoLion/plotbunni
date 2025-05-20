@@ -19,15 +19,18 @@ import { useData } from '@/context/DataContext';
 import { useSettings } from '../../context/SettingsContext';
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Added
-import { generateContextWithRetry } from '../../lib/aiContextUtils'; // Added
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateContextWithRetry } from '../../lib/aiContextUtils';
+import ConfirmModal from '@/components/ui/ConfirmModal'; // Import ConfirmModal
+import { Trash2 } from 'lucide-react'; // Import Trash2 icon
 
 const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
   const { t } = useTranslation();
   const {
     addSceneToChapter,
     updateScene,
-    concepts, // All concepts from DataContext
+    deleteScene, // Add deleteScene
+    concepts, 
     acts,
     chapters,
     scenes,
@@ -46,12 +49,12 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
 
   const [name, setName] = useState('');
   const [tags, setTags] = useState(''); // Comma-separated
-  const [synopsisText, setSynopsisText] = useState(''); // Renamed from synopsis to avoid conflict
-  const [selectedContextConcepts, setSelectedContextConcepts] = useState([]); // Array of concept IDs
+  const [synopsisText, setSynopsisText] = useState('');
+  const [selectedContextConcepts, setSelectedContextConcepts] = useState([]);
   const [autoUpdateContext, setAutoUpdateContext] = useState(true);
   const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false); // State for confirm modal
   
-  // State for AI suggestion context
   const [aiContext, setAiContext] = useState({
     contextString: "",
     estimatedTokens: 0,
@@ -87,6 +90,7 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     setSelectedContextConcepts([]);
     setAutoUpdateContext(true);
     setAiContext({ contextString: "", estimatedTokens: 0, level: 0, error: null });
+    setIsConfirmDeleteOpen(false);
   };
 
   const handleContextConceptChange = (conceptId) => {
@@ -121,6 +125,22 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     resetForm();
     onOpenChange(false);
   };
+
+  const handleDeleteScene = () => {
+    if (sceneToEdit && chapterId) { // Ensure chapterId is available
+      deleteScene(sceneToEdit.id, chapterId);
+      resetForm();
+      onOpenChange(false); // Close main modal
+      setIsConfirmDeleteOpen(false); // Close confirm modal
+    } else if (sceneToEdit) {
+        // Fallback if chapterId is somehow not passed during edit (should not happen with current PlanView structure)
+        console.warn("Attempting to delete scene without parent chapterId. This might lead to orphaned data if not handled by deleteScene globally.");
+        deleteScene(sceneToEdit.id, null); 
+        resetForm();
+        onOpenChange(false);
+        setIsConfirmDeleteOpen(false);
+    }
+  };
   
   useEffect(() => {
     if (!open) {
@@ -128,7 +148,6 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
     }
   }, [open]);
 
-  // Determine effective chapter and scene IDs for context generation
   const prepareAIContext = async () => {
     if (!acts || !chapters || !scenes || !concepts || !actOrder) {
       setAiContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('scene_form_modal_ai_context_error_data_not_loaded') });
@@ -277,13 +296,33 @@ const SceneFormModal = ({ open, onOpenChange, sceneToEdit, chapterId }) => {
             </TabsContent>
           </Tabs>
         </div>
-        <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
-          <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>
-            {isEditing ? t('save_changes_button') : t('scene_form_modal_button_create')}
-          </Button>
+        <DialogFooter className="flex justify-between w-full">
+          <div>
+            {isEditing && sceneToEdit && chapterId && (
+              <Button type="button" variant="destructive" size="icon" onClick={() => setIsConfirmDeleteOpen(true)} className="mr-auto" title={t('tooltip_delete_scene')}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <DialogClose asChild><Button type="button" variant="outline">{t('cancel')}</Button></DialogClose>
+            <Button type="submit" onClick={handleSubmit} disabled={!name.trim()}>
+              {isEditing ? t('save_changes_button') : t('scene_form_modal_button_create')}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {sceneToEdit && (
+        <ConfirmModal
+          open={isConfirmDeleteOpen}
+          onOpenChange={setIsConfirmDeleteOpen}
+          title={t('scene_form_modal_confirm_delete_title')}
+          description={t('scene_form_modal_confirm_delete_description', { sceneName: sceneToEdit.name })}
+          onConfirm={handleDeleteScene}
+        />
+      )}
+
       {isAISuggestionModalOpen && aiContext && (
         <AISuggestionModal
           isOpen={isAISuggestionModalOpen}

@@ -4,17 +4,20 @@ import { useData } from '../../context/DataContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AISuggestionModal } from '../ai/AISuggestionModal';
 import { AINovelWriterModal } from '../ai/AINovelWriterModal';
-import { WandSparkles, Sparkles, Type as TypeIcon, NotebookText } from 'lucide-react';
+import NovelOutlinePopover from './NovelOutlinePopover'; // Import the new component
+import { WandSparkles, Sparkles, Type as TypeIcon, PlusCircle } from 'lucide-react'; // Removed NotebookText
 import Markdown from 'react-markdown';
 import { Button } from '../ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'; // Re-add Popover imports
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import { Separator } from '../ui/separator';
+// Separator might not be needed if only used by old popover
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { generateContextWithRetry } from '../../lib/aiContextUtils';
 import { removeIndentation } from '../../lib/utils';
+import ChapterFormModal from '../plan/ChapterFormModal'; // Import ChapterFormModal
+import SceneFormModal from '../plan/SceneFormModal'; // Import SceneFormModal
 
 // Helper component for editable titles
 const EditableTitle = ({ initialValue, onSave, placeholder, className, inputClassName, tag: Component = 'div' }) => {
@@ -313,13 +316,22 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
     const { t } = useTranslation();
     const {
       acts, chapters, scenes, actOrder, concepts,
-      updateAct, updateChapter,
+      updateAct, updateChapter, addChapterToAct, addSceneToChapter, // Added addChapterToAct and addSceneToChapter
       // Destructure all novel detail fields needed for AutoExpandingTextarea context
       novelSynopsis, genre, pointOfView, timePeriod, targetAudience, themes, tone
     } = useData();
     const { showAiFeatures } = useSettings(); // Get showAiFeatures
     const [isAINovelWriterModalOpen, setIsAINovelWriterModalOpen] = useState(false);
-    const [isOutlinePopoverOpen, setIsOutlinePopoverOpen] = useState(false); // State for outline popover
+    const [isOutlinePopoverOpen, setIsOutlinePopoverOpen] = useState(false); // State for outline popover remains here
+    
+    // State for Chapter and Scene modals
+    const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
+    const [currentActIdForModal, setCurrentActIdForModal] = useState(null);
+    const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
+    const [currentChapterIdForModal, setCurrentChapterIdForModal] = useState(null);
+
+    // showAddButtonsInOutline state and useEffect are moved to NovelOutlinePopover.jsx
+
     const chapterRefs = useRef({});
     const sceneTextareaRefs = useRef({}); // This will store refs to the AutoExpandingTextarea's outer div
 
@@ -351,6 +363,10 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
         }
     }, [targetChapterId, targetSceneId, chapters, scenes]); // Added targetSceneId and refined dependencies
 
+    useEffect(() => {
+        // localStorage.setItem('plotbunni_writeview_showAddButtons', JSON.stringify(showAddButtonsInOutline)); // This logic is moved
+    }, []); // Empty dependency array if no other logic remains here, or adjust if other logic is added
+
     const handleSceneSelect = (sceneIdToFocus) => {
         const sceneContainer = sceneTextareaRefs.current[sceneIdToFocus];
         if (sceneContainer) {
@@ -371,6 +387,18 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
             }, 300); // Delay to allow for scroll and potential DOM updates
         }
         setIsOutlinePopoverOpen(false);
+    };
+
+    const handleOpenChapterModal = (actId) => {
+        setCurrentActIdForModal(actId);
+        setIsChapterModalOpen(true);
+        setIsOutlinePopoverOpen(false); // Close popover when opening modal
+    };
+
+    const handleOpenSceneModal = (chapterId) => {
+        setCurrentChapterIdForModal(chapterId);
+        setIsSceneModalOpen(true);
+        setIsOutlinePopoverOpen(false); // Close popover when opening modal
     };
 
     const handleActTitleChange = useCallback((actId, newName) => {
@@ -407,66 +435,16 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
 
     return (
         <ScrollArea className="h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 relative">
-            {/* Outline Popover Button */}
+            {/* Outline Popover Button - Now uses NovelOutlinePopover component */}
             <div className="absolute top-4 left-4 z-10">
-                <Popover open={isOutlinePopoverOpen} onOpenChange={setIsOutlinePopoverOpen}>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="rounded-full shadow-lg hover:bg-primary/10"
-                            title={t('write_view_outline_popover_tooltip')}
-                        >
-                            <NotebookText className="h-5 w-5 text-primary" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[350px] p-0" side="right" align="start">
-                        <ScrollArea className="h-[500px] max-h-[80vh] p-4">
-                            <div className="text-lg font-semibold mb-3">{t('write_view_outline_popover_title')}</div>
-                            {actOrder.map(actId => {
-                                const act = acts[actId];
-                                if (!act) return null;
-                                return (
-                                    <div key={actId} className="mb-3">
-                                        <h3 className="font-semibold text-sm mb-1 text-foreground">{act.name || t('ai_novel_writer_unnamed_act')}</h3>
-                                        {act.chapterOrder?.map(chapterId => {
-                                            const chapter = chapters[chapterId];
-                                            if (!chapter) return null;
-                                            return (
-                                                <div key={chapterId} className="ml-3 mb-2">
-                                                    <h4 className="font-medium text-xs text-muted-foreground mb-1">{chapter.name || t('ai_novel_writer_unnamed_chapter')}</h4>
-                                                    {chapter.sceneOrder?.map(sceneId => {
-                                                        const scene = scenes[sceneId];
-                                                        if (!scene) return null;
-                                                        return (
-                                                            <Button
-                                                                key={sceneId}
-                                                                variant="ghost"
-                                                                className="w-full justify-start h-auto py-1 px-2 text-xs font-normal text-left"
-                                                                onClick={() => handleSceneSelect(sceneId)}
-                                                            >
-                                                                {scene.name || t('ai_novel_writer_unnamed_scene')}
-                                                            </Button>
-                                                        );
-                                                    })}
-                                                    {(!chapter.sceneOrder || chapter.sceneOrder.length === 0) && (
-                                                        <p className="ml-2 text-xs text-muted-foreground italic">{t('write_view_outline_popover_no_scenes')}</p>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                        {(!act.chapterOrder || act.chapterOrder.length === 0) && (
-                                            <p className="ml-3 text-xs text-muted-foreground italic">{t('write_view_outline_popover_no_chapters')}</p>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                            {actOrder.length === 0 && (
-                                <p className="text-sm text-muted-foreground italic">{t('write_view_outline_popover_empty_message')}</p>
-                            )}
-                        </ScrollArea>
-                    </PopoverContent>
-                </Popover>
+                <NovelOutlinePopover
+                    isOpen={isOutlinePopoverOpen}
+                    onOpenChange={setIsOutlinePopoverOpen}
+                    onSceneSelect={handleSceneSelect}
+                    onAddChapter={handleOpenChapterModal} // Pass the handler for adding a chapter
+                    onAddScene={handleOpenSceneModal}     // Pass the handler for adding a scene
+                    // acts, chapters, scenes, actOrder are no longer passed as props
+                />
             </div>
 
             {/* Button to open AI Novel Writer Modal */}
@@ -586,6 +564,26 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                     isOpen={isAINovelWriterModalOpen}
                     onClose={() => setIsAINovelWriterModalOpen(false)}
                     novelData={novelDataForAI}
+                />
+            )}
+
+            {/* Chapter Form Modal */}
+            {isChapterModalOpen && currentActIdForModal && (
+                <ChapterFormModal
+                    open={isChapterModalOpen}
+                    onOpenChange={setIsChapterModalOpen}
+                    actId={currentActIdForModal}
+                    // No chapterToEdit means it's a new chapter
+                />
+            )}
+
+            {/* Scene Form Modal */}
+            {isSceneModalOpen && currentChapterIdForModal && (
+                <SceneFormModal
+                    open={isSceneModalOpen}
+                    onOpenChange={setIsSceneModalOpen}
+                    chapterId={currentChapterIdForModal}
+                    // No sceneToEdit means it's a new scene
                 />
             )}
         </ScrollArea>

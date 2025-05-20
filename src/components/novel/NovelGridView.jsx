@@ -307,8 +307,11 @@ const NovelGridView = () => {
               <DropdownMenuItem onClick={() => changeLanguage('de')} disabled={currentLanguage === 'de'}>
                 Deutsch
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => changeLanguage('rus')} disabled={currentLanguage === 'rus'}>
+              <DropdownMenuItem onClick={() => changeLanguage('ru')} disabled={currentLanguage === 'ru'}>
                 Pусский
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeLanguage('vi')} disabled={currentLanguage === 'vi'}>
+                Tiếng Việt
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -13,7 +13,8 @@ function LanguageSwitcher() {
       <button onClick={() => changeLanguage('en')}>English</button>
       <button onClick={() => changeLanguage('es')}>Espanol</button>
       <button onClick={() => changeLanguage('de')}>Deutsch</button>
-      <button onClick={() => changeLanguage('rus')}>Pусский</button>
+      <button onClick={() => changeLanguage('ru')}>Pусский</button>
+      <button onClick={() => changeLanguage('vi')}>Tiếng Việt</button>
       {/* Add buttons for other languages */}
     </div>
   );

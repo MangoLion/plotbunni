@@ -473,6 +473,249 @@ export const DataProvider = ({ children, novelId }) => { // Accept novelId as a 
     updateSceneOrderInChapter,
     isDataLoaded, // Expose isDataLoaded for UI to show loading states if needed
     currentNovelId, // Expose currentNovelId for debugging or advanced conditional rendering
+    
+    // Reordering functions and helpers
+    moveAct: useCallback((actId, direction) => {
+      setActOrder(currentActOrder => {
+        const index = currentActOrder.indexOf(actId);
+        if (index === -1) return currentActOrder;
+        const newOrder = [...currentActOrder];
+        if (direction === 'up' && index > 0) {
+          [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+        } else if (direction === 'down' && index < newOrder.length - 1) {
+          [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+        }
+        return newOrder;
+      });
+    }, []),
+
+    canMoveActUp: useCallback(actId => {
+      const index = actOrder.indexOf(actId);
+      return index > 0;
+    }, [actOrder]),
+
+    canMoveActDown: useCallback(actId => {
+      const index = actOrder.indexOf(actId);
+      return index !== -1 && index < actOrder.length - 1;
+    }, [actOrder]),
+
+    moveChapter: useCallback((chapterId, parentActId, direction) => {
+      setActs(currentActs => {
+        const newActs = { ...currentActs };
+        const act = newActs[parentActId];
+        if (!act || !act.chapterOrder) return currentActs;
+
+        const chapterIndex = act.chapterOrder.indexOf(chapterId);
+        if (chapterIndex === -1) return currentActs;
+
+        if (direction === 'up') {
+          if (chapterIndex > 0) {
+            const newChapterOrder = [...act.chapterOrder];
+            [newChapterOrder[chapterIndex - 1], newChapterOrder[chapterIndex]] = [newChapterOrder[chapterIndex], newChapterOrder[chapterIndex - 1]];
+            newActs[parentActId] = { ...act, chapterOrder: newChapterOrder, last_modified_date: new Date().toISOString() };
+          } else { // First chapter in act, try to move to previous act
+            const parentActIndex = actOrder.indexOf(parentActId);
+            if (parentActIndex > 0) {
+              const prevActId = actOrder[parentActIndex - 1];
+              const prevAct = newActs[prevActId];
+              if (prevAct && prevAct.chapterOrder) {
+                const currentChapterOrder = act.chapterOrder.filter(id => id !== chapterId);
+                const prevActChapterOrder = [...prevAct.chapterOrder, chapterId];
+                newActs[parentActId] = { ...act, chapterOrder: currentChapterOrder, last_modified_date: new Date().toISOString() };
+                newActs[prevActId] = { ...prevAct, chapterOrder: prevActChapterOrder, last_modified_date: new Date().toISOString() };
+              }
+            }
+          }
+        } else if (direction === 'down') {
+          if (chapterIndex < act.chapterOrder.length - 1) {
+            const newChapterOrder = [...act.chapterOrder];
+            [newChapterOrder[chapterIndex + 1], newChapterOrder[chapterIndex]] = [newChapterOrder[chapterIndex], newChapterOrder[chapterIndex + 1]];
+            newActs[parentActId] = { ...act, chapterOrder: newChapterOrder, last_modified_date: new Date().toISOString() };
+          } else { // Last chapter in act, try to move to next act
+            const parentActIndex = actOrder.indexOf(parentActId);
+            if (parentActIndex < actOrder.length - 1) {
+              const nextActId = actOrder[parentActIndex + 1];
+              const nextAct = newActs[nextActId];
+              if (nextAct && nextAct.chapterOrder) {
+                const currentChapterOrder = act.chapterOrder.filter(id => id !== chapterId);
+                const nextActChapterOrder = [chapterId, ...nextAct.chapterOrder];
+                newActs[parentActId] = { ...act, chapterOrder: currentChapterOrder, last_modified_date: new Date().toISOString() };
+                newActs[nextActId] = { ...nextAct, chapterOrder: nextActChapterOrder, last_modified_date: new Date().toISOString() };
+              }
+            }
+          }
+        }
+        return newActs;
+      });
+    }, [actOrder]),
+
+    canMoveChapterUp: useCallback((chapterId, parentActId) => {
+      const act = acts[parentActId];
+      if (!act || !act.chapterOrder) return false;
+      const chapterIndex = act.chapterOrder.indexOf(chapterId);
+      if (chapterIndex > 0) return true; // Can move up within the same act
+      // Check if it's the first chapter and there's a previous act
+      const parentActIndex = actOrder.indexOf(parentActId);
+      if (parentActIndex > 0) {
+        const prevActId = actOrder[parentActIndex - 1];
+        return acts[prevActId] && acts[prevActId].chapterOrder !== undefined; // Can move to prev act
+      }
+      return false;
+    }, [acts, actOrder]),
+
+    canMoveChapterDown: useCallback((chapterId, parentActId) => {
+      const act = acts[parentActId];
+      if (!act || !act.chapterOrder) return false;
+      const chapterIndex = act.chapterOrder.indexOf(chapterId);
+      if (chapterIndex !== -1 && chapterIndex < act.chapterOrder.length - 1) return true; // Can move down within the same act
+      // Check if it's the last chapter and there's a next act
+      const parentActIndex = actOrder.indexOf(parentActId);
+      if (parentActIndex !== -1 && parentActIndex < actOrder.length - 1) {
+        const nextActId = actOrder[parentActIndex + 1];
+        return acts[nextActId] && acts[nextActId].chapterOrder !== undefined; // Can move to next act
+      }
+      return false;
+    }, [acts, actOrder]),
+
+    moveScene: useCallback((sceneId, parentChapterId, parentActId, direction) => {
+      setChapters(currentChapters => {
+        const newChapters = { ...currentChapters };
+        const chapter = newChapters[parentChapterId];
+        if (!chapter || !chapter.sceneOrder) return currentChapters;
+
+        const sceneIndex = chapter.sceneOrder.indexOf(sceneId);
+        if (sceneIndex === -1) return currentChapters;
+
+        if (direction === 'up') {
+          if (sceneIndex > 0) { // Move up within the same chapter
+            const newSceneOrder = [...chapter.sceneOrder];
+            [newSceneOrder[sceneIndex - 1], newSceneOrder[sceneIndex]] = [newSceneOrder[sceneIndex], newSceneOrder[sceneIndex - 1]];
+            newChapters[parentChapterId] = { ...chapter, sceneOrder: newSceneOrder, last_modified_date: new Date().toISOString() };
+          } else { // First scene in chapter, try to move to previous chapter or act
+            const parentAct = acts[parentActId];
+            if (!parentAct || !parentAct.chapterOrder) return currentChapters;
+            const chapterIndexInAct = parentAct.chapterOrder.indexOf(parentChapterId);
+
+            if (chapterIndexInAct > 0) { // Move to previous chapter in the same act
+              const prevChapterId = parentAct.chapterOrder[chapterIndexInAct - 1];
+              const prevChapter = newChapters[prevChapterId];
+              if (prevChapter && prevChapter.sceneOrder) {
+                const currentSceneOrder = chapter.sceneOrder.filter(id => id !== sceneId);
+                const prevChapterSceneOrder = [...prevChapter.sceneOrder, sceneId];
+                newChapters[parentChapterId] = { ...chapter, sceneOrder: currentSceneOrder, last_modified_date: new Date().toISOString() };
+                newChapters[prevChapterId] = { ...prevChapter, sceneOrder: prevChapterSceneOrder, last_modified_date: new Date().toISOString() };
+              }
+            } else if (chapterIndexInAct === 0) { // First chapter in act, try to move to previous act's last chapter
+              const parentActIndexGlobal = actOrder.indexOf(parentActId);
+              if (parentActIndexGlobal > 0) {
+                const prevActId = actOrder[parentActIndexGlobal - 1];
+                const prevAct = acts[prevActId]; // Use acts from outer scope for reading structure
+                if (prevAct && prevAct.chapterOrder && prevAct.chapterOrder.length > 0) {
+                  const targetChapterId = prevAct.chapterOrder[prevAct.chapterOrder.length - 1];
+                  const targetChapter = newChapters[targetChapterId];
+                  if (targetChapter && targetChapter.sceneOrder) {
+                    const currentSceneOrder = chapter.sceneOrder.filter(id => id !== sceneId);
+                    const targetChapterSceneOrder = [...targetChapter.sceneOrder, sceneId];
+                    newChapters[parentChapterId] = { ...chapter, sceneOrder: currentSceneOrder, last_modified_date: new Date().toISOString() };
+                    newChapters[targetChapterId] = { ...targetChapter, sceneOrder: targetChapterSceneOrder, last_modified_date: new Date().toISOString() };
+                  }
+                }
+              }
+            }
+          }
+        } else if (direction === 'down') {
+          if (sceneIndex < chapter.sceneOrder.length - 1) { // Move down within the same chapter
+            const newSceneOrder = [...chapter.sceneOrder];
+            [newSceneOrder[sceneIndex + 1], newSceneOrder[sceneIndex]] = [newSceneOrder[sceneIndex], newSceneOrder[sceneIndex + 1]];
+            newChapters[parentChapterId] = { ...chapter, sceneOrder: newSceneOrder, last_modified_date: new Date().toISOString() };
+          } else { // Last scene in chapter, try to move to next chapter or act
+            const parentAct = acts[parentActId];
+            if (!parentAct || !parentAct.chapterOrder) return currentChapters;
+            const chapterIndexInAct = parentAct.chapterOrder.indexOf(parentChapterId);
+
+            if (chapterIndexInAct !== -1 && chapterIndexInAct < parentAct.chapterOrder.length - 1) { // Move to next chapter in the same act
+              const nextChapterId = parentAct.chapterOrder[chapterIndexInAct + 1];
+              const nextChapter = newChapters[nextChapterId];
+              if (nextChapter && nextChapter.sceneOrder) {
+                const currentSceneOrder = chapter.sceneOrder.filter(id => id !== sceneId);
+                const nextChapterSceneOrder = [sceneId, ...nextChapter.sceneOrder];
+                newChapters[parentChapterId] = { ...chapter, sceneOrder: currentSceneOrder, last_modified_date: new Date().toISOString() };
+                newChapters[nextChapterId] = { ...nextChapter, sceneOrder: nextChapterSceneOrder, last_modified_date: new Date().toISOString() };
+              }
+            } else if (chapterIndexInAct === parentAct.chapterOrder.length - 1) { // Last chapter in act, try to move to next act's first chapter
+              const parentActIndexGlobal = actOrder.indexOf(parentActId);
+              if (parentActIndexGlobal !== -1 && parentActIndexGlobal < actOrder.length - 1) {
+                const nextActId = actOrder[parentActIndexGlobal + 1];
+                const nextAct = acts[nextActId]; // Use acts from outer scope for reading structure
+                if (nextAct && nextAct.chapterOrder && nextAct.chapterOrder.length > 0) {
+                  const targetChapterId = nextAct.chapterOrder[0];
+                  const targetChapter = newChapters[targetChapterId];
+                  if (targetChapter && targetChapter.sceneOrder) {
+                    const currentSceneOrder = chapter.sceneOrder.filter(id => id !== sceneId);
+                    const targetChapterSceneOrder = [sceneId, ...targetChapter.sceneOrder];
+                    newChapters[parentChapterId] = { ...chapter, sceneOrder: currentSceneOrder, last_modified_date: new Date().toISOString() };
+                    newChapters[targetChapterId] = { ...targetChapter, sceneOrder: targetChapterSceneOrder, last_modified_date: new Date().toISOString() };
+                  }
+                }
+              }
+            }
+          }
+        }
+        return newChapters;
+      });
+    }, [acts, actOrder]), // Include acts and actOrder as dependencies for reading structure
+
+    canMoveSceneUp: useCallback((sceneId, parentChapterId, parentActId) => {
+      const chapter = chapters[parentChapterId];
+      if (!chapter || !chapter.sceneOrder) return false;
+      const sceneIndex = chapter.sceneOrder.indexOf(sceneId);
+      if (sceneIndex > 0) return true; // Can move up within the same chapter
+
+      // Check if it's the first scene, try previous chapter or act
+      const parentAct = acts[parentActId];
+      if (!parentAct || !parentAct.chapterOrder) return false;
+      const chapterIndexInAct = parentAct.chapterOrder.indexOf(parentChapterId);
+
+      if (chapterIndexInAct > 0) { // Previous chapter in same act
+        const prevChapterId = parentAct.chapterOrder[chapterIndexInAct - 1];
+        return chapters[prevChapterId] && chapters[prevChapterId].sceneOrder !== undefined;
+      } else if (chapterIndexInAct === 0) { // First chapter in act, check previous act
+        const parentActIndexGlobal = actOrder.indexOf(parentActId);
+        if (parentActIndexGlobal > 0) {
+          const prevActId = actOrder[parentActIndexGlobal - 1];
+          const prevAct = acts[prevActId];
+          return prevAct && prevAct.chapterOrder && prevAct.chapterOrder.length > 0 && 
+                 chapters[prevAct.chapterOrder[prevAct.chapterOrder.length -1]]?.sceneOrder !== undefined;
+        }
+      }
+      return false;
+    }, [chapters, acts, actOrder]),
+
+    canMoveSceneDown: useCallback((sceneId, parentChapterId, parentActId) => {
+      const chapter = chapters[parentChapterId];
+      if (!chapter || !chapter.sceneOrder) return false;
+      const sceneIndex = chapter.sceneOrder.indexOf(sceneId);
+      if (sceneIndex !== -1 && sceneIndex < chapter.sceneOrder.length - 1) return true; // Can move down within same chapter
+
+      // Check if it's the last scene, try next chapter or act
+      const parentAct = acts[parentActId];
+      if (!parentAct || !parentAct.chapterOrder) return false;
+      const chapterIndexInAct = parentAct.chapterOrder.indexOf(parentChapterId);
+      
+      if (chapterIndexInAct !== -1 && chapterIndexInAct < parentAct.chapterOrder.length - 1) { // Next chapter in same act
+        const nextChapterId = parentAct.chapterOrder[chapterIndexInAct + 1];
+        return chapters[nextChapterId] && chapters[nextChapterId].sceneOrder !== undefined;
+      } else if (chapterIndexInAct === parentAct.chapterOrder.length - 1) { // Last chapter in act, check next act
+        const parentActIndexGlobal = actOrder.indexOf(parentActId);
+        if (parentActIndexGlobal !== -1 && parentActIndexGlobal < actOrder.length - 1) {
+          const nextActId = actOrder[parentActIndexGlobal + 1];
+          const nextAct = acts[nextActId];
+          return nextAct && nextAct.chapterOrder && nextAct.chapterOrder.length > 0 &&
+                 chapters[nextAct.chapterOrder[0]]?.sceneOrder !== undefined;
+        }
+      }
+      return false;
+    }, [chapters, acts, actOrder]),
   };
 
   // Render children only when data for the specific novelId is loaded or initialized

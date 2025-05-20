@@ -11,7 +11,8 @@ import en from './locales/en/translation.json';
 import es from './locales/es/translation.json';
 import de from './locales/de/translation.json';
 import cn from './locales/cn/translation.json';
-import rus from './locales/rus/translation.json';
+import ru from './locales/ru/translation.json';
+import vi from './locales/vi/translation.json';
 
 const resources = {
   en: {
@@ -26,8 +27,11 @@ const resources = {
   cn: {
     translation: cn,
   },
-  rus: {
-    translation: rus,
+  ru: {
+    translation: ru,
+  },
+  vi: {
+    translation: vi,
   }
 };
 
