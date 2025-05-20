@@ -209,7 +209,8 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
         <div className="flex items-center"> {/* Right side items: Font Settings Popover, Theme Toggle */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="ml-2" title={t('novel_editor_font_settings_tooltip')}>
+              {/* Apply hidden md:inline-flex to hide on small screens and show on md+ */}
+              <Button variant="ghost" size="icon" className="ml-2 hidden md:inline-flex" title={t('novel_editor_font_settings_tooltip')}>
                 <Text className="h-5 w-5" />
               </Button>
             </PopoverTrigger>

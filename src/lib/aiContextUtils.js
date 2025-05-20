@@ -250,27 +250,33 @@ function buildConceptDetails(concepts, trimDescription = false, scenes = null, t
   }
 
   let details = "";
-  if (concepts && concepts.length > 0 && relevantConceptIds.size > 0) {
-      details = "CONCEPTS:\n";
-  }
   let conceptsIncludedCount = 0;
-  if (concepts) {
-    relevantConceptIds.forEach(id => {
-      const concept = concepts.find(c => c.id === id);
-      if (concept) {
+
+  if (concepts && concepts.length > 0 && relevantConceptIds.size > 0) {
+    const relevantConceptObjects = concepts
+      .filter(c => relevantConceptIds.has(c.id))
+      .sort((a, b) => {
+        // Ascending sort by priority. Undefined/null/NaN priorities are treated as lowest (Infinity).
+        const prioA = typeof a.priority === 'number' && !isNaN(a.priority) ? a.priority : Infinity;
+        const prioB = typeof b.priority === 'number' && !isNaN(b.priority) ? b.priority : Infinity;
+        return prioA - prioB;
+      });
+
+    if (relevantConceptObjects.length > 0) {
+      details = "CONCEPTS:\n";
+      relevantConceptObjects.forEach(concept => {
         conceptsIncludedCount++;
         details += `  Name: ${concept.name || 'Unnamed Concept'}\n`;
         if (concept.aliases && concept.aliases.length > 0) {
           details += `    Aliases: ${concept.aliases.join(', ')}\n`;
         }
         if (concept.description) {
-          // trimDescription is passed but L1 always uses false.
           const desc = trimDescription ? concept.description.substring(0, 100) + (concept.description.length > 100 ? '...' : '') : concept.description;
           details += `    Description: ${desc.replace(/\n/g, '\n      ')}\n`;
         }
         details += "\n";
-      }
-    });
+      });
+    }
   }
   
   if (conceptsIncludedCount === 0) return "";
