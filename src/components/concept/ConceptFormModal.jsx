@@ -17,18 +17,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { UserRoundPen, CircleX, Settings } from 'lucide-react'; // Added icons, Settings
+import { UserRoundPen, CircleX, Settings, WandSparkles } from 'lucide-react'; // Added icons, Settings, WandSparkles
 
 import { useData } from '@/context/DataContext';
+import { useSettings } from '@/context/SettingsContext'; // For AI settings
+import { AISuggestionModal } from '@/components/ai/AISuggestionModal'; // For AI suggestions
+import { useToast } from '@/hooks/use-toast'; // For notifications
+import { getAllNovelMetadata, getNovelData } from '@/lib/indexedDb'; // For fetching novel name and full novel data
+import { tokenCount } from '@/lib/utils'; // For estimating token count
 // import { createConcept } from '@/data/models'; // createConcept is not used here
 // import { defaultConceptTemplates } from '@/data/conceptTemplates'; // Will use conceptTemplates from DataContext
 import ManageTemplatesModal from './ManageTemplatesModal'; // Import ManageTemplatesModal
 
 const NO_TEMPLATE_VALUE = "__no_template__"; // Constant for "None" option
+const defaultConceptDescriptionPrompt = 'concept description:'; // TODO: Consider t('concept_form_modal_default_description_prompt')
 
 const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
   const { t } = useTranslation();
-  const { addConcept, updateConcept, conceptTemplates } = useData(); // Get conceptTemplates from DataContext
+  const { addConcept, updateConcept, conceptTemplates, currentNovelId, synopsis: synopsisFromContext, concepts: conceptsFromContext } = useData();
+  const { taskSettings, TASK_KEYS, showAiFeatures } = useSettings();
+  const { toast } = useToast();
+
+  // State for self-fetched novel data for AI context
+  const [localNovelData, setLocalNovelData] = useState(null);
+  const [localNovelName, setLocalNovelName] = useState('');
+  const [isLoadingNovelContext, setIsLoadingNovelContext] = useState(false);
+
   const [name, setName] = useState('');
   const [aliases, setAliases] = useState(''); // Comma-separated
   const [tags, setTags] = useState(''); // Comma-separated
@@ -40,8 +54,89 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
   const [showAliases, setShowAliases] = useState(false); // State to toggle alias field visibility
   const [useImageUrl, setUseImageUrl] = useState(false); // State to toggle image input type, default to false (file upload)
   const [isManageTemplatesModalOpen, setIsManageTemplatesModalOpen] = useState(false);
+  const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false); // State for AI modal
+  const [contextForAI, setContextForAI] = useState('');
+  const [contextTokensForAI, setContextTokensForAI] = useState(0);
 
   const isEditing = Boolean(conceptToEdit);
+
+  useEffect(() => {
+    if (open && currentNovelId) {
+      const loadNovelContextData = async () => {
+        setIsLoadingNovelContext(true);
+        try {
+          const [novelDataResult, allMetaResult] = await Promise.all([
+            getNovelData(currentNovelId),
+            getAllNovelMetadata()
+          ]);
+          
+          setLocalNovelData(novelDataResult);
+
+          const currentNovelMeta = allMetaResult.find(meta => meta.id === currentNovelId);
+          setLocalNovelName(currentNovelMeta ? currentNovelMeta.name : '');
+
+        } catch (error) {
+          console.error("Error fetching novel context data in ConceptFormModal:", error);
+          setLocalNovelData(null);
+          setLocalNovelName('');
+        }
+        setIsLoadingNovelContext(false);
+      };
+      loadNovelContextData();
+    } else if (open) { // Modal is open but no currentNovelId
+      setLocalNovelData(null);
+      setLocalNovelName('');
+      setIsLoadingNovelContext(false);
+    }
+  }, [open, currentNovelId]);
+
+  const prepareAIContextAndOpenModal = () => { 
+    if (isLoadingNovelContext) {
+      toast({ title: t('toast_context_loading_title'), description: t('toast_context_loading_desc_concept'), variant: "destructive" });
+      return; 
+    }
+    if (!currentNovelId) {
+      toast({ title: t('toast_no_active_novel_title'), description: t('toast_no_active_novel_desc_ai'), variant: "destructive" });
+      return;
+    }
+
+    let contextString = "";
+
+    if (localNovelName) {
+      contextString += `Novel Name: ${localNovelName}\n`;
+    } else {
+      contextString += `Novel ID: ${currentNovelId} (Name not available)\n`;
+    }
+
+    const synopsisToUse = localNovelData?.synopsis ?? synopsisFromContext;
+    if (synopsisToUse) {
+      contextString += `Novel Synopsis: ${synopsisToUse}\n\n`;
+    } else {
+      contextString += `Novel Synopsis: (Not available or empty)\n\n`;
+    }
+  
+    const conceptsToUse = localNovelData?.concepts ?? conceptsFromContext;
+    if (conceptsToUse && conceptsToUse.length > 0) {
+      contextString += "Other Existing Concepts in this Novel:\n";
+      conceptsToUse.slice(0, 10).forEach(concept => { 
+        contextString += `- ${concept.name}: ${concept.description?.substring(0, 75) || 'No description.'} (Tags: ${concept.tags?.join(', ') || 'none'})\n`;
+      });
+      if (conceptsToUse.length > 10) {
+        contextString += `... and ${conceptsToUse.length - 10} more concepts.\n`;
+      }
+      contextString += "\n";
+    }
+  
+    contextString += "Current Concept Details (for which to generate a description):\n";
+    contextString += `Name: ${name || "(Not yet named)"}\n`;
+    if (aliases) contextString += `Aliases: ${aliases}\n`;
+    if (tags) contextString += `Tags: ${tags}\n`;
+    if (description) contextString += `Current Description Draft: ${description}\n`;
+    
+    setContextForAI(contextString);
+    setContextTokensForAI(tokenCount(contextString));
+    setIsAISuggestionModalOpen(true);
+  };
 
   const applyTemplate = (templateId) => {
     setSelectedTemplateId(templateId); // Set the selected ID first
@@ -100,8 +195,19 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
   useEffect(() => {
     if (open) {
       resetFormFields(); // This will correctly populate or clear based on isEditing
+      // Reset AI context related state if modal is re-opened for a different concept or new
+      setContextForAI('');
+      setContextTokensForAI(0);
+      // Fetch novel context if modal is opened
+      if (open && currentNovelId) {
+        // The useEffect for [open, currentNovelId] will handle fetching
+      } else if (open) {
+        setLocalNovelData(null);
+        setLocalNovelName('');
+        setIsLoadingNovelContext(false);
+      }
     }
-  }, [conceptToEdit, isEditing, open]);
+  }, [conceptToEdit, isEditing, open, currentNovelId]); // Added currentNovelId dependency
 
 
   const handleSubmit = () => {
@@ -203,8 +309,28 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
               <TabsTrigger value="notes">{t('concept_form_modal_tab_notes')}</TabsTrigger>
             </TabsList>
             <TabsContent value="description">
-              <div className="flex flex-col gap-2">
-                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('concept_form_modal_placeholder_description')} rows={4}/>
+              <div className="flex flex-col gap-2 relative"> {/* Added relative positioning */}
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t('concept_form_modal_placeholder_description')}
+                  rows={4}
+                  className={showAiFeatures ? "pr-10" : ""} // Add padding for the button
+                />
+                {showAiFeatures && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute bottom-2 right-2 h-7 w-7 text-slate-500 hover:text-slate-700"
+                    onClick={prepareAIContextAndOpenModal}
+                    aria-label={t('create_concept_modal_ai_description_label')} // Re-use translation or create new
+                    disabled={isLoadingNovelContext || !currentNovelId} 
+                  >
+                    <WandSparkles className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="notes">
@@ -298,6 +424,24 @@ const ConceptFormModal = ({ children, open, onOpenChange, conceptToEdit }) => {
       open={isManageTemplatesModalOpen}
       onOpenChange={setIsManageTemplatesModalOpen}
     />
+
+    {isAISuggestionModalOpen && (
+      <AISuggestionModal
+        isOpen={isAISuggestionModalOpen}
+        onClose={() => setIsAISuggestionModalOpen(false)}
+        currentText={description}
+        initialQuery={taskSettings[TASK_KEYS.CONCEPT_DESC]?.prompt || defaultConceptDescriptionPrompt}
+        novelData={contextForAI}
+        novelDataTokens={contextTokensForAI}
+        onAccept={(suggestion) => {
+          setDescription(suggestion);
+          setIsAISuggestionModalOpen(false);
+          toast({ title: t('toast_concept_description_updated_title'), description: t('toast_concept_description_updated_desc') });
+        }}
+        fieldLabel={t('create_concept_modal_ai_modal_field_label_description')} // Re-use or create new
+        taskKeyForProfile={TASK_KEYS.CONCEPT_DESC}
+      />
+    )}
   </>
   );
 };

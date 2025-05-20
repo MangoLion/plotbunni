@@ -22,10 +22,17 @@ const ConceptCacheList = () => {
   const handleDuplicateConcept = (conceptToDuplicate) => {
     const newName = `${conceptToDuplicate.name} ${t('concept_cache_duplicate_suffix')}`;
     // Create a new concept object, ensuring a new ID and updated timestamps
+    const { 
+      id: _oldId, 
+      creation_date: _oldCreationDate, 
+      last_modified_date: _oldLastModifiedDate,
+      ...restOfConceptToDuplicate 
+    } = conceptToDuplicate;
+
     const duplicatedConcept = createConcept({
-      ...conceptToDuplicate, // Spread existing properties
-      name: newName,         // Set new name
-      // id, creation_date, last_modified_date will be handled by createConcept
+      ...restOfConceptToDuplicate, // Spread properties EXCEPT original id and dates
+      name: newName,               // Set new name
+      // id, creation_date, last_modified_date will be (and must be) generated fresh by createConcept
     });
     addConcept(duplicatedConcept);
   };

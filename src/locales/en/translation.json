@@ -630,5 +630,10 @@
   "write_view_chapter_no_scenes_message": "This chapter has no scenes yet. Add scenes in the 'Plan' tab.",
   "write_view_act_no_chapters_message": "This act has no chapters yet. Add chapters in the 'Plan' tab.",
   "root_app_error_no_novel_id": "Error: No Novel ID provided.",
-  "root_app_go_to_novels_link": "Go to Novels"
+  "root_app_go_to_novels_link": "Go to Novels",
+  "create_concept_modal_default_description_prompt": "Write a detailed and engaging description for this concept, considering its name, aliases, tags, and any existing draft.",
+  "create_concept_modal_ai_description_label": "Get AI Suggestion for Description",
+  "create_concept_modal_ai_modal_field_label_description": "Concept Description",
+  "toast_concept_description_updated_title": "Description Updated",
+  "toast_concept_description_updated_desc": "The concept description has been updated with the AI suggestion."
 }

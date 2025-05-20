@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useData } from '../../context/DataContext';
+import { getAllNovelMetadata } from '@/lib/indexedDb'; // Import getAllNovelMetadata
 import { createAct, createChapter, createScene } from '@/data/models';
 import { WandSparkles } from 'lucide-react';
 import { AISuggestionModal } from '../ai/AISuggestionModal';
@@ -42,15 +43,34 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
   const [isAISuggestionModalOpen, setIsAISuggestionModalOpen] = useState(false);
   const [replaceExisting, setReplaceExisting] = useState(false);
   const { taskSettings, TASK_KEYS, showAiFeatures } = useSettings();
-  const { synopsis: novelSynopsis } = useData();
+  const { synopsis: novelSynopsis, currentNovelId } = useData(); // Get currentNovelId
+  const [novelName, setNovelName] = useState(''); // State for novel name
 
   useEffect(() => {
+    const fetchNovelName = async () => {
+      if (currentNovelId) {
+        try {
+          const allMetadata = await getAllNovelMetadata();
+          const currentNovelMeta = allMetadata.find(meta => meta.id === currentNovelId);
+          if (currentNovelMeta) {
+            setNovelName(currentNovelMeta.name);
+          }
+        } catch (err) {
+          console.error("Failed to fetch novel name:", err);
+          setNovelName(''); // Fallback
+        }
+      } else {
+        setNovelName(''); // Reset if no novelId
+      }
+    };
+
     if (open) {
       setOutlineText(EXAMPLE_OUTLINE);
       setError('');
       setReplaceExisting(false);
+      fetchNovelName(); // Fetch novel name when modal opens
     }
-  }, [open]);
+  }, [open, currentNovelId]);
 
   const detectIndentation = (lines) => {
     for (const line of lines) {
@@ -133,7 +153,8 @@ const ImportOutlineModal = ({ open, onOpenChange, onImportConfirm }) => {
     }
   };
 
-  const novelDataContextForAI = novelSynopsis ? `Synopsis: ${novelSynopsis}` : "";
+  const novelDataContextForAI = 
+    `${novelName ? `Novel Name: ${novelName}\n` : ''}${novelSynopsis ? `Synopsis: ${novelSynopsis}` : ''}`.trim();
   const novelDataTokensForAI = tokenCount(novelDataContextForAI);
 
   return (

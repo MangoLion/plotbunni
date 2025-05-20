@@ -32,6 +32,7 @@ const TASK_KEYS = {
   SCENE_TEXT: 'sceneTextWriting',
   CHAT: 'chatting',
   NOVEL_DESC: 'novelDescriptionWriting',
+  CONCEPT_DESC: 'conceptDescriptionWriting', // New task key
 };
 
 const DEFAULT_TASK_PROMPTS = {
@@ -39,6 +40,7 @@ const DEFAULT_TASK_PROMPTS = {
   [TASK_KEYS.SYNOPSIS]: "write the synopsis for the next chapter scene. Do not write the chapter or scene title.",
   [TASK_KEYS.SCENE_TEXT]: "Based on the provided scene synopsis and context, write the full text for this scene. Do not write the chapter or scene title.",
   [TASK_KEYS.CHAT]: "Engage in a helpful conversation about the novel, offering ideas, answering questions, or discussing plot points.",
+  [TASK_KEYS.CONCEPT_DESC]: "Based on the provided concept name and details, write a compelling description for this concept. Focus on its key attributes and role. Do not write the concept name or any other labels.", // New default prompt
   [TASK_KEYS.PLANNER_OUTLINE]: 
   `Generate a comprehensive plot outline for a new novel based on the synopsis above. NO markdown, plaintext only!
 Use indentation (tabs or spaces) to define acts, chapters, and scenes. Example: Act (no indent), Chapter (1 indent), Scene (2 indents), Synopsis (3 indents). Example format:
@@ -89,10 +91,14 @@ const createDefaultTaskSettings = (defaultProfileId = null) => ({
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.CHAT],
   },
-  [TASK_KEYS.NOVEL_DESC]: { // New task settings
+  [TASK_KEYS.NOVEL_DESC]: { 
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.NOVEL_DESC],
   },
+  [TASK_KEYS.CONCEPT_DESC]: { // New task settings
+    profileId: defaultProfileId,
+    prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.CONCEPT_DESC],
+  }
 });
 
 
