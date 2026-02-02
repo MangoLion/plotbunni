@@ -72,7 +72,7 @@ Plot Bunni offers a comprehensive suite of features for novelists:
 -   **CRUD Operations**:
     -   Create new concepts (from templates or blank).
     -   Edit existing concepts (name, description, image, tags, aliases, custom fields based on template).
-    -   Delete concepts (with confirmation).
+    -   Delete concepts (with confirmation, automatically removes references from linked scenes).
     -   Duplicate concepts.
 -   **Search & Filter**: Quickly find concepts by name, tags, aliases, or description. (Filter UI present, full functionality TBD).
 -   **Template System**:
@@ -118,7 +118,9 @@ Plot Bunni offers a comprehensive suite of features for novelists:
     -   Reusable `AISuggestionModal` for various text generation tasks.
     -   Context generation utilities (`aiContextUtils.js`) with truncation strategies to manage token limits.
     -   Task-specific AI configurations and system prompts.
--   **Data Persistence**: All novel-specific data is saved locally using IndexedDB, ensuring work is not lost.
+-   **Data Persistence**:
+    -   All novel-specific data is saved locally using IndexedDB, ensuring work is not lost.
+    -   Includes sanity checks during novel loading (e.g., removing references to deleted concepts from scenes).
 -   **Responsive Design**: UI adapts for optimal use on desktop, tablet, and mobile devices.
 -   **Error Handling & Loading States**: Provides feedback during data operations and loading.
 

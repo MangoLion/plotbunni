@@ -370,7 +370,7 @@ const SettingsView = () => {
                       <span>GitHub</span>
                     </a>
                     <a
-                      href="https://discord.gg/5ACMfHcJ"
+                      href="https://discord.gg/zB6TrHTwAb"
                       target="_blank"
                       rel="noopener noreferrer"
                       title={t('settings_about_discord_tooltip', 'Discord Community')}

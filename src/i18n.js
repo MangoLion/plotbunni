@@ -13,6 +13,7 @@ import de from './locales/de/translation.json';
 import cn from './locales/cn/translation.json';
 import ru from './locales/ru/translation.json';
 import vi from './locales/vi/translation.json';
+import fr from './locales/fr/translation.json';
 
 const resources = {
   en: {
@@ -32,6 +33,9 @@ const resources = {
   },
   vi: {
     translation: vi,
+  },
+  fr: {
+    translation: fr,
   }
 };
 

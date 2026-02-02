@@ -5,9 +5,11 @@ import { useSettings } from '../../context/SettingsContext';
 import { AISuggestionModal } from '../ai/AISuggestionModal';
 import { AINovelWriterModal } from '../ai/AINovelWriterModal';
 import NovelOutlinePopover from './NovelOutlinePopover'; // Import the new component
-import { WandSparkles, Sparkles, Type as TypeIcon, PlusCircle } from 'lucide-react'; // Removed NotebookText
+import FocusedEditor from './FocusedEditor'; // Import FocusedEditor
+import { WandSparkles, Sparkles, Type as TypeIcon, PlusCircle, BookText, Focus } from 'lucide-react'; // Added BookText, Focus
 import Markdown from 'react-markdown';
 import { Button } from '../ui/button';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'; // For view mode toggle
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'; // Re-add Popover imports
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -96,7 +98,8 @@ const AutoExpandingTextarea = React.forwardRef(({
     scenesData, // Renamed to avoid conflict with useData().scenes
     concepts,
     // Pass all novel detail fields
-    novelDetailsForContext
+    novelDetailsForContext,
+    onTextAreaFocus // New prop for when the actual textarea gets focus
 }, forwardedRef) => {
     const { t } = useTranslation();
     const internalTextareaRef = useRef(null); // For the <Textarea> element itself
@@ -158,7 +161,8 @@ const AutoExpandingTextarea = React.forwardRef(({
         setIsEditingScene(false); // Exit editing mode
         const originalScene = scenesFromHook[sceneId];
         if (originalScene && originalScene.content !== text) {
-            updateScene({ id: sceneId, content: text });
+            // Preserve all existing scene properties and only update the content
+            updateScene({ ...originalScene, content: text });
         }
     };
 
@@ -214,7 +218,13 @@ const AutoExpandingTextarea = React.forwardRef(({
     
     const handleAcceptAISuggestion = (suggestion) => {
         setText(suggestion);
-        updateScene({ id: sceneId, content: suggestion });
+        const originalScene = scenesFromHook[sceneId];
+        if (originalScene) {
+            // Preserve all existing scene properties and only update the content
+            updateScene({ ...originalScene, content: suggestion });
+        } else {
+            updateScene({ id: sceneId, content: suggestion });
+        }
         setIsAISuggestionModalOpen(false);
     };
 
@@ -230,6 +240,7 @@ const AutoExpandingTextarea = React.forwardRef(({
                         value={text}
                         onChange={handleChange}
                         onBlur={handleBlur}
+                        onFocus={onTextAreaFocus} // Call the passed onFocus handler
                         placeholder={placeholder || t('write_view_textarea_default_placeholder')}
                         className="w-full resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 pr-10 transition-all duration-200 ease-in-out" // Removed pl-10, not needed for top-right button
                     />
@@ -316,13 +327,45 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
     const { t } = useTranslation();
     const {
       acts, chapters, scenes, actOrder, concepts,
-      updateAct, updateChapter, addChapterToAct, addSceneToChapter, // Added addChapterToAct and addSceneToChapter
-      // Destructure all novel detail fields needed for AutoExpandingTextarea context
-      novelSynopsis, genre, pointOfView, timePeriod, targetAudience, themes, tone
+      updateAct, updateChapter, updateScene, // Added updateScene
+      addChapterToAct, addSceneToChapter, 
+      // Destructure all novel detail fields needed for AI context
+      synopsis, genre, pointOfView, timePeriod, targetAudience, themes, tone // Note: DataContext exposes 'synopsis', not 'novelSynopsis'
     } = useData();
-    const { showAiFeatures } = useSettings(); // Get showAiFeatures
+    const { showAiFeatures, taskSettings, TASK_KEYS, systemPrompt, getActiveProfile } = useSettings(); // Get showAiFeatures and AI settings
     const [isAINovelWriterModalOpen, setIsAINovelWriterModalOpen] = useState(false);
-    const [isOutlinePopoverOpen, setIsOutlinePopoverOpen] = useState(false); // State for outline popover remains here
+    const [isOutlinePopoverOpen, setIsOutlinePopoverOpen] = useState(false); 
+    const [viewMode, setViewMode] = useState('full'); // 'full' or 'focused', default 'focused'
+    const [focusedSceneId, setFocusedSceneId] = useState(null);
+    const [isNarrowScreen, setIsNarrowScreen] = useState(false);
+    
+    // Check if device has a narrow screen (phone in portrait mode)
+    useEffect(() => {
+        const checkScreenWidth = () => {
+            // Consider a screen with width less than 768px as narrow
+            setIsNarrowScreen(window.innerWidth < 768);
+        };
+        
+        // Initial check
+        checkScreenWidth();
+        
+        // Add event listener for window resizes
+        window.addEventListener('resize', checkScreenWidth);
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('resize', checkScreenWidth);
+        };
+    }, []);
+
+    // AI Suggestion Modal for Focused View
+    const [isFocusedAISuggestionModalOpen, setIsFocusedAISuggestionModalOpen] = useState(false);
+    const [focusedAiSceneContext, setFocusedAiSceneContext] = useState({
+        contextString: "",
+        estimatedTokens: 0,
+        level: 0,
+        error: null,
+    });
     
     // State for Chapter and Scene modals
     const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
@@ -333,61 +376,216 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
     // showAddButtonsInOutline state and useEffect are moved to NovelOutlinePopover.jsx
 
     const chapterRefs = useRef({});
-    const sceneTextareaRefs = useRef({}); // This will store refs to the AutoExpandingTextarea's outer div
+    const sceneTextareaRefs = useRef({}); 
+    // const focusedEditorRef = useRef(null); // Ref for FocusedEditor is not currently needed
+    const debounceTimeoutRef = useRef(null); // For debouncing focused editor changes
+
+    const prevViewModeRef = useRef(viewMode); // To track previous viewMode
+
+    // Create a combined novelDetails object for AI context
+    const novelDetails = useMemo(() => {
+        return {
+            synopsis,
+            genre,
+            pointOfView,
+            timePeriod,
+            targetAudience,
+            themes,
+            tone
+        };
+    }, [synopsis, genre, pointOfView, timePeriod, targetAudience, themes, tone]);
 
     const novelDataForAI = useMemo(() => {
-        return { actOrder, acts, chapters, scenes, concepts };
-    }, [actOrder, acts, chapters, scenes, concepts]);
+        return { actOrder, acts, chapters, scenes, concepts, novelDetails }; // Pass the combined novelDetails
+    }, [actOrder, acts, chapters, scenes, concepts, novelDetails]);
 
+    // Effect 1: Handles explicit navigation from props (e.g., from PlanView)
     useEffect(() => {
-        if (scenes && sceneTextareaRefs.current) { // Ensure scenes and refs are available
-            if (targetSceneId && sceneTextareaRefs.current[targetSceneId]) {
-                const targetTextarea = sceneTextareaRefs.current[targetSceneId];
-                targetTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => targetTextarea.focus(), 300);
-            } else if (targetChapterId && chapters && chapterRefs.current) {
-                const chapter = chapters[targetChapterId];
-                if (chapter && chapter.sceneOrder && chapter.sceneOrder.length > 0) {
-                    const firstSceneIdInChapter = chapter.sceneOrder[0];
-                    if (sceneTextareaRefs.current[firstSceneIdInChapter]) {
-                        const firstSceneTextarea = sceneTextareaRefs.current[firstSceneIdInChapter];
-                        firstSceneTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        setTimeout(() => firstSceneTextarea.focus(), 300);
-                    } else if (chapterRefs.current[targetChapterId]) {
-                        chapterRefs.current[targetChapterId].scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                } else if (chapterRefs.current[targetChapterId]) {
+        if (!scenes || Object.keys(scenes).length === 0) return;
+
+        let newNavTargetSceneId = null;
+        if (targetSceneId && scenes[targetSceneId]) { // Navigating directly to a scene
+            newNavTargetSceneId = targetSceneId;
+        } else if (targetChapterId && chapters && chapters[targetChapterId]?.sceneOrder?.length > 0) { // Navigating to a chapter, focus its first scene
+            newNavTargetSceneId = chapters[targetChapterId].sceneOrder[0];
+        }
+
+        if (newNavTargetSceneId && newNavTargetSceneId !== focusedSceneId) {
+            setFocusedSceneId(newNavTargetSceneId);
+            // Scroll to this new target if in full view
+            if (viewMode === 'full') {
+                if (sceneTextareaRefs.current[newNavTargetSceneId]) {
+                    sceneTextareaRefs.current[newNavTargetSceneId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (targetChapterId && chapterRefs.current[targetChapterId]) { // Fallback to chapter scroll if scene ref not ready
                     chapterRefs.current[targetChapterId].scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         }
-    }, [targetChapterId, targetSceneId, chapters, scenes]); // Added targetSceneId and refined dependencies
+    }, [targetSceneId, targetChapterId, scenes, chapters, viewMode, focusedSceneId]); // focusedSceneId added to prevent re-setting if already correct
 
+    // Effect 2: Sets a default focused scene ONLY if one isn't set by navigation or previous interaction (e.g., initial load)
     useEffect(() => {
-        // localStorage.setItem('plotbunni_writeview_showAddButtons', JSON.stringify(showAddButtonsInOutline)); // This logic is moved
-    }, []); // Empty dependency array if no other logic remains here, or adjust if other logic is added
+        if (!focusedSceneId && scenes && Object.keys(scenes).length > 0 && actOrder?.length > 0 && acts && chapters) {
+            let defaultFirstSceneId = null;
+            const firstAct = acts[actOrder[0]];
+            if (firstAct && firstAct.chapterOrder && firstAct.chapterOrder.length > 0) {
+                const firstChapterId = firstAct.chapterOrder[0];
+                const firstChapter = chapters[firstChapterId];
+                if (firstChapter && firstChapter.sceneOrder && firstChapter.sceneOrder.length > 0) {
+                    defaultFirstSceneId = firstChapter.sceneOrder[0];
+                }
+            }
+            if (defaultFirstSceneId) {
+                setFocusedSceneId(defaultFirstSceneId);
+            }
+        }
+    }, [focusedSceneId, scenes, acts, chapters, actOrder]);
+
+    // Effect to update prevViewModeRef after viewMode changes
+    useEffect(() => {
+        prevViewModeRef.current = viewMode;
+    }, [viewMode]);
+
+    // Effect 3: Handles scrolling to the current focusedSceneId when switching TO full view, or if focusedSceneId changes while in full view
+    useEffect(() => {
+        const switchedToFullFromFocused = prevViewModeRef.current === 'focused' && viewMode === 'full';
+
+        if (viewMode === 'full' && focusedSceneId && scenes && scenes[focusedSceneId] && sceneTextareaRefs.current[focusedSceneId]) {
+            const element = sceneTextareaRefs.current[focusedSceneId];
+            
+            if (switchedToFullFromFocused) {
+                // Always scroll to center when switching from focused to full view
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // Original logic for other cases (e.g., focusedSceneId changes while already in full view)
+                const rect = element.getBoundingClientRect();
+                const isInViewport = rect.top >= 0 && rect.left >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+                if (!isInViewport) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    }, [viewMode, focusedSceneId, scenes]); // scenes dependency to ensure scene data is available
+
 
     const handleSceneSelect = (sceneIdToFocus) => {
-        const sceneContainer = sceneTextareaRefs.current[sceneIdToFocus];
-        if (sceneContainer) {
-            sceneContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-            setTimeout(() => {
-                // Attempt to find the non-editing view (Markdown display) first
-                const markdownDisplay = sceneContainer.querySelector('.prose'); 
-                if (markdownDisplay) {
-                    markdownDisplay.click(); // This should trigger edit mode and focus via AutoExpandingTextarea's internal logic
-                } else {
-                    // If not found, it might already be in editing mode
-                    const textarea = sceneContainer.querySelector('textarea');
-                    if (textarea) {
-                        textarea.focus();
+        setFocusedSceneId(sceneIdToFocus);
+        // setViewMode('focused'); // Optionally switch to focused mode upon selection
+        if (viewMode === 'full') {
+            const sceneContainer = sceneTextareaRefs.current[sceneIdToFocus];
+            if (sceneContainer) {
+                sceneContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    const markdownDisplay = sceneContainer.querySelector('.prose');
+                    if (markdownDisplay) markdownDisplay.click();
+                    else {
+                        const textarea = sceneContainer.querySelector('textarea');
+                        if (textarea) textarea.focus();
                     }
-                }
-            }, 300); // Delay to allow for scroll and potential DOM updates
+                }, 300);
+            }
         }
         setIsOutlinePopoverOpen(false);
     };
+    
+    const handleFocusedSceneContentChange = useCallback((newContent) => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        debounceTimeoutRef.current = setTimeout(() => {
+            if (focusedSceneId && scenes[focusedSceneId] && scenes[focusedSceneId].content !== newContent) {
+                // Preserve all existing scene properties and only update the content
+                updateScene({ ...scenes[focusedSceneId], content: newContent });
+            }
+        }, 1000); // 1000ms debounce delay
+    }, [focusedSceneId, scenes, updateScene]);
+
+    // Cleanup debounce timer on component unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const prepareFocusedAISceneContext = async () => {
+        if (!focusedSceneId || !scenes[focusedSceneId]) {
+            setFocusedAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('write_view_ai_context_error_no_scene_selected') });
+            return;
+        }
+
+        // Ensure essential structural data (acts, chapters, scenes, concepts) is available.
+        // We now use the combined novelDetails object created above.
+        if (!actOrder || !acts || !chapters || !scenes || !concepts) {
+            // Log details for debugging to understand what specific data is missing
+            console.error("Focused AI Context Prep: Missing essential base data. Structural data is unavailable.", {
+                hasActOrder: !!actOrder,
+                hasActs: !!acts,
+                hasChapters: !!chapters,
+                hasScenes: !!scenes, // This refers to the 'scenes' collection from useData, not scenes[focusedSceneId]
+                hasConcepts: !!concepts,
+                novelDetailsObject: novelDetails   // Log the novelDetails object for further inspection
+            });
+            setFocusedAiSceneContext({ 
+                contextString: "", 
+                estimatedTokens: 0, 
+                level: 0, 
+                // Using a general error message, but the console log provides specifics for devs
+                error: t('write_view_ai_context_error_base_data') 
+            });
+            return;
+        }
+
+        const activeAIProfile = getActiveProfile();
+        if (!activeAIProfile) {
+            setFocusedAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('write_view_ai_context_error_no_profile') });
+            return;
+        }
+
+        let currentChapterId = null;
+        for (const act of Object.values(acts)) {
+            if (act.chapterOrder) {
+                for (const chapId of act.chapterOrder) {
+                    const chapter = chapters[chapId];
+                    if (chapter?.sceneOrder?.includes(focusedSceneId)) {
+                        currentChapterId = chapId;
+                        break;
+                    }
+                }
+            }
+            if (currentChapterId) break;
+        }
+        if (!currentChapterId) {
+             setFocusedAiSceneContext({ contextString: "", estimatedTokens: 0, level: 0, error: t('write_view_ai_context_error_no_chapter') });
+            return;
+        }
+        
+        // Use the combined novelDetails object directly
+        const contextResult = await generateContextWithRetry({
+            strategy: 'sceneText',
+            baseData: { actOrder, acts, chapters, scenes, concepts, novelDetails },
+            targetData: { targetChapterId: currentChapterId, targetSceneId: focusedSceneId, currentSceneText: scenes[focusedSceneId].content || '' },
+            aiProfile: activeAIProfile,
+            systemPromptText: systemPrompt,
+            userQueryText: taskSettings[TASK_KEYS.SCENE_TEXT]?.prompt || '',
+        });
+        setFocusedAiSceneContext(contextResult);
+    };
+
+    const handleOpenFocusedAISuggestionModal = async () => {
+        await prepareFocusedAISceneContext();
+        setIsFocusedAISuggestionModalOpen(true);
+    };
+
+    const handleAcceptFocusedAISuggestion = (suggestion) => {
+        if (focusedSceneId && scenes[focusedSceneId]) {
+            // Preserve all existing scene properties and only update the content
+            updateScene({ ...scenes[focusedSceneId], content: suggestion });
+        }
+        setIsFocusedAISuggestionModalOpen(false);
+    };
+
 
     const handleOpenChapterModal = (actId) => {
         setCurrentActIdForModal(actId);
@@ -435,37 +633,68 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
 
     return (
         <ScrollArea className="h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 relative">
-            {/* Outline Popover Button - Now uses NovelOutlinePopover component */}
+            {/* Outline Popover Button - Floating Top-Left */}
             <div className="absolute top-4 left-4 z-10">
                 <NovelOutlinePopover
                     isOpen={isOutlinePopoverOpen}
                     onOpenChange={setIsOutlinePopoverOpen}
                     onSceneSelect={handleSceneSelect}
-                    onAddChapter={handleOpenChapterModal} // Pass the handler for adding a chapter
-                    onAddScene={handleOpenSceneModal}     // Pass the handler for adding a scene
-                    // acts, chapters, scenes, actOrder are no longer passed as props
+                    onAddChapter={handleOpenChapterModal}
+                    onAddScene={handleOpenSceneModal}
                 />
             </div>
 
-            {/* Button to open AI Novel Writer Modal */}
-            {showAiFeatures && (
-                <div className="absolute top-4 right-4 z-10">
+            {/* View Mode Toggle - Floating Top-Center */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                <ToggleGroup 
+                    type="single" 
+                    value={viewMode} 
+                    onValueChange={(value) => { if (value) setViewMode(value); }}
+                    className="bg-background rounded-md shadow-md"
+                    aria-label={t('write_view_mode_toggle_label')}
+                >
+                    <ToggleGroupItem value="full" aria-label={t('write_view_mode_full')}>
+                        <BookText className="h-5 w-5" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="focused" aria-label={t('write_view_mode_focused')}>
+                        <Focus className="h-5 w-5" />
+                    </ToggleGroupItem>
+                </ToggleGroup>
+            </div>
+            
+            {/* AI Buttons - Floating Top-Right */}
+            <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
+                {showAiFeatures && viewMode === 'focused' && focusedSceneId && (
+                     <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleOpenFocusedAISuggestionModal}
+                        className="rounded-full shadow-lg hover:bg-primary/10 bg-background"
+                        title={t('write_view_ai_suggestion_tooltip')}
+                    >
+                        <WandSparkles className="h-5 w-5 text-primary" />
+                    </Button>
+                )}
+                {showAiFeatures && ( // AI Novel Writer always available
                     <Button
                         variant="outline"
                         size="icon"
                         onClick={() => setIsAINovelWriterModalOpen(true)}
-                        className="rounded-full shadow-lg hover:bg-primary/10"
+                        className="rounded-full shadow-lg hover:bg-primary/10 bg-background"
                         title={t('write_view_ai_novel_writer_tooltip')}
                     >
                         <Sparkles className="h-5 w-5 text-primary" />
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
 
-            <div className="mx-auto max-w-[800px] w-full space-y-10 pt-12"> {/* Added pt-12 to avoid overlap with button */}
-                {actOrder.map((actId) => {
-                    const act = acts[actId];
-                    if (!act) return null;
+            {/* Content Area */}
+            {/* Added pt-16 to main content containers to avoid overlap with floating buttons */}
+            {viewMode === 'full' && (
+                <div className="mx-auto max-w-[800px] w-full space-y-10 pt-16">
+                    {actOrder.map((actId) => {
+                        const act = acts[actId];
+                            if (!act) return null;
 
                 return (
                     <section key={actId} aria-labelledby={`act-title-${actId}`} className="space-y-6">
@@ -503,62 +732,100 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                                     <CardContent className="p-4">
                                         {chapter.sceneOrder && chapter.sceneOrder.map((sceneId, sceneIndex) => {
                                             const scene = scenes[sceneId];
-                                            if (!scene) return null;
-                                            
-                                            const scenePlaceholder = scene.synopsis 
-                                                ? t('write_view_textarea_placeholder_with_synopsis', { sceneName: scene.name || t('ai_novel_writer_unnamed_scene'), sceneSynopsis: scene.synopsis })
-                                                : t('write_view_textarea_placeholder_no_synopsis', { sceneName: scene.name || t('ai_novel_writer_unnamed_scene') });
+                                                    if (!scene) return null;
+                                                    
+                                                    const scenePlaceholder = scene.synopsis 
+                                                        ? t('write_view_textarea_placeholder_with_synopsis', { sceneName: scene.name || t('ai_novel_writer_unnamed_scene'), sceneSynopsis: scene.synopsis })
+                                                        : t('write_view_textarea_placeholder_no_synopsis', { sceneName: scene.name || t('ai_novel_writer_unnamed_scene') });
 
-                                            return (
-                                                <article key={sceneId} aria-labelledby={`scene-heading-${sceneId}`}>
-                                                    {/* Scene name can be displayed as non-editable heading if desired - REMOVED based on feedback */}
-                                                    {/* {scene.name && <h4 id={`scene-heading-${sceneId}`} className="text-sm font-medium text-muted-foreground mb-1">Scene: {scene.name}</h4>} */}
-                                                    {/* Assign ref to the textarea */}
-                                                    <AutoExpandingTextarea
-                                                        ref={el => sceneTextareaRefs.current[sceneId] = el}
-                                                        sceneId={sceneId}
-                                                        initialValue={scene.content || ''}
-                                                        placeholder={scenePlaceholder}
-                                                        // Pass necessary data for AutoExpandingTextarea to generate its own context
-                                                        actOrder={actOrder}
-                                                        acts={acts}
-                                                        chapters={chapters}
-                                                        scenesData={scenes} // Pass all scenes data
-                                                        concepts={concepts}
-                                                        novelDetailsForContext={{ // Construct and pass novelDetails object
-                                                          synopsis: novelSynopsis,
-                                                          genre,
-                                                          pointOfView,
-                                                          timePeriod,
-                                                          targetAudience,
-                                                          themes,
-                                                          tone,
-                                                        }}
-                                                        sceneName={scene.name}
-                                                        sceneSynopsis={scene.synopsis}
-                                                    />
-                                                    {sceneIndex < chapter.sceneOrder.length - 1 && (
-                                                        <div className="flex justify-center">
-                                                            <div className="w-2/3 h-px mx-auto my-3 bg-gradient-to-r from-transparent via-muted-foreground/70 to-transparent"></div>
-                                                        </div>
-                                                    )}
-                                                </article>
-                                            );
-                                        })}
-                                        {(!chapter.sceneOrder || chapter.sceneOrder.length === 0) && (
-                                            <p className="text-sm text-muted-foreground">{t('write_view_chapter_no_scenes_message')}</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                        {(!act.chapterOrder || act.chapterOrder.length === 0) && (
-                            <p className="text-sm text-muted-foreground ml-4">{t('write_view_act_no_chapters_message')}</p>
+                                                    return (
+                                                        <article key={sceneId} aria-labelledby={`scene-heading-${sceneId}`}>
+                                                            <AutoExpandingTextarea
+                                                                ref={el => sceneTextareaRefs.current[sceneId] = el}
+                                                                sceneId={sceneId}
+                                                                initialValue={scene.content || ''}
+                                                                placeholder={scenePlaceholder}
+                                                                onTextAreaFocus={() =>{setFocusedSceneId(sceneId)}} // Update focusedSceneId on focus
+                                                                actOrder={actOrder}
+                                                                acts={acts}
+                                                                chapters={chapters}
+                                                                scenesData={scenes} 
+                                                                concepts={concepts}
+                                                                novelDetailsForContext={novelDetails} // Pass the whole novelDetails object
+                                                                sceneName={scene.name}
+                                                                sceneSynopsis={scene.synopsis}
+                                                            />
+                                                            {sceneIndex < chapter.sceneOrder.length - 1 && (
+                                                                <div className="flex justify-center">
+                                                                    <div className="w-2/3 h-px mx-auto my-3 bg-gradient-to-r from-transparent via-muted-foreground/70 to-transparent"></div>
+                                                                </div>
+                                                            )}
+                                                        </article>
+                                                    );
+                                                })}
+                                                {(!chapter.sceneOrder || chapter.sceneOrder.length === 0) && (
+                                                    <p className="text-sm text-muted-foreground">{t('write_view_chapter_no_scenes_message')}</p>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                                {(!act.chapterOrder || act.chapterOrder.length === 0) && (
+                                    <p className="text-sm text-muted-foreground ml-4">{t('write_view_act_no_chapters_message')}</p>
+                                )}
+                            </section>
+                        );
+                    })}
+                    </div>
+                )}
+                {viewMode === 'focused' && focusedSceneId && scenes[focusedSceneId] && (
+                    <div className="mx-auto max-w-[800px] w-full h-full flex flex-col pt-16"> {/* Ensure focused editor takes space & has padding */}
+                        {!isNarrowScreen ? (
+                            <FocusedEditor
+                                // ref={focusedEditorRef} // Removed as it's not used and causes a warning
+                                markdown={scenes[focusedSceneId]?.content || ''}
+                                onChange={handleFocusedSceneContentChange}
+                                sceneName={scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene')}
+                                height="calc(100% - 0px)" // Adjust based on parent padding, or use flex to fill
+                                placeholder={
+                                    scenes[focusedSceneId]?.synopsis
+                                    ? t('write_view_textarea_placeholder_with_synopsis', { sceneName: scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene'), sceneSynopsis: scenes[focusedSceneId]?.synopsis })
+                                    : t('write_view_textarea_placeholder_no_synopsis', { sceneName: scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene') })
+                                }
+                            />
+                        ) : (
+                            <div className="w-full">
+                                <h3 className="text-xl font-semibold mb-4">
+                                    {scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene')}
+                                </h3>
+                                <AutoExpandingTextarea
+                                    sceneId={focusedSceneId}
+                                    initialValue={scenes[focusedSceneId]?.content || ''}
+                                    placeholder={
+                                        scenes[focusedSceneId]?.synopsis
+                                        ? t('write_view_textarea_placeholder_with_synopsis', { sceneName: scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene'), sceneSynopsis: scenes[focusedSceneId]?.synopsis })
+                                        : t('write_view_textarea_placeholder_no_synopsis', { sceneName: scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene') })
+                                    }
+                                    actOrder={actOrder}
+                                    acts={acts}
+                                    chapters={chapters}
+                                    scenesData={scenes} 
+                                    concepts={concepts}
+                                    novelDetailsForContext={novelDetails}
+                                    sceneName={scenes[focusedSceneId]?.name}
+                                    sceneSynopsis={scenes[focusedSceneId]?.synopsis}
+                                />
+                            </div>
                         )}
-                    </section>
-                );
-            })}
-            </div>
+                    </div>
+                )}
+                {viewMode === 'focused' && !focusedSceneId && (
+                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center pt-16">
+                        <p className="text-lg mb-2">{t('write_view_focused_no_scene_selected_title')}</p>
+                        <p>{t('write_view_focused_no_scene_selected_message')}</p>
+                    </div>
+                )}
+            {/* Modals are outside the ScrollArea's direct content flow but part of the overall component */}
             {isAINovelWriterModalOpen && (
                 <AINovelWriterModal
                     isOpen={isAINovelWriterModalOpen}
@@ -566,24 +833,32 @@ const WriteView = ({ targetChapterId, targetSceneId }) => {
                     novelData={novelDataForAI}
                 />
             )}
-
-            {/* Chapter Form Modal */}
+            {isFocusedAISuggestionModalOpen && focusedAiSceneContext && scenes[focusedSceneId] && (
+                <AISuggestionModal
+                    isOpen={isFocusedAISuggestionModalOpen}
+                    onClose={() => setIsFocusedAISuggestionModalOpen(false)}
+                    currentText={scenes[focusedSceneId]?.content || ''}
+                    initialQuery={taskSettings[TASK_KEYS.SCENE_TEXT]?.prompt || ''}
+                    novelData={focusedAiSceneContext.contextString}
+                    novelDataTokens={focusedAiSceneContext.estimatedTokens}
+                    novelDataLevel={focusedAiSceneContext.level}
+                    onAccept={handleAcceptFocusedAISuggestion}
+                    fieldLabel={t('write_view_ai_suggestion_field_label_scene', { sceneName: scenes[focusedSceneId]?.name || t('ai_novel_writer_unnamed_scene')})}
+                    taskKeyForProfile={TASK_KEYS.SCENE_TEXT}
+                />
+            )}
             {isChapterModalOpen && currentActIdForModal && (
                 <ChapterFormModal
                     open={isChapterModalOpen}
                     onOpenChange={setIsChapterModalOpen}
                     actId={currentActIdForModal}
-                    // No chapterToEdit means it's a new chapter
                 />
             )}
-
-            {/* Scene Form Modal */}
             {isSceneModalOpen && currentChapterIdForModal && (
                 <SceneFormModal
                     open={isSceneModalOpen}
                     onOpenChange={setIsSceneModalOpen}
                     chapterId={currentChapterIdForModal}
-                    // No sceneToEdit means it's a new scene
                 />
             )}
         </ScrollArea>

@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, ChevronDown, ChevronRight, Send, Bot, User, TriangleAlert, Database, RefreshCcw, StopCircle, Edit2, Check, XCircle, Settings2 } from 'lucide-react';
+import { X, ChevronDown, ChevronRight, Send, Bot, User, TriangleAlert, Database, RefreshCcw, StopCircle, Edit2, Check, XCircle, Settings2, Trash2, RotateCcw } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import {
   Collapsible,
@@ -72,6 +72,8 @@ export const AIChatModal = ({
   const [isMemoryDetailOpen, setIsMemoryDetailOpen] = useState(false);
   const chatAreaRef = useRef(null);
   const [isConfirmResetModalOpen, setIsConfirmResetModalOpen] = useState(false);
+  const [isConfirmDeleteMessageModalOpen, setIsConfirmDeleteMessageModalOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editText, setEditText] = useState("");
 
@@ -409,7 +411,7 @@ export const AIChatModal = ({
     setUserInput(''); 
     
     const aiMessageId = Date.now() + 1;
-    setChatMessages(prev => [...prev, { id: aiMessageId, role: 'ai', content: t('ai_chat_modal_thinking_indicator') }]);
+    setChatMessages(prev => [...prev, { id: aiMessageId, role: 'assistant', content: t('ai_chat_modal_thinking_indicator') }]);
 
     try {
       const messagesPayload = [];
@@ -525,6 +527,193 @@ export const AIChatModal = ({
     const startIndex = getSceneComparableOrder(effectiveStartSceneIdVal);
     const endIndex = getSceneComparableOrder(effectiveEndSceneIdVal);
     return startIndex !== null && endIndex !== null && startIndex > endIndex;
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    setMessageToDelete(messageId);
+    setIsConfirmDeleteMessageModalOpen(true);
+  };
+
+  const confirmDeleteMessage = () => {
+    if (messageToDelete) {
+      setChatMessages(prev => prev.filter(msg => msg.id !== messageToDelete));
+      setMessageToDelete(null);
+    }
+    setIsConfirmDeleteMessageModalOpen(false);
+  };
+
+  const handleRetry = async () => {
+    if (isLoading || chatMessages.length === 0) return;
+    
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    
+    // Only retry if the last message was from AI
+    if (lastMessage.role !== 'ai' && lastMessage.role !== 'assistant') return;
+    
+    // Remove the last AI message - this will leave the chat history ending with the user message
+    setChatMessages(prev => prev.slice(0, -1));
+    
+    // Trigger a new AI response with the existing message history
+    setIsLoading(true);
+    abortControllerRef.current = new AbortController();
+    
+    // Get the updated chat history (without the last AI message)
+    const updatedChatHistory = chatMessages.slice(0, -1);
+    
+    const endpointConfig = getActiveProfile(taskSettings[TASK_KEYS.CHATTING]?.profileId || globalActiveProfileId);
+
+    if (!endpointConfig || !endpointConfig.endpointUrl) {
+      setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
+      setIsLoading(false);
+      return;
+    }
+
+    const baseSystemPrompt = systemPrompt || t('ai_chat_modal_default_system_prompt');
+    const baseSystemPromptTokens = tokenCount(baseSystemPrompt);
+    const fullChatHistoryTokens = tokenCount(updatedChatHistory.map(msg => msg.content).join('\n'));
+
+    let availableTokensForNovelContext = maxContextTokensForPrompt - (baseSystemPromptTokens + fullChatHistoryTokens);
+    if (availableTokensForNovelContext < 0) availableTokensForNovelContext = 0;
+
+    let novelContextToSend = "";
+    let novelContextTokensSentThisTurn = 0;
+
+    if (initialNovelContext.contextString && availableTokensForNovelContext > 0) {
+      if (initialNovelContext.estimatedTokens <= availableTokensForNovelContext) {
+        novelContextToSend = initialNovelContext.contextString;
+        novelContextTokensSentThisTurn = initialNovelContext.estimatedTokens;
+      } else {
+        // Truncate novel context from the end to fit (preserve beginning)
+        let tempNovelContext = initialNovelContext.contextString;
+        let tempTokens = initialNovelContext.estimatedTokens;
+        const minLengthToKeep = 100;
+
+        while (tempTokens > availableTokensForNovelContext && tempNovelContext.length > minLengthToKeep) {
+            const trimChars = Math.max(1, Math.floor(tempNovelContext.length * 0.1));
+            tempNovelContext = tempNovelContext.substring(0, tempNovelContext.length - trimChars);
+            tempTokens = tokenCount(tempNovelContext);
+        }
+        
+        if (tempTokens > availableTokensForNovelContext) {
+            tempNovelContext = tempNovelContext.substring(0, Math.floor(tempNovelContext.length * (availableTokensForNovelContext / tempTokens)));
+            tempTokens = tokenCount(tempNovelContext);
+        }
+
+        novelContextToSend = tempTokens <= availableTokensForNovelContext ? tempNovelContext : "";
+        novelContextTokensSentThisTurn = tokenCount(novelContextToSend);
+      }
+    }
+    setActuallySentNovelContextTokens(novelContextTokensSentThisTurn);
+
+    let effectiveSystemPrompt = baseSystemPrompt;
+    if (novelContextToSend) {
+      effectiveSystemPrompt += `\n\n--- Novel Context Start ---\n${novelContextToSend}\n--- Novel Context End ---`;
+    }
+    
+    const finalSystemPromptTokens = tokenCount(effectiveSystemPrompt);
+    const finalPayloadTokenEstimate = finalSystemPromptTokens + fullChatHistoryTokens;
+
+    if (finalPayloadTokenEstimate > maxContextTokensForPrompt) {
+        setChatMessages(prev => [...prev, {
+            id: Date.now(),
+            role: 'ai',
+            content: t('ai_chat_modal_error_prompt_too_large', { currentTokens: finalPayloadTokenEstimate, maxTokens: maxContextTokensForPrompt })
+        }]);
+        setIsLoading(false);
+        return;
+    }
+    
+    const aiMessageId = Date.now();
+    setChatMessages(prev => [...prev, { id: aiMessageId, role: 'assistant', content: t('ai_chat_modal_thinking_indicator') }]);
+
+    try {
+      const messagesPayload = [];
+      messagesPayload.push({ role: 'system', content: effectiveSystemPrompt });
+      updatedChatHistory.forEach(msg => messagesPayload.push({ role: msg.role, content: msg.content }));
+
+      const payload = {
+        model: endpointConfig.modelName,
+        messages: messagesPayload,
+        stream: true,
+        max_tokens: endpointConfig.maxOutputTokens,
+      };
+
+      const response = await fetch(endpointConfig.endpointUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${endpointConfig.apiToken}` },
+        body: JSON.stringify(payload),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulatedResponse = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let boundary = buffer.indexOf('\n\n');
+        while (boundary !== -1) {
+            const eventString = buffer.substring(0, boundary);
+            buffer = buffer.substring(boundary + 2);
+            if (eventString.startsWith('data: ')) {
+                const jsonData = eventString.substring('data: '.length).trim();
+                if (jsonData === '[DONE]') break;
+                try {
+                    const parsed = JSON.parse(jsonData);
+                    if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                        accumulatedResponse += parsed.choices[0].delta.content;
+                        setChatMessages(prev => prev.map(msg => 
+                            msg.id === aiMessageId ? { ...msg, content: accumulatedResponse } : msg
+                        ));
+                    }
+                } catch (e) { console.error('Error parsing stream JSON chunk:', e, jsonData); }
+            }
+            boundary = buffer.indexOf('\n\n');
+        }
+      }
+      
+      if (buffer.startsWith('data: ')) {
+            const jsonData = buffer.substring('data: '.length).trim();
+            if (jsonData !== '[DONE]') {
+                 try {
+                    const parsed = JSON.parse(jsonData);
+                    if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                        accumulatedResponse += parsed.choices[0].delta.content;
+                         setChatMessages(prev => prev.map(msg => 
+                            msg.id === aiMessageId ? { ...msg, content: accumulatedResponse } : msg
+                        ));
+                    }
+                } catch (e) { console.error('Error parsing final stream JSON chunk:', e, jsonData); }
+            }
+        }
+    } catch (error) {
+      const errorKey = error.name === 'AbortError' ? t('ai_chat_modal_chat_stopped') : t('ai_chat_modal_error_generic', { errorMessage: error.message });
+      setChatMessages(prev => prev.map(msg => {
+        if (msg.id === aiMessageId) {
+            return { ...msg, content: (msg.content === t('ai_chat_modal_thinking_indicator') ? '' : msg.content) + `\n\n--- ${errorKey} ---` };
+        }
+        return msg;
+      }));
+    } finally {
+      setIsLoading(false);
+      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+         abortControllerRef.current = null;
+      }
+    }
+  };
+
+  const canRetry = () => {
+    if (isLoading || chatMessages.length === 0) return false;
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    return lastMessage.role === 'ai' || lastMessage.role === 'assistant';
   };
 
   return (
@@ -648,16 +837,21 @@ export const AIChatModal = ({
                       <span className="text-xs font-medium">{msg.role === 'user' ? t('ai_chat_modal_user_role_label') : t('ai_chat_modal_ai_role_label')}</span>
                     </div>
                     {editingMessageId !== msg.id && !isLoading && (
-                      <Button variant="ghost" size="iconSm" className="h-6 w-6 opacity-50 hover:opacity-100" onClick={() => { setEditingMessageId(msg.id); setEditText(msg.content);}} title={t('ai_chat_modal_tooltip_edit_message')}>
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="iconSm" className="h-6 w-6 opacity-50 hover:opacity-100" onClick={() => { setEditingMessageId(msg.id); setEditText(msg.content);}} title={t('ai_chat_modal_tooltip_edit_message')}>
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="iconSm" className="h-6 w-6 opacity-50 hover:opacity-100 hover:text-destructive" onClick={() => handleDeleteMessage(msg.id)} title="Delete message">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                   {editingMessageId === msg.id ? (
                     <div className="mt-1">
-                      <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={Math.max(3, editText.split('\n').length)} className="text-sm mb-2" />
+                      <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={Math.max(3, editText.split('\n').length)} className="text-sm mb-2 bg-background text-foreground" />
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setEditingMessageId(null); setEditText(""); }}>
+                        <Button variant="outline" size="sm" className="text-foreground" onClick={() => { setEditingMessageId(null); setEditText(""); }}>
                           <XCircle className="h-4 w-4 mr-1" /> {t('cancel')}
                         </Button>
                         <Button size="sm" onClick={() => { setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, content: editText } : m)); setEditingMessageId(null); setEditText(""); }}>
@@ -684,19 +878,27 @@ export const AIChatModal = ({
           <div className="p-4 border-t">
             <div className="flex items-start space-x-2">
               <Textarea value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder={t('ai_chat_modal_placeholder_user_input')} className="flex-grow resize-none" rows={2} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} disabled={isLoading || editingMessageId !== null} />
-              {isLoading ? (
-                <Button onClick={() => abortControllerRef.current?.abort()} variant="destructive" className="h-full" title={t('ai_chat_modal_tooltip_stop_generating')}>
-                  <StopCircle className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">{t('ai_chat_modal_button_stop')}</span>
-                </Button>
-              ) : (
-                <Button onClick={handleSendMessage} disabled={!userInput.trim() || editingMessageId !== null} className="h-full">
-                  <Send className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">{t('ai_chat_modal_button_send_message')}</span>
-                </Button>
-              )}
+              <div className="flex flex-col space-y-2">
+                {isLoading ? (
+                  <Button onClick={() => abortControllerRef.current?.abort()} variant="destructive" className="h-auto" title={t('ai_chat_modal_tooltip_stop_generating')}>
+                    <StopCircle className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">{t('ai_chat_modal_button_stop')}</span>
+                  </Button>
+                ) : (
+                  <Button onClick={handleSendMessage} disabled={!userInput.trim() || editingMessageId !== null} className="h-auto">
+                    <Send className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">{t('ai_chat_modal_button_send_message')}</span>
+                  </Button>
+                )}
+                {canRetry() && !isLoading && (
+                  <Button variant="outline" size="sm" onClick={handleRetry} title="Retry last response">
+                    <RotateCcw className="h-4 w-4 mr-0 sm:mr-2" /> <span className="hidden sm:inline">Retry</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
         <ConfirmModal open={isConfirmResetModalOpen} onOpenChange={setIsConfirmResetModalOpen} title={t('ai_chat_modal_confirm_reset_title')} description={t('ai_chat_modal_confirm_reset_description')} onConfirm={onResetChat} confirmText={t('ai_chat_modal_confirm_reset_button_confirm')} />
+        <ConfirmModal open={isConfirmDeleteMessageModalOpen} onOpenChange={setIsConfirmDeleteMessageModalOpen} title="Delete Message" description="Are you sure you want to delete this message? This action cannot be undone." onConfirm={confirmDeleteMessage} confirmText="Delete" />
       </DialogContent>
     </Dialog>
   );

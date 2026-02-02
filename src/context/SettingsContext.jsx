@@ -12,12 +12,15 @@ const APP_ID = "PLOTBUNNI";
 const SETTINGS_STORAGE_KEY = `${APP_ID}_Settings`;
 
 const DEFAULT_ENDPOINT_VALUES = {
-  endpointUrl: 'https://mistral.lyonade.net/v1/chat/completions',
+  endpointUrl: 'https://api.lyonade.net/v1/chat/completions',
   apiToken: '',
-  modelName: 'shuyuej/Mistral-Nemo-Instruct-2407-GPTQ',
-  contextLength: 3900,
+  modelName: 'default',
+  contextLength: 10512,
   maxOutputTokens: 1024,
 };
+
+// Old endpoint values for migration
+const OLD_ENDPOINT_URLS = ['https://mistral.lyonade.net/v1/chat/completions', 'https://violet.lyonade.net/v1/chat/completions'];
 
 const createDefaultProfile = () => ({
   id: uuidv4(),
@@ -294,10 +297,27 @@ export const SettingsProvider = ({ children }) => {
   useEffect(() => {
     const loaded = loadSettings();
     
-    setEndpointProfiles(loaded.endpointProfiles);
+    // Check for profiles using the old endpoint URL and update them
+    const updatedProfiles = loaded.endpointProfiles.map(profile => {
+      const isOldEndpoint = OLD_ENDPOINT_URLS.includes(profile.endpointUrl);
+
+      if (isOldEndpoint) {
+        console.log(`Updating profile "${profile.name}" from old Mistral endpoint to new Violet endpoint`);
+        return {
+          ...profile,
+          endpointUrl: DEFAULT_ENDPOINT_VALUES.endpointUrl,
+          modelName: DEFAULT_ENDPOINT_VALUES.modelName,
+          contextLength: DEFAULT_ENDPOINT_VALUES.contextLength,
+          maxOutputTokens: DEFAULT_ENDPOINT_VALUES.maxOutputTokens,
+        };
+      }
+      return profile;
+    });
+    
+    setEndpointProfiles(updatedProfiles);
     // Ensure activeProfileId is valid or set to the first profile
-    const firstProfileId = loaded.endpointProfiles.length > 0 ? loaded.endpointProfiles[0].id : null;
-    setActiveProfileId(loaded.endpointProfiles.find(p => p.id === activeProfileId) ? activeProfileId : firstProfileId);
+    const firstProfileId = updatedProfiles.length > 0 ? updatedProfiles[0].id : null;
+    setActiveProfileId(updatedProfiles.find(p => p.id === activeProfileId) ? activeProfileId : firstProfileId);
 
     setThemeModeState(loaded.themeMode);
     setUserLightColorsState(loaded.userLightColors);
@@ -317,7 +337,7 @@ export const SettingsProvider = ({ children }) => {
     const updatedTaskSettings = { ...loaded.taskSettings };
     let settingsUpdated = false;
     Object.values(TASK_KEYS).forEach(taskKey => {
-      if (!updatedTaskSettings[taskKey] || !updatedTaskSettings[taskKey].profileId || !loaded.endpointProfiles.find(p => p.id === updatedTaskSettings[taskKey].profileId)) {
+      if (!updatedTaskSettings[taskKey] || !updatedTaskSettings[taskKey].profileId || !updatedProfiles.find(p => p.id === updatedTaskSettings[taskKey].profileId)) {
         updatedTaskSettings[taskKey] = {
           ...updatedTaskSettings[taskKey], // keep existing prompt if any
           prompt: updatedTaskSettings[taskKey]?.prompt || DEFAULT_TASK_PROMPTS[taskKey],

@@ -67,7 +67,13 @@ const NovelOutlinePopover = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setShowReorderControls(!showReorderControls)}
+            onClick={() => {
+              const newReorderState = !showReorderControls;
+              setShowReorderControls(newReorderState);
+              if (newReorderState) {
+                setShowAddButtonsInOutline(false);
+              }
+            }}
             title={t('write_view_outline_popover_toggle_reorder_tooltip')}
             className="h-7 w-7"
           >
@@ -77,7 +83,13 @@ const NovelOutlinePopover = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setShowAddButtonsInOutline(!showAddButtonsInOutline)}
+            onClick={() => {
+              const newAddState = !showAddButtonsInOutline;
+              setShowAddButtonsInOutline(newAddState);
+              if (newAddState) {
+                setShowReorderControls(false);
+              }
+            }}
             title={t('write_view_outline_popover_toggle_add_buttons_tooltip')}
             className="h-7 w-7"
           >
@@ -92,6 +104,11 @@ const NovelOutlinePopover = ({
               <div key={actId} className="mb-3">
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center flex-grow mr-2 min-w-0">
+                    {showAddButtonsInOutline && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 p-0 mr-1 flex-shrink-0" onClick={() => onAddChapter(act.id)} title={t('write_view_outline_popover_add_chapter_tooltip')}>
+                        <PlusCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                     {showReorderControls && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -117,11 +134,7 @@ const NovelOutlinePopover = ({
                     )}
                     <h3 className="font-semibold text-sm text-foreground flex-grow truncate" title={act.name || t('ai_novel_writer_unnamed_act')}>{act.name || t('ai_novel_writer_unnamed_act')}</h3>
                   </div>
-                  {showAddButtonsInOutline && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0 flex-shrink-0" onClick={() => onAddChapter(act.id)} title={t('write_view_outline_popover_add_chapter_tooltip')}>
-                      <PlusCircle className="h-4 w-4" />
-                    </Button>
-                  )}
+                  {showAddButtonsInOutline && null}
                 </div>
                 {act.chapterOrder?.map((chapterId, chapterIndex) => {
                   const chapter = chapters[chapterId];
@@ -130,6 +143,11 @@ const NovelOutlinePopover = ({
                     <div key={chapterId} className="ml-3 mb-2">
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center flex-grow mr-2 min-w-0">
+                          {showAddButtonsInOutline && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6 p-0 mr-1 flex-shrink-0" onClick={() => onAddScene(chapter.id)} title={t('write_view_outline_popover_add_scene_tooltip')}>
+                              <PlusCircle className="h-4 w-4" />
+                            </Button>
+                          )}
                           {showReorderControls && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -155,11 +173,7 @@ const NovelOutlinePopover = ({
                           )}
                           <h4 className="font-medium text-xs text-muted-foreground flex-grow truncate" title={chapter.name || t('ai_novel_writer_unnamed_chapter')}>{chapter.name || t('ai_novel_writer_unnamed_chapter')}</h4>
                         </div>
-                        {showAddButtonsInOutline && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6 p-0 flex-shrink-0" onClick={() => onAddScene(chapter.id)} title={t('write_view_outline_popover_add_scene_tooltip')}>
-                            <PlusCircle className="h-4 w-4" />
-                          </Button>
-                        )}
+                        {showAddButtonsInOutline && null}
                       </div>
                       {chapter.sceneOrder?.map((sceneId, sceneIndex) => {
                         const scene = scenes[sceneId];

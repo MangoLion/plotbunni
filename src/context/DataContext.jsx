@@ -86,7 +86,24 @@ export const DataProvider = ({ children, novelId }) => { // Accept novelId as a 
   };
 
   const deleteConcept = (conceptId) => {
+    // Remove the concept itself
     setConcepts(prevConcepts => prevConcepts.filter(concept => concept.id !== conceptId));
+
+    // Remove references to this concept from all scenes
+    setScenes(prevScenes => {
+      const updatedScenes = { ...prevScenes };
+      Object.keys(updatedScenes).forEach(sceneId => {
+        const scene = updatedScenes[sceneId];
+        if (scene.context && scene.context.includes(conceptId)) {
+          updatedScenes[sceneId] = {
+            ...scene,
+            context: scene.context.filter(id => id !== conceptId),
+            last_modified_date: new Date().toISOString(), // Update modification date
+          };
+        }
+      });
+      return updatedScenes;
+    });
   };
 
   // Acts
@@ -363,7 +380,36 @@ export const DataProvider = ({ children, novelId }) => { // Accept novelId as a 
           setConcepts(loadedNovelData.concepts !== undefined ? loadedNovelData.concepts : initialDefaultConcepts);
           setActs(loadedNovelData.acts || {});
           setChapters(loadedNovelData.chapters || {});
-          setScenes(loadedNovelData.scenes || {});
+          
+          // Initial set of scenes and concepts from loaded data
+          const initialScenes = loadedNovelData.scenes || {};
+          const initialConceptsList = loadedNovelData.concepts !== undefined ? loadedNovelData.concepts : initialDefaultConcepts;
+          setConcepts(initialConceptsList);
+          
+          // Sanity check for scene contexts
+          const validConceptIds = new Set(initialConceptsList.map(c => c.id));
+          const sanitizedScenes = { ...initialScenes };
+          let scenesWereModified = false;
+
+          Object.keys(sanitizedScenes).forEach(sceneId => {
+            const scene = sanitizedScenes[sceneId];
+            if (scene.context && scene.context.length > 0) {
+              const originalContextLength = scene.context.length;
+              const newContext = scene.context.filter(conceptId => validConceptIds.has(conceptId));
+              if (newContext.length !== originalContextLength) {
+                sanitizedScenes[sceneId] = {
+                  ...scene,
+                  context: newContext,
+                  last_modified_date: new Date().toISOString(), // Mark as modified
+                };
+                scenesWereModified = true;
+              }
+            }
+          });
+          setScenes(sanitizedScenes);
+          // If scenes were modified by the sanity check, this will eventually trigger a saveNovelData call
+          // due to the dependency array of the save useEffect.
+
           setActOrder(loadedNovelData.actOrder || []);
           setConceptTemplates(loadedNovelData.conceptTemplates || getDefaultConceptTemplates()); // Load or init templates
         } else {

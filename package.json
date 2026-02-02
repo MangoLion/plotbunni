@@ -18,6 +18,7 @@
     "@fontsource/roboto": "^5.2.5",
     "@fontsource/source-sans-3": "^5.2.7",
     "@hookform/resolvers": "^3.9.0",
+    "@mdxeditor/editor": "^3.33.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
