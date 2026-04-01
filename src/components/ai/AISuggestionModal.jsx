@@ -59,7 +59,7 @@ export const AISuggestionModal = ({
   const [isFullscreenEditModalOpen, setIsFullscreenEditModalOpen] = useState(false);
   const [fullscreenEditModalConfig, setFullscreenEditModalConfig] = useState({
     initialValue: '',
-    onSave: () => {},
+    onSave: () => { },
     title: '',
     textareaId: '',
   });
@@ -98,7 +98,7 @@ export const AISuggestionModal = ({
     const activeProf = endpointProfiles?.find(p => p.id === profileIdToUse);
     setCurrentProfile(activeProf);
   }, [isOpen, endpointProfiles, globalActiveProfileId, taskKeyForProfile, taskSettings]);
-  
+
   useEffect(() => {
     if (isOpen) {
       setQuery(initialQuery || '');
@@ -131,16 +131,16 @@ export const AISuggestionModal = ({
     }
   }, [isOpen, initialQuery, systemPrompt, novelData]);
 
-// Effect to pre-fill aiResponse when "Continue from" is selected
-useEffect(() => {
-  if (isOpen && promptMode === 'continue') {
-    setAiResponse(currentText || '');
-  }
-  // For 'scratch' or 'modify', aiResponse should start empty or be cleared by handleGetSuggestion.
-}, [isOpen, promptMode, currentText]);
+  // Effect to pre-fill aiResponse when "Continue from" is selected
+  useEffect(() => {
+    if (isOpen && promptMode === 'continue') {
+      setAiResponse(currentText || '');
+    }
+    // For 'scratch' or 'modify', aiResponse should start empty or be cleared by handleGetSuggestion.
+  }, [isOpen, promptMode, currentText]);
 
-// Effect to update token estimation and max context tokens
-useEffect(() => {
+  // Effect to update token estimation and max context tokens
+  useEffect(() => {
     if (!isOpen || !currentProfile) {
       setEstimatedTotalTokens(0);
       // Potentially set maxContextTokensForPrompt to a default if profile is null
@@ -157,7 +157,7 @@ useEffect(() => {
     const queryTokens = tokenCount(query);
     const novelContextTokensValue = tokenCount(editableNovelData); // Use editableNovelData for token count
     const currentTextTokensValue = (promptMode === 'continue' || promptMode === 'modify') ? tokenCount(currentText) : 0;
-    
+
     setTokenBreakdown({
       system: systemPromptTokens,
       query: queryTokens,
@@ -211,8 +211,19 @@ useEffect(() => {
       url: currentProfile.endpointUrl,
       token: currentProfile.apiToken || '',
       model: currentProfile.modelName,
-      maxOutputTokens: currentProfile.maxOutputTokens || 1024, // Ensure this is passed
-      contextLength: currentProfile.contextLength || 4096, // For reference, not directly in payload
+      maxOutputTokens: currentProfile.maxOutputTokens || 1024,
+      contextLength: currentProfile.contextLength || 4096,
+      contextLength: currentProfile.contextLength || 4096,
+      // Optional params
+      temperature: currentProfile.temperature ?? 0.7,
+      top_p: currentProfile.top_p ?? 1.0,
+      presence_penalty: currentProfile.presence_penalty ?? 0.0,
+      frequency_penalty: currentProfile.frequency_penalty ?? 0.0,
+      logit_bias: currentProfile.logit_bias || '',
+      logprobs: currentProfile.logprobs || false,
+      top_logprobs: currentProfile.top_logprobs,
+      stop: currentProfile.stop || '',
+      seed: currentProfile.seed,
     };
   };
 
@@ -268,7 +279,7 @@ useEffect(() => {
     const tempNovelContextTokensValue = tokenCount(novelDataForAPI);
     const tempCurrentTextTokensValue = textToContinueWithForAPI ? tokenCount(textToContinueWithForAPI) : 0;
     const tempTotalTokens = tempSystemPromptTokens + tempQueryTokens + tempNovelContextTokensValue + tempCurrentTextTokensValue;
-    
+
     if (tempTotalTokens > maxContextTokensForPrompt) {
       setAiResponse((shouldClearResponseInitially ? '' : aiResponse) +
         t('ai_suggestion_modal_error_prompt_too_large_suffix', { tokens: tempTotalTokens, maxTokens: maxContextTokensForPrompt }));
@@ -325,6 +336,45 @@ useEffect(() => {
         max_tokens: endpointConfig.maxOutputTokens,
       };
 
+      // Always send temperature
+      payload.temperature = endpointConfig.temperature;
+
+      // Add optional parameters if they differ from defaults
+      if (endpointConfig.top_p !== 1.0) payload.top_p = endpointConfig.top_p;
+      if (endpointConfig.presence_penalty !== 0.0) payload.presence_penalty = endpointConfig.presence_penalty;
+      if (endpointConfig.frequency_penalty !== 0.0) payload.frequency_penalty = endpointConfig.frequency_penalty;
+      if (endpointConfig.seed !== null && endpointConfig.seed !== undefined) payload.seed = endpointConfig.seed;
+      if (endpointConfig.logprobs) {
+        payload.logprobs = true;
+        if (endpointConfig.top_logprobs !== null && endpointConfig.top_logprobs !== undefined) {
+          payload.top_logprobs = endpointConfig.top_logprobs;
+        }
+      }
+
+      // Handle 'stop' - can be comma separated string or JSON
+      if (endpointConfig.stop) {
+        try {
+          // Try to parse as JSON first (if it's an array like ["\n", "User:"])
+          payload.stop = JSON.parse(endpointConfig.stop);
+        } catch (e) {
+          // Treat as comma separated string if JSON parse fails
+          if (endpointConfig.stop.includes(',')) {
+            payload.stop = endpointConfig.stop.split(',').map(s => s.trim());
+          } else {
+            payload.stop = endpointConfig.stop;
+          }
+        }
+      }
+
+      // Handle 'logit_bias' - must be JSON
+      if (endpointConfig.logit_bias) {
+        try {
+          payload.logit_bias = JSON.parse(endpointConfig.logit_bias);
+        } catch (e) {
+          console.warn("Invalid JSON for logit_bias, ignoring:", e);
+        }
+      }
+
       const response = await fetch(endpointConfig.url, {
         method: 'POST',
         headers: {
@@ -339,10 +389,10 @@ useEffect(() => {
         const errorText = await response.text();
         let detailMessage = errorText;
         try {
-            const errorJson = JSON.parse(errorText);
-            detailMessage = errorJson.error?.message || errorJson.message || errorText;
+          const errorJson = JSON.parse(errorText);
+          detailMessage = errorJson.error?.message || errorJson.message || errorText;
         } catch (e) {
-            // Keep errorText as detailMessage
+          // Keep errorText as detailMessage
         }
         throw new Error(t('ai_suggestion_modal_error_api_generic', { status: response.status, message: detailMessage }));
       }
@@ -356,32 +406,32 @@ useEffect(() => {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        
+
         let boundary = buffer.indexOf('\n\n');
         while (boundary !== -1) {
-            const eventString = buffer.substring(0, boundary);
-            buffer = buffer.substring(boundary + 2);
+          const eventString = buffer.substring(0, boundary);
+          buffer = buffer.substring(boundary + 2);
 
-            if (eventString.startsWith('data: ')) {
-                const jsonData = eventString.substring('data: '.length).trim();
-                if (jsonData === '[DONE]') {
-                  // OpenAI specific [DONE] signal, loop will break on next reader.read()
-                  // For robustness, we can break here if we are sure it's the end.
-                  // await reader.cancel(); // This might be too aggressive
-                  // The 'done' flag from reader.read() is the primary way to exit.
-                } else {
-                  try {
-                      const parsed = JSON.parse(jsonData);
-                      if (parsed.choices && parsed.choices[0]?.delta?.content) {
-                          setAiResponse(prev => prev + parsed.choices[0].delta.content);
-                      }
-                  } catch (e) {
-                      console.error('Error parsing stream JSON chunk:', e, jsonData);
-                      // Potentially append raw chunk if it's just text and not JSON
-                  }
+          if (eventString.startsWith('data: ')) {
+            const jsonData = eventString.substring('data: '.length).trim();
+            if (jsonData === '[DONE]') {
+              // OpenAI specific [DONE] signal, loop will break on next reader.read()
+              // For robustness, we can break here if we are sure it's the end.
+              // await reader.cancel(); // This might be too aggressive
+              // The 'done' flag from reader.read() is the primary way to exit.
+            } else {
+              try {
+                const parsed = JSON.parse(jsonData);
+                if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                  setAiResponse(prev => prev + parsed.choices[0].delta.content);
                 }
+              } catch (e) {
+                console.error('Error parsing stream JSON chunk:', e, jsonData);
+                // Potentially append raw chunk if it's just text and not JSON
+              }
             }
-            boundary = buffer.indexOf('\n\n');
+          }
+          boundary = buffer.indexOf('\n\n');
         }
       }
     } catch (error) {
@@ -395,11 +445,11 @@ useEffect(() => {
       setIsLoading(false);
       // Ensure ref is cleared if not aborted by user action that already clears it
       if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-         abortControllerRef.current = null;
+        abortControllerRef.current = null;
       }
     }
   };
-  
+
   const handleStopGeneration = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -417,7 +467,7 @@ useEffect(() => {
     onAccept(aiResponse);
     onClose();
   };
-  
+
   const handleModalClose = () => {
     // This is called by Dialog's onOpenChange when closing
     // The useEffect for isOpen will handle aborting and cleanup
@@ -436,131 +486,130 @@ useEffect(() => {
         <div className="flex-grow overflow-y-auto px-6">
           {/* Memory Progress Bar */}
           <div className="flex items-center gap-2 py-3 border-b"> {/* Removed px-6 */}
-          <Database className="h-5 w-5 text-muted-foreground" />
-          <Progress 
-            value={maxContextTokensForPrompt > 0 ? (estimatedTotalTokens / maxContextTokensForPrompt) * 100 : 0} 
-            className={`w-full [&>div]:transition-all [&>div]:duration-500 ${
-              maxContextTokensForPrompt > 0 && estimatedTotalTokens / maxContextTokensForPrompt >= 1 ? ' [&>div]:bg-destructive' : 
-              maxContextTokensForPrompt > 0 && estimatedTotalTokens / maxContextTokensForPrompt >= 0.5 ? ' [&>div]:bg-yellow-500' : ''
-            }`}
-          />
-          {/* Token count text removed as per request */}
-        </div>
+            <Database className="h-5 w-5 text-muted-foreground" />
+            <Progress
+              value={maxContextTokensForPrompt > 0 ? (estimatedTotalTokens / maxContextTokensForPrompt) * 100 : 0}
+              className={`w-full [&>div]:transition-all [&>div]:duration-500 ${maxContextTokensForPrompt > 0 && estimatedTotalTokens / maxContextTokensForPrompt >= 1 ? ' [&>div]:bg-destructive' :
+                maxContextTokensForPrompt > 0 && estimatedTotalTokens / maxContextTokensForPrompt >= 0.5 ? ' [&>div]:bg-yellow-500' : ''
+                }`}
+            />
+            {/* Token count text removed as per request */}
+          </div>
 
-        {/* Collapsible Memory Details */}
-        <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="py-2 border-b text-xs"> {/* Removed px-6 */}
-          <CollapsibleTrigger asChild>
-            <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground flex items-center">
-              {t('ai_chat_modal_memory_usage_details_button')}
-              {isMemoryDetailOpen ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2 space-y-1 text-muted-foreground">
-                {estimatedTotalTokens > 0 && currentProfile ? (
-                  <>
-                    <p>{t('ai_suggestion_modal_memory_system_prompt_stats', { percentage: (tokenBreakdown.system / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.system })}</p>
-                    <p>{t('ai_suggestion_modal_memory_your_query_stats', { percentage: (tokenBreakdown.query / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.query })}</p>
-                    {tokenBreakdown.novelData > 0 && (
-                      <p className="flex items-center">
-                        {novelDataLevel && novelDataLevel > 1 && novelDataLevel !== -1 && (
-                          <TriangleAlert className="h-3 w-3 mr-1 text-yellow-500" />
-                        )}
-                        {novelDataLevel === -1 && (
-                           <TriangleAlert className="h-3 w-3 mr-1 text-destructive" />
-                        )}
-                        <span className={
-                          novelDataLevel === -1 ? 'text-destructive' :
-                          novelDataLevel === 4 ? 'text-destructive' :
-                          novelDataLevel === 2 || novelDataLevel === 3 ? 'text-yellow-600 dark:text-yellow-400' : ''
-                        }>
-                          {t('ai_novel_writer_memory_novel_context_stats_label', { level: novelDataLevel === -1 ? t('ai_novel_writer_memory_details_level_err') : novelDataLevel })}:
-                        </span>
-                        <span className="ml-1">
-                          {t('ai_novel_writer_memory_novel_context_stats_tokens', { percentage: (tokenBreakdown.novelData / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.novelData })}
-                        </span>
-                      </p>
-                    )}
-                     {novelDataLevel && novelDataLevel > 1 && novelDataLevel !== -1 && (
-                      <p className="text-xs text-yellow-600 dark:text-yellow-400 pl-4">
-                        {t('ai_novel_writer_memory_context_reduced_note')}
-                      </p>
-                    )}
-                    {novelDataLevel === -1 && (
-                       <p className="text-xs text-destructive pl-4">
-                        {t('ai_novel_writer_memory_context_failed_note')}
-                      </p>
-                    )}
-                    {(promptMode === 'continue' || promptMode === 'modify') && tokenBreakdown.currentText > 0 && (
-                      <p>{t('ai_suggestion_modal_memory_current_text_stats', { percentage: (tokenBreakdown.currentText / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.currentText })}</p>
-                    )}
-                    <p className="pt-1 border-t mt-1 font-semibold">{t('ai_novel_writer_memory_total_input_tokens', { tokens: estimatedTotalTokens })}</p>
-                    <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_max_output_tokens', { tokens: currentProfile.maxOutputTokens || t('ai_novel_writer_memory_details_level_na') })}</p>
-                    <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_safety_buffer', { tokens: 50 })}</p>
-                    <p>{t('ai_novel_writer_memory_available_for_input', { tokens: maxContextTokensForPrompt })}</p>
-                    <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_total_model_context', { tokens: currentProfile.contextLength || t('ai_novel_writer_memory_details_level_na') })}</p>
-                  </>
-            ) : (
-              <p>{t('ai_novel_writer_memory_token_details_unavailable')}</p>
-            )}
-          </CollapsibleContent>
-        </Collapsible>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col pb-1 pt-2"> {/* Removed flex-grow, overflow-hidden, px-6 */}
-          <TabsList className="grid w-full grid-cols-2 mb-2">
-            <TabsTrigger value="query" disabled={isLoading}>{t('ai_suggestion_modal_tab_query')}</TabsTrigger>
-            <TabsTrigger value="suggestion">{t('ai_suggestion_modal_tab_suggestion')}</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="query" className="flex-grow space-y-3 py-1 pr-1"> {/* Removed overflow-y-auto */}
-            <div className="pb-3">
-              <Button onClick={handleGetSuggestion} className="w-full" disabled={isLoading}>
-                {t('ai_suggestion_modal_button_get_suggestion')}
+          {/* Collapsible Memory Details */}
+          <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="py-2 border-b text-xs"> {/* Removed px-6 */}
+            <CollapsibleTrigger asChild>
+              <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground flex items-center">
+                {t('ai_chat_modal_memory_usage_details_button')}
+                {isMemoryDetailOpen ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
               </Button>
-            </div>
-            <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen} className="space-y-1">
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
-                  {t('ai_suggestion_modal_label_system_prompt')}
-                  {isSystemPromptOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <Textarea
-                  value={editableSystemPrompt}
-                  onChange={(e) => {
-                    if (!isMobileDevice()) {
-                      setEditableSystemPrompt(e.target.value);
-                    }
-                  }}
-                  onClick={() => {
-                    if (isMobileDevice()) {
-                      openFullscreenEditor(
-                        editableSystemPrompt,
-                        (newValue) => setEditableSystemPrompt(newValue),
-                        t('ai_suggestion_modal_label_system_prompt'),
-                        'fullscreen-system-prompt'
-                      );
-                    }
-                  }}
-                  readOnly={isMobileDevice()}
-                  rows={3}
-                  className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
-                  placeholder={t('ai_suggestion_modal_placeholder_system_prompt')}
-                />
-              </CollapsibleContent>
-            </Collapsible>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 space-y-1 text-muted-foreground">
+              {estimatedTotalTokens > 0 && currentProfile ? (
+                <>
+                  <p>{t('ai_suggestion_modal_memory_system_prompt_stats', { percentage: (tokenBreakdown.system / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.system })}</p>
+                  <p>{t('ai_suggestion_modal_memory_your_query_stats', { percentage: (tokenBreakdown.query / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.query })}</p>
+                  {tokenBreakdown.novelData > 0 && (
+                    <p className="flex items-center">
+                      {novelDataLevel && novelDataLevel > 1 && novelDataLevel !== -1 && (
+                        <TriangleAlert className="h-3 w-3 mr-1 text-yellow-500" />
+                      )}
+                      {novelDataLevel === -1 && (
+                        <TriangleAlert className="h-3 w-3 mr-1 text-destructive" />
+                      )}
+                      <span className={
+                        novelDataLevel === -1 ? 'text-destructive' :
+                          novelDataLevel === 4 ? 'text-destructive' :
+                            novelDataLevel === 2 || novelDataLevel === 3 ? 'text-yellow-600 dark:text-yellow-400' : ''
+                      }>
+                        {t('ai_novel_writer_memory_novel_context_stats_label', { level: novelDataLevel === -1 ? t('ai_novel_writer_memory_details_level_err') : novelDataLevel })}:
+                      </span>
+                      <span className="ml-1">
+                        {t('ai_novel_writer_memory_novel_context_stats_tokens', { percentage: (tokenBreakdown.novelData / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.novelData })}
+                      </span>
+                    </p>
+                  )}
+                  {novelDataLevel && novelDataLevel > 1 && novelDataLevel !== -1 && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 pl-4">
+                      {t('ai_novel_writer_memory_context_reduced_note')}
+                    </p>
+                  )}
+                  {novelDataLevel === -1 && (
+                    <p className="text-xs text-destructive pl-4">
+                      {t('ai_novel_writer_memory_context_failed_note')}
+                    </p>
+                  )}
+                  {(promptMode === 'continue' || promptMode === 'modify') && tokenBreakdown.currentText > 0 && (
+                    <p>{t('ai_suggestion_modal_memory_current_text_stats', { percentage: (tokenBreakdown.currentText / estimatedTotalTokens * 100).toFixed(1), tokens: tokenBreakdown.currentText })}</p>
+                  )}
+                  <p className="pt-1 border-t mt-1 font-semibold">{t('ai_novel_writer_memory_total_input_tokens', { tokens: estimatedTotalTokens })}</p>
+                  <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_max_output_tokens', { tokens: currentProfile.maxOutputTokens || t('ai_novel_writer_memory_details_level_na') })}</p>
+                  <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_safety_buffer', { tokens: 50 })}</p>
+                  <p>{t('ai_novel_writer_memory_available_for_input', { tokens: maxContextTokensForPrompt })}</p>
+                  <p className="text-slate-500 dark:text-slate-400">{t('ai_novel_writer_memory_total_model_context', { tokens: currentProfile.contextLength || t('ai_novel_writer_memory_details_level_na') })}</p>
+                </>
+              ) : (
+                <p>{t('ai_novel_writer_memory_token_details_unavailable')}</p>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
 
-            {/* NovelData is now always potentially present due to editableNovelData state */}
-            <Collapsible open={isNovelDataOpen} onOpenChange={setIsNovelDataOpen} className="space-y-1">
-              <CollapsibleTrigger asChild>
-                {/* The trigger text can still refer to the original novelData's properties like level */}
-                <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col pb-1 pt-2"> {/* Removed flex-grow, overflow-hidden, px-6 */}
+            <TabsList className="grid w-full grid-cols-2 mb-2">
+              <TabsTrigger value="query" disabled={isLoading}>{t('ai_suggestion_modal_tab_query')}</TabsTrigger>
+              <TabsTrigger value="suggestion">{t('ai_suggestion_modal_tab_suggestion')}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="query" className="flex-grow space-y-3 py-1 pr-1"> {/* Removed overflow-y-auto */}
+              <div className="pb-3">
+                <Button onClick={handleGetSuggestion} className="w-full" disabled={isLoading}>
+                  {t('ai_suggestion_modal_button_get_suggestion')}
+                </Button>
+              </div>
+              <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen} className="space-y-1">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
+                    {t('ai_suggestion_modal_label_system_prompt')}
+                    {isSystemPromptOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <Textarea
+                    value={editableSystemPrompt}
+                    onChange={(e) => {
+                      if (!isMobileDevice()) {
+                        setEditableSystemPrompt(e.target.value);
+                      }
+                    }}
+                    onClick={() => {
+                      if (isMobileDevice()) {
+                        openFullscreenEditor(
+                          editableSystemPrompt,
+                          (newValue) => setEditableSystemPrompt(newValue),
+                          t('ai_suggestion_modal_label_system_prompt'),
+                          'fullscreen-system-prompt'
+                        );
+                      }
+                    }}
+                    readOnly={isMobileDevice()}
+                    rows={3}
+                    className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
+                    placeholder={t('ai_suggestion_modal_placeholder_system_prompt')}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* NovelData is now always potentially present due to editableNovelData state */}
+              <Collapsible open={isNovelDataOpen} onOpenChange={setIsNovelDataOpen} className="space-y-1">
+                <CollapsibleTrigger asChild>
+                  {/* The trigger text can still refer to the original novelData's properties like level */}
+                  <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left">
                     <span>
                       {t('ai_suggestion_modal_label_novel_data_context')}
-                       {novelDataLevel !== undefined && novelDataLevel > 0 && (
+                      {novelDataLevel !== undefined && novelDataLevel > 0 && (
                         <span className="text-xs text-muted-foreground ml-2">{t('ai_suggestion_modal_label_novel_data_context_level', { level: novelDataLevel })}</span>
                       )}
-                       {novelDataLevel === -1 && (
+                      {novelDataLevel === -1 && (
                         <span className="text-xs text-destructive ml-2">{t('ai_suggestion_modal_memory_context_too_large_label')}</span>
                       )}
                     </span>
@@ -592,59 +641,59 @@ useEffect(() => {
                   />
                 </CollapsibleContent>
               </Collapsible>
-            {/* )} */} {/* Closing bracket for the original conditional rendering, now removed */}
-            
-            <div className="py-2 space-y-2">
-              <Label className="text-sm font-medium">{t('ai_suggestion_modal_label_prompt_mode')}</Label>
-              <RadioGroup
-                value={promptMode}
-                onValueChange={setPromptMode}
-                className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0"
-                disabled={!currentText || currentText.trim() === ''} // Disable group if no current text for continue/modify
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="scratch" id="r-scratch" />
-                  <Label htmlFor="r-scratch" className="font-normal">{t('ai_suggestion_modal_radio_write_from_scratch')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="continue" id="r-continue" disabled={!currentText || currentText.trim() === ''} />
-                  <Label htmlFor="r-continue" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>{t('ai_suggestion_modal_radio_continue_from_previous')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="modify" id="r-modify" disabled={!currentText || currentText.trim() === ''} />
-                  <Label htmlFor="r-modify" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>{t('ai_suggestion_modal_radio_modify_previous')}</Label>
-                </div>
-              </RadioGroup>
-            </div>
+              {/* )} */} {/* Closing bracket for the original conditional rendering, now removed */}
 
-            <Collapsible
-              open={(promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen}
-              onOpenChange={setIsCurrentTextOpen}
-              className="space-y-1"
-            >
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left"
-                  disabled={!(promptMode === 'continue' || promptMode === 'modify') || (!currentText || currentText.trim() === '')}
+              <div className="py-2 space-y-2">
+                <Label className="text-sm font-medium">{t('ai_suggestion_modal_label_prompt_mode')}</Label>
+                <RadioGroup
+                  value={promptMode}
+                  onValueChange={setPromptMode}
+                  className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0"
+                  disabled={!currentText || currentText.trim() === ''} // Disable group if no current text for continue/modify
                 >
-                  {t('ai_suggestion_modal_label_current_text', { fieldLabel: fieldLabel || t('ai_suggestion_modal_default_field_label')})}
-                  {((promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <Textarea
-                  id="currentTextDisplay"
-                  value={currentText || t('ai_suggestion_modal_placeholder_no_current_text', {fieldLabel: fieldLabel?.toLowerCase() || t('ai_suggestion_modal_default_field_label').toLowerCase() })}
-                  readOnly
-                  rows={3}
-                  className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
-                />
-              </CollapsibleContent>
-            </Collapsible>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="scratch" id="r-scratch" />
+                    <Label htmlFor="r-scratch" className="font-normal">{t('ai_suggestion_modal_radio_write_from_scratch')}</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="continue" id="r-continue" disabled={!currentText || currentText.trim() === ''} />
+                    <Label htmlFor="r-continue" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>{t('ai_suggestion_modal_radio_continue_from_previous')}</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="modify" id="r-modify" disabled={!currentText || currentText.trim() === ''} />
+                    <Label htmlFor="r-modify" className={`font-normal ${(!currentText || currentText.trim() === '') ? 'text-muted-foreground' : ''}`}>{t('ai_suggestion_modal_radio_modify_previous')}</Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-            <div className="space-y-1 pt-2">
-              <Label htmlFor="aiQueryInput">{t('ai_suggestion_modal_label_your_query')}</Label>
+              <Collapsible
+                open={(promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen}
+                onOpenChange={setIsCurrentTextOpen}
+                className="space-y-1"
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-left"
+                    disabled={!(promptMode === 'continue' || promptMode === 'modify') || (!currentText || currentText.trim() === '')}
+                  >
+                    {t('ai_suggestion_modal_label_current_text', { fieldLabel: fieldLabel || t('ai_suggestion_modal_default_field_label') })}
+                    {((promptMode === 'continue' || promptMode === 'modify') && isCurrentTextOpen) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <Textarea
+                    id="currentTextDisplay"
+                    value={currentText || t('ai_suggestion_modal_placeholder_no_current_text', { fieldLabel: fieldLabel?.toLowerCase() || t('ai_suggestion_modal_default_field_label').toLowerCase() })}
+                    readOnly
+                    rows={3}
+                    className="w-full resize-none bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-xs"
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+
+              <div className="space-y-1 pt-2">
+                <Label htmlFor="aiQueryInput">{t('ai_suggestion_modal_label_your_query')}</Label>
                 <Textarea
                   id="aiQueryInput"
                   value={query}
@@ -672,120 +721,120 @@ useEffect(() => {
               </div>
             </TabsContent>
 
-          <TabsContent value="suggestion" className="flex flex-col flex-grow py-1 pr-1">
-            {/* Buttons Area: Moved to the top of the tab content */}
-            {(isLoading || (aiResponse && aiResponse.trim() !== '')) && (
-              <div className="pt-2 pb-2 mb-2"> 
-                {isLoading ? (
-                  <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
-                    {t('ai_chat_modal_tooltip_stop_generating')} 
-                  </Button>
-                ) : (
-                  // This branch is taken if !isLoading.
-                  // The outer condition ensures (aiResponse && aiResponse.trim() !== '') is true here.
-                  // Add check for lastSuccessfulEditableSystemPrompt to ensure context exists for continuation.
-                  <Button 
-                    onClick={handleContinueSuggGeneration} 
-                    className="w-full"
-                    disabled={!lastSuccessfulEditableSystemPrompt} // Disable if no prior successful context
-                  >
-                    {t('ai_suggestion_modal_button_continue_generating')}
-                  </Button>
+            <TabsContent value="suggestion" className="flex flex-col flex-grow py-1 pr-1">
+              {/* Buttons Area: Moved to the top of the tab content */}
+              {(isLoading || (aiResponse && aiResponse.trim() !== '')) && (
+                <div className="pt-2 pb-2 mb-2">
+                  {isLoading ? (
+                    <Button onClick={handleStopGeneration} variant="destructive" className="w-full">
+                      {t('ai_chat_modal_tooltip_stop_generating')}
+                    </Button>
+                  ) : (
+                    // This branch is taken if !isLoading.
+                    // The outer condition ensures (aiResponse && aiResponse.trim() !== '') is true here.
+                    // Add check for lastSuccessfulEditableSystemPrompt to ensure context exists for continuation.
+                    <Button
+                      onClick={handleContinueSuggGeneration}
+                      className="w-full"
+                      disabled={!lastSuccessfulEditableSystemPrompt} // Disable if no prior successful context
+                    >
+                      {t('ai_suggestion_modal_button_continue_generating')}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Response Area: Takes up available space and scrolls */}
+              <div className="flex-grow overflow-y-auto p-2"> {/* Added p-2 for consistency */}
+                {isLoading && !aiResponse && (
+                  <div className="w-full text-muted-foreground min-h-[100px]">{t('ai_suggestion_modal_status_streaming')}</div>
+                )}
+                {isLoading && aiResponse && (
+                  <div className="w-full whitespace-pre-wrap break-words min-h-[100px]">
+                    {aiResponse}
+                    <span className="text-muted-foreground">{t('ai_suggestion_modal_status_streaming_suffix')}</span>
+                  </div>
+                )}
+                {!isLoading && !aiResponse && (
+                  <div className="flex items-center justify-center h-full text-slate-500 min-h-[100px]">
+                    <p>{t('ai_suggestion_modal_placeholder_no_suggestion')}</p>
+                  </div>
+                )}
+                {!isLoading && aiResponse && (
+                  isEditingSuggestion ? ( // This block is for when editing is active (desktop or mobile before fullscreen)
+                    <Textarea
+                      ref={suggestionTextareaRef}
+                      value={aiResponse}
+                      onChange={(e) => {
+                        if (!isMobileDevice()) {
+                          setAiResponse(e.target.value);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!isMobileDevice()) setIsEditingSuggestion(false);
+                      }}
+                      onClick={() => { // For mobile, clicking the already-editing textarea also opens fullscreen
+                        if (isMobileDevice()) {
+                          openFullscreenEditor(
+                            aiResponse,
+                            (newValue) => {
+                              setAiResponse(newValue);
+                              setIsEditingSuggestion(false); // Close inline edit after save from fullscreen
+                            },
+                            t('ai_suggestion_modal_tab_suggestion'),
+                            'fullscreen-ai-suggestion'
+                          );
+                        }
+                      }}
+                      readOnly={isMobileDevice()}
+                      autoFocus={!isMobileDevice()} // Only autofocus on desktop
+                      className="w-full min-h-[100px] resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 border border-input bg-background rounded-md p-3"
+                    />
+                  ) : ( // This block is for when suggestion is displayed (not in edit mode)
+                    <div
+                      onClick={() => {
+                        if (!isLoading) {
+                          if (isMobileDevice()) {
+                            openFullscreenEditor(
+                              aiResponse,
+                              (newValue) => setAiResponse(newValue),
+                              t('ai_suggestion_modal_tab_suggestion'),
+                              'fullscreen-ai-suggestion'
+                            );
+                          } else {
+                            setIsEditingSuggestion(true);
+                          }
+                        }
+                      }}
+                      className="w-full p-2 whitespace-pre-wrap break-words min-h-[100px] cursor-text" // Added cursor-text for better UX
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (!isLoading && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          if (isMobileDevice()) {
+                            openFullscreenEditor(
+                              aiResponse,
+                              (newValue) => setAiResponse(newValue),
+                              t('ai_suggestion_modal_tab_suggestion'),
+                              'fullscreen-ai-suggestion'
+                            );
+                          } else {
+                            setIsEditingSuggestion(true);
+                          }
+                        }
+                      }}
+                    >
+                      {aiResponse}
+                    </div>
+                  )
                 )}
               </div>
-            )}
 
-            {/* Response Area: Takes up available space and scrolls */}
-            <div className="flex-grow overflow-y-auto p-2"> {/* Added p-2 for consistency */}
-              {isLoading && !aiResponse && (
-                <div className="w-full text-muted-foreground min-h-[100px]">{t('ai_suggestion_modal_status_streaming')}</div>
-              )}
-              {isLoading && aiResponse && (
-                 <div className="w-full whitespace-pre-wrap break-words min-h-[100px]">
-                  {aiResponse}
-                  <span className="text-muted-foreground">{t('ai_suggestion_modal_status_streaming_suffix')}</span>
-                </div>
-              )}
-              {!isLoading && !aiResponse && (
-                <div className="flex items-center justify-center h-full text-slate-500 min-h-[100px]">
-                  <p>{t('ai_suggestion_modal_placeholder_no_suggestion')}</p>
-                </div>
-              )}
-              {!isLoading && aiResponse && (
-                isEditingSuggestion ? ( // This block is for when editing is active (desktop or mobile before fullscreen)
-                  <Textarea
-                    ref={suggestionTextareaRef}
-                    value={aiResponse}
-                    onChange={(e) => {
-                      if (!isMobileDevice()) {
-                        setAiResponse(e.target.value);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (!isMobileDevice()) setIsEditingSuggestion(false);
-                    }}
-                    onClick={() => { // For mobile, clicking the already-editing textarea also opens fullscreen
-                      if (isMobileDevice()) {
-                        openFullscreenEditor(
-                          aiResponse,
-                          (newValue) => {
-                            setAiResponse(newValue);
-                            setIsEditingSuggestion(false); // Close inline edit after save from fullscreen
-                          },
-                          t('ai_suggestion_modal_tab_suggestion'),
-                          'fullscreen-ai-suggestion'
-                        );
-                      }
-                    }}
-                    readOnly={isMobileDevice()}
-                    autoFocus={!isMobileDevice()} // Only autofocus on desktop
-                    className="w-full min-h-[100px] resize-none overflow-hidden text-base leading-relaxed focus-visible:ring-1 border border-input bg-background rounded-md p-3"
-                  />
-                ) : ( // This block is for when suggestion is displayed (not in edit mode)
-                  <div
-                    onClick={() => {
-                      if (!isLoading) {
-                        if (isMobileDevice()) {
-                          openFullscreenEditor(
-                            aiResponse,
-                            (newValue) => setAiResponse(newValue),
-                            t('ai_suggestion_modal_tab_suggestion'),
-                            'fullscreen-ai-suggestion'
-                          );
-                        } else {
-                          setIsEditingSuggestion(true);
-                        }
-                      }
-                    }}
-                    className="w-full p-2 whitespace-pre-wrap break-words min-h-[100px] cursor-text" // Added cursor-text for better UX
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { 
-                      if (!isLoading && (e.key === 'Enter' || e.key === ' ')) { 
-                        e.preventDefault(); 
-                        if (isMobileDevice()) {
-                          openFullscreenEditor(
-                            aiResponse,
-                            (newValue) => setAiResponse(newValue),
-                            t('ai_suggestion_modal_tab_suggestion'),
-                            'fullscreen-ai-suggestion'
-                          );
-                        } else {
-                          setIsEditingSuggestion(true);
-                        }
-                      }
-                    }}
-                  >
-                    {aiResponse}
-                  </div>
-                )
-              )}
-            </div>
-
-            {/* Buttons Area was here, now moved to the top */}
-          </TabsContent>
-        </Tabs>
-      </div> {/* End of scrollable content area */}
+              {/* Buttons Area was here, now moved to the top */}
+            </TabsContent>
+          </Tabs>
+        </div> {/* End of scrollable content area */}
 
         <DialogFooter className="p-6 pt-4 border-t">
           <Button variant="outline" onClick={handleModalClose} disabled={isLoading && abortControllerRef.current && !abortControllerRef.current.signal.aborted}>

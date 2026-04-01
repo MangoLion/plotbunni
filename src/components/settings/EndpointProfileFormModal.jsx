@@ -38,20 +38,20 @@ const EndpointProfileFormModal = ({ profile, isOpen, onClose }) => {
   };
 
   const handleCheckboxChange = (checked) => {
-      const name = 'useCustomEndpoint';
-      const newFormData = {
-          ...formData,
-          [name]: checked,
-      };
-       // If 'Use Custom Endpoint' is unchecked, immediately reset relevant fields to default
-      if (!checked) {
-          newFormData.endpointUrl = DEFAULT_ENDPOINT_VALUES.endpointUrl;
-          newFormData.apiToken = DEFAULT_ENDPOINT_VALUES.apiToken;
-          newFormData.modelName = DEFAULT_ENDPOINT_VALUES.modelName;
-          newFormData.contextLength = DEFAULT_ENDPOINT_VALUES.contextLength;
-          newFormData.maxOutputTokens = DEFAULT_ENDPOINT_VALUES.maxOutputTokens;
-      }
-      setFormData(newFormData);
+    const name = 'useCustomEndpoint';
+    const newFormData = {
+      ...formData,
+      [name]: checked,
+    };
+    // If 'Use Custom Endpoint' is unchecked, immediately reset relevant fields to default
+    if (!checked) {
+      newFormData.endpointUrl = DEFAULT_ENDPOINT_VALUES.endpointUrl;
+      newFormData.apiToken = DEFAULT_ENDPOINT_VALUES.apiToken;
+      newFormData.modelName = DEFAULT_ENDPOINT_VALUES.modelName;
+      newFormData.contextLength = DEFAULT_ENDPOINT_VALUES.contextLength;
+      newFormData.maxOutputTokens = DEFAULT_ENDPOINT_VALUES.maxOutputTokens;
+    }
+    setFormData(newFormData);
   }
 
   const handleSave = () => {
@@ -68,12 +68,12 @@ const EndpointProfileFormModal = ({ profile, isOpen, onClose }) => {
   };
 
   const handleReset = () => {
-      // Reset form state to defaults, keeping id and name
-      setFormData(prev => ({
-          ...prev, // Keep existing id and name
-          ...DEFAULT_ENDPOINT_VALUES,
-          useCustomEndpoint: false,
-      }));
+    // Reset form state to defaults, keeping id and name
+    setFormData(prev => ({
+      ...prev, // Keep existing id and name
+      ...DEFAULT_ENDPOINT_VALUES,
+      useCustomEndpoint: false,
+    }));
   }
 
   // Don't render the modal content if it's not open or no profile is provided
@@ -91,10 +91,11 @@ const EndpointProfileFormModal = ({ profile, isOpen, onClose }) => {
           </DialogDescription>
         </DialogHeader>
         {/* Use grid gap-y-4 for vertical spacing between rows */}
-        <div className="grid gap-y-4 py-4"> 
+        {/* Use grid gap-y-4 for vertical spacing between rows. Add scroll and max-height for overflow. */}
+        <div className="grid gap-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Profile Name - Row */}
-          <div className="grid grid-cols-4 items-center gap-x-4"> {/* Use gap-x-4 for horizontal spacing */}
-            <Label htmlFor="name" className="text-right col-span-1">{t('endpoint_profile_form_label_name')}</Label> {/* Explicit col-span */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="name" className="text-right col-span-1">{t('endpoint_profile_form_label_name')}</Label>
             <Input
               id="name"
               name="name"
@@ -105,19 +106,17 @@ const EndpointProfileFormModal = ({ profile, isOpen, onClose }) => {
           </div>
 
           {/* Use Custom Endpoint Checkbox - Row (Aligned Right) */}
-          {/* Removed col-span-4, using flex justify-end on its own row */}
-          <div className="flex items-center justify-end space-x-2 pr-4"> 
-             <Checkbox
-                id="useCustomEndpoint"
-                name="useCustomEndpoint"
-                checked={formData.useCustomEndpoint || false}
-                onCheckedChange={handleCheckboxChange} // Use onCheckedChange for Shadcn Checkbox
+          <div className="flex items-center justify-end space-x-2 pr-4">
+            <Checkbox
+              id="useCustomEndpoint"
+              name="useCustomEndpoint"
+              checked={formData.useCustomEndpoint || false}
+              onCheckedChange={handleCheckboxChange}
             />
             <Label htmlFor="useCustomEndpoint" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {t('endpoint_profile_form_label_use_custom')}
+              {t('endpoint_profile_form_label_use_custom')}
             </Label>
           </div>
-
 
           {/* Endpoint URL - Row */}
           <div className="grid grid-cols-4 items-center gap-x-4">
@@ -170,7 +169,7 @@ const EndpointProfileFormModal = ({ profile, isOpen, onClose }) => {
               value={formData.contextLength === undefined ? '' : formData.contextLength}
               onChange={handleChange}
               className="col-span-3"
-              min="0" // Add min attribute for better UX
+              min="0"
               disabled={!isCustom}
             />
           </div>
@@ -185,29 +184,181 @@ const EndpointProfileFormModal = ({ profile, isOpen, onClose }) => {
               value={formData.maxOutputTokens === undefined ? '' : formData.maxOutputTokens}
               onChange={handleChange}
               className="col-span-3"
-              min="0" // Add min attribute
+              min="0"
               disabled={!isCustom}
             />
           </div>
+
+          {/* New Optional Parameters Divider */}
+          {isCustom && (
+            <div className="border-t pt-4 mt-2 mb-2">
+              <h4 className="text-sm font-semibold mb-2">Advanced Optional Parameters</h4>
+            </div>
+          )}
+
+          {/* Temperature - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="temperature" className="text-right col-span-1">Temperature</Label>
+            <Input
+              id="temperature"
+              name="temperature"
+              type="number"
+              step="0.01"
+              min="0"
+              max="2"
+              value={formData.temperature === undefined ? '' : formData.temperature}
+              onChange={handleChange}
+              className="col-span-3"
+              disabled={!isCustom}
+            />
+          </div>
+
+          {/* Top_p - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="top_p" className="text-right col-span-1">Top P</Label>
+            <Input
+              id="top_p"
+              name="top_p"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              value={formData.top_p === undefined ? '' : formData.top_p}
+              onChange={handleChange}
+              className="col-span-3"
+              disabled={!isCustom}
+            />
+          </div>
+
+          {/* Presence Penalty - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="presence_penalty" className="text-right col-span-1">Presence Penalty</Label>
+            <Input
+              id="presence_penalty"
+              name="presence_penalty"
+              type="number"
+              step="0.01"
+              min="-2"
+              max="2"
+              value={formData.presence_penalty === undefined ? '' : formData.presence_penalty}
+              onChange={handleChange}
+              className="col-span-3"
+              disabled={!isCustom}
+            />
+          </div>
+
+          {/* Frequency Penalty - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="frequency_penalty" className="text-right col-span-1">Frequency Penalty</Label>
+            <Input
+              id="frequency_penalty"
+              name="frequency_penalty"
+              type="number"
+              step="0.01"
+              min="-2"
+              max="2"
+              value={formData.frequency_penalty === undefined ? '' : formData.frequency_penalty}
+              onChange={handleChange}
+              className="col-span-3"
+              disabled={!isCustom}
+            />
+          </div>
+
+          {/* Seed - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="seed" className="text-right col-span-1">Seed</Label>
+            <Input
+              id="seed"
+              name="seed"
+              type="number"
+              value={formData.seed === undefined || formData.seed === null ? '' : formData.seed}
+              onChange={handleChange}
+              className="col-span-3"
+              placeholder="Optional integer"
+              disabled={!isCustom}
+            />
+          </div>
+
+          {/* Logprobs - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="logprobs" className="text-right col-span-1">Logprobs</Label>
+            <div className="col-span-3 flex items-center space-x-2">
+              <Checkbox
+                id="logprobs"
+                name="logprobs"
+                checked={formData.logprobs || false}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, logprobs: checked }))}
+                disabled={!isCustom}
+              />
+            </div>
+          </div>
+
+          {/* Top Logprobs - Row */}
+          {formData.logprobs && (
+            <div className="grid grid-cols-4 items-center gap-x-4">
+              <Label htmlFor="top_logprobs" className="text-right col-span-1">Top Logprobs</Label>
+              <Input
+                id="top_logprobs"
+                name="top_logprobs"
+                type="number"
+                min="0"
+                max="20"
+                value={formData.top_logprobs === undefined || formData.top_logprobs === null ? '' : formData.top_logprobs}
+                onChange={handleChange}
+                className="col-span-3"
+                disabled={!isCustom}
+              />
+            </div>
+          )}
+
+          {/* Stop Sequences - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="stop" className="text-right col-span-1">Stop</Label>
+            <Input
+              id="stop"
+              name="stop"
+              value={formData.stop || ''}
+              onChange={handleChange}
+              className="col-span-3"
+              placeholder='e.g. \n, "User:" (comma sep or JSON)'
+              disabled={!isCustom}
+            />
+          </div>
+
+          {/* Logit Bias - Row */}
+          <div className="grid grid-cols-4 items-center gap-x-4">
+            <Label htmlFor="logit_bias" className="text-right col-span-1">Logit Bias</Label>
+            <Input
+              id="logit_bias"
+              name="logit_bias"
+              value={formData.logit_bias || ''}
+              onChange={handleChange}
+              className="col-span-3"
+              placeholder='JSON string'
+              disabled={!isCustom}
+            />
+          </div>
+
+
         </div>
         <DialogFooter className="sm:justify-between">
-           {/* Conditionally render Reset button only if custom is checked */}
-           {isCustom ? (
-             <Button type="button" variant="outline" onClick={handleReset}>
-               {t('endpoint_profile_form_button_reset_custom')}
-             </Button>
-           ) : (
-             <div /> // Placeholder to keep layout consistent
-           )}
-           <div>
-             <DialogClose asChild>
-                <Button type="button" variant="ghost">{t('endpoint_profile_form_button_cancel')}</Button>
-             </DialogClose>
-             <Button type="button" onClick={handleSave}>{t('endpoint_profile_form_button_save')}</Button>
-           </div>
+          {/* Conditionally render Reset button only if custom is checked */}
+          {isCustom ? (
+            <Button type="button" variant="outline" onClick={handleReset}>
+              {t('endpoint_profile_form_button_reset_custom')}
+            </Button>
+          ) : (
+            <div /> // Placeholder to keep layout consistent
+          )}
+          <div>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">{t('endpoint_profile_form_button_cancel')}</Button>
+            </DialogClose>
+            <Button type="button" onClick={handleSave}>{t('endpoint_profile_form_button_save')}</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };
 

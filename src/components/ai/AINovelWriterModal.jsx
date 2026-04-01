@@ -34,10 +34,10 @@ export const AINovelWriterModal = ({
 }) => {
   const { t } = useTranslation();
   const { updateScene, novelSynopsis } = useData(); // Added novelSynopsis from useData
-  const { 
-    systemPrompt, 
-    endpointProfiles, 
-    activeProfileId: globalActiveProfileId, 
+  const {
+    systemPrompt,
+    endpointProfiles,
+    activeProfileId: globalActiveProfileId,
     taskSettings,
     TASK_KEYS,
     getActiveProfile // Added
@@ -48,7 +48,7 @@ export const AINovelWriterModal = ({
   const [scenesQueue, setScenesQueue] = useState([]);
   const [totalScenesCount, setTotalScenesCount] = useState(0);
   const [scenesWrittenCount, setScenesWrittenCount] = useState(0);
-  
+
   const [currentChapterName, setCurrentChapterName] = useState('');
   const [currentSceneName, setCurrentSceneName] = useState('');
   const [currentStreamingText, setCurrentStreamingText] = useState('');
@@ -80,7 +80,7 @@ export const AINovelWriterModal = ({
     isOpen: false,
     title: '',
     description: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
     confirmText: 'Confirm',
     cancelText: 'Cancel',
   });
@@ -115,16 +115,16 @@ export const AINovelWriterModal = ({
                 chapter.sceneOrder.forEach((sceneId, sceneIndex) => {
                   const scene = scenes[sceneId];
                   if (scene) {
-                  const sceneDetail = {
-                    id: scene.id,
-                    name: scene.name || t('ai_novel_writer_unnamed_scene'),
-                    content: scene.content || '',
-                    chapterId: chapter.id,
-                    chapterName: chapter.name || t('ai_novel_writer_unnamed_chapter'),
-                    actName: act.name || t('ai_novel_writer_unnamed_act'),
-                    originalIndices: { actIndex, chapterIndex, sceneIndex }
-                  };
-                  initialProcessingQueue.push(sceneDetail);
+                    const sceneDetail = {
+                      id: scene.id,
+                      name: scene.name || t('ai_novel_writer_unnamed_scene'),
+                      content: scene.content || '',
+                      chapterId: chapter.id,
+                      chapterName: chapter.name || t('ai_novel_writer_unnamed_chapter'),
+                      actName: act.name || t('ai_novel_writer_unnamed_act'),
+                      originalIndices: { actIndex, chapterIndex, sceneIndex }
+                    };
+                    initialProcessingQueue.push(sceneDetail);
                     options.push({
                       value: scene.id,
                       label: `${act.name || `Act ${actIndex + 1}`} / ${chapter.name || `Chapter ${chapterIndex + 1}`} / ${scene.name || `Scene ${sceneIndex + 1}`}`,
@@ -155,7 +155,7 @@ export const AINovelWriterModal = ({
         // If a start scene is selected, search within the already sliced queue. Otherwise, search in the initial full queue.
         const queueToSearchForEnd = effectiveStartSceneId ? filteredQueue : initialProcessingQueue;
         const endIndexInThatQueue = queueToSearchForEnd.findIndex(s => s.id === effectiveEndSceneId);
-        
+
         if (endIndexInThatQueue !== -1) {
           if (effectiveStartSceneId) {
             // If start was selected, slice the `filteredQueue` (which starts from `effectiveStartSceneId`)
@@ -163,13 +163,13 @@ export const AINovelWriterModal = ({
           } else {
             // If no start was selected, slice the `initialProcessingQueue`
             const originalEndIndex = initialProcessingQueue.findIndex(s => s.id === effectiveEndSceneId);
-             if (originalEndIndex !== -1) { // Should always be found if endIndexInThatQueue was found
-                filteredQueue = initialProcessingQueue.slice(0, originalEndIndex + 1);
-             }
+            if (originalEndIndex !== -1) { // Should always be found if endIndexInThatQueue was found
+              filteredQueue = initialProcessingQueue.slice(0, originalEndIndex + 1);
+            }
           }
         }
       }
-      
+
       setScenesQueue(filteredQueue);
       setTotalScenesCount(filteredQueue.length);
 
@@ -179,7 +179,7 @@ export const AINovelWriterModal = ({
       setScenesWrittenCount(0);
       // Don't clear errorMessages or generatedContents here, only on explicit start
       setCurrentStreamingText('');
-      
+
       if (filteredQueue.length > 0) {
         setCurrentChapterName(filteredQueue[0].chapterName);
         setCurrentSceneName(filteredQueue[0].name);
@@ -187,7 +187,7 @@ export const AINovelWriterModal = ({
         setCurrentChapterName('');
         setCurrentSceneName('');
       }
-      
+
       // Reset memory UI states for the (potentially new) first scene in queue
       setCurrentSceneTokenBreakdown({ system: 0, query: 0, novelData: 0, currentText: 0 });
       setCurrentSceneEstimatedTokens(0);
@@ -196,32 +196,32 @@ export const AINovelWriterModal = ({
       setIsMemoryDetailOpen(false); // Close memory details when range changes
 
     } else if (!isOpen) {
-        // Full reset when modal closes
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
-        setIsGenerating(false);
-        setSceneOptions([]);
-        setSelectedStartSceneId(DEFAULT_SCENE_OPTION_VALUE); // Reset to default placeholder value
-        setSelectedEndSceneId(DEFAULT_SCENE_OPTION_VALUE);   // Reset to default placeholder value
-        setIsRangeSelectorOpen(false);
-        setScenesQueue([]);
-        setTotalScenesCount(0);
-        setScenesWrittenCount(0);
-        setCurrentSceneIndex(0);
-        setCurrentChapterName('');
-        setCurrentSceneName('');
-        setErrorMessages([]);
-        setCurrentStreamingText('');
-        setGeneratedContents(new Map());
-        setHasAttemptedSaveOnStop(false);
-        setCurrentSceneTokenBreakdown({ system: 0, query: 0, novelData: 0, currentText: 0 });
-        setCurrentSceneEstimatedTokens(0);
-        setCurrentSceneMaxPromptTokens(currentAIProfile?.contextLength || 4096);
-        setCurrentSceneNovelContextLevel(0);
-        setIsMemoryDetailOpen(false);
-        setIsNovelDataCtxOpen(false);
+      // Full reset when modal closes
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setIsGenerating(false);
+      setSceneOptions([]);
+      setSelectedStartSceneId(DEFAULT_SCENE_OPTION_VALUE); // Reset to default placeholder value
+      setSelectedEndSceneId(DEFAULT_SCENE_OPTION_VALUE);   // Reset to default placeholder value
+      setIsRangeSelectorOpen(false);
+      setScenesQueue([]);
+      setTotalScenesCount(0);
+      setScenesWrittenCount(0);
+      setCurrentSceneIndex(0);
+      setCurrentChapterName('');
+      setCurrentSceneName('');
+      setErrorMessages([]);
+      setCurrentStreamingText('');
+      setGeneratedContents(new Map());
+      setHasAttemptedSaveOnStop(false);
+      setCurrentSceneTokenBreakdown({ system: 0, query: 0, novelData: 0, currentText: 0 });
+      setCurrentSceneEstimatedTokens(0);
+      setCurrentSceneMaxPromptTokens(currentAIProfile?.contextLength || 4096);
+      setCurrentSceneNovelContextLevel(0);
+      setIsMemoryDetailOpen(false);
+      setIsNovelDataCtxOpen(false);
     }
   }, [isOpen, novelData, currentAIProfile, selectedStartSceneId, selectedEndSceneId]);
 
@@ -240,6 +240,16 @@ export const AINovelWriterModal = ({
       model: currentAIProfile.modelName,
       maxOutputTokens: currentAIProfile.maxOutputTokens || 1024,
       contextLength: currentAIProfile.contextLength || 4096,
+      // Optional params
+      temperature: currentAIProfile.temperature ?? 0.7,
+      top_p: currentAIProfile.top_p ?? 1.0,
+      presence_penalty: currentAIProfile.presence_penalty ?? 0.0,
+      frequency_penalty: currentAIProfile.frequency_penalty ?? 0.0,
+      logit_bias: currentAIProfile.logit_bias || '',
+      logprobs: currentAIProfile.logprobs || false,
+      top_logprobs: currentAIProfile.top_logprobs,
+      stop: currentAIProfile.stop || '',
+      seed: currentAIProfile.seed,
     };
   };
 
@@ -260,7 +270,7 @@ export const AINovelWriterModal = ({
       setIsGenerating(false);
       return;
     }
-    
+
     const sceneTextPrompt = taskSettings[TASK_KEYS.SCENE_TEXT]?.prompt || t('ai_novel_writer_default_scene_prompt');
 
     // The currentRunScenes local variable is no longer needed here, 
@@ -268,15 +278,15 @@ export const AINovelWriterModal = ({
 
     const contextResult = await generateContextWithRetry({
       strategy: 'sceneText',
-      baseData: { 
-        ...(novelData || {}), 
+      baseData: {
+        ...(novelData || {}),
         scenes: novelData?.scenes, // Pass original scenes from novelData prop
         currentGeneratedContents: generatedContents, // Pass the map of currently generated contents
-        novelSynopsis 
+        novelSynopsis
       },
-      targetData: { 
-        targetChapterId: currentSceneData.chapterId, 
-        targetSceneId: currentSceneData.id, 
+      targetData: {
+        targetChapterId: currentSceneData.chapterId,
+        targetSceneId: currentSceneData.id,
         currentSceneText: currentSceneData.content // Use original content of the scene to be written
       },
       aiProfile: currentAIProfile,
@@ -290,20 +300,20 @@ export const AINovelWriterModal = ({
       setCurrentSceneIndex(prev => prev + 1); // Skip to next scene
       return;
     }
-    
+
     setCurrentSceneNovelContextLevel(contextResult.level);
     setCurrentSceneNovelDataContextString(contextResult.contextString || ""); // Store for display
-    
+
     const systemPromptTokens = tokenCount(systemPrompt);
     const queryTokens = tokenCount(sceneTextPrompt);
     // currentText is not explicitly added to payload by default in AINovelWriter, so 0 for breakdown unless logic changes
-    const currentTextInPayloadTokens = 0; 
-    
+    const currentTextInPayloadTokens = 0;
+
     setCurrentSceneTokenBreakdown({
       system: systemPromptTokens,
       query: queryTokens,
       novelData: contextResult.estimatedTokens,
-      currentText: currentTextInPayloadTokens 
+      currentText: currentTextInPayloadTokens
     });
     const totalEstTokens = systemPromptTokens + queryTokens + contextResult.estimatedTokens + currentTextInPayloadTokens;
     setCurrentSceneEstimatedTokens(totalEstTokens);
@@ -334,6 +344,44 @@ export const AINovelWriterModal = ({
       stream: true,
     };
 
+    // Always send temperature
+    payload.temperature = endpointConfig.temperature;
+
+    // Add optional parameters if they differ from defaults
+    if (endpointConfig.top_p !== 1.0) payload.top_p = endpointConfig.top_p;
+    if (endpointConfig.presence_penalty !== 0.0) payload.presence_penalty = endpointConfig.presence_penalty;
+    if (endpointConfig.frequency_penalty !== 0.0) payload.frequency_penalty = endpointConfig.frequency_penalty;
+    // For novel writer, n should probably be 1, but we respect the setting
+    if (endpointConfig.seed !== null && endpointConfig.seed !== undefined) payload.seed = endpointConfig.seed;
+    if (endpointConfig.logprobs) {
+      payload.logprobs = true;
+      if (endpointConfig.top_logprobs !== null && endpointConfig.top_logprobs !== undefined) {
+        payload.top_logprobs = endpointConfig.top_logprobs;
+      }
+    }
+
+    // Handle 'stop' - can be comma separated string or JSON
+    if (endpointConfig.stop) {
+      try {
+        payload.stop = JSON.parse(endpointConfig.stop);
+      } catch (e) {
+        if (endpointConfig.stop.includes(',')) {
+          payload.stop = endpointConfig.stop.split(',').map(s => s.trim());
+        } else {
+          payload.stop = endpointConfig.stop;
+        }
+      }
+    }
+
+    // Handle 'logit_bias' - must be JSON
+    if (endpointConfig.logit_bias) {
+      try {
+        payload.logit_bias = JSON.parse(endpointConfig.logit_bias);
+      } catch (e) {
+        console.warn("Invalid JSON for logit_bias, ignoring:", e);
+      }
+    }
+
     try {
       const response = await fetch(endpointConfig.url, {
         method: 'POST',
@@ -361,31 +409,31 @@ export const AINovelWriterModal = ({
         if (abortControllerRef.current && abortControllerRef.current.signal.aborted) break;
 
         buffer += decoder.decode(value, { stream: true });
-        
+
         let boundary = buffer.indexOf('\n\n');
         while (boundary !== -1) {
-            const eventString = buffer.substring(0, boundary);
-            buffer = buffer.substring(boundary + 2);
+          const eventString = buffer.substring(0, boundary);
+          buffer = buffer.substring(boundary + 2);
 
-            if (eventString.startsWith('data: ')) {
-                const jsonData = eventString.substring('data: '.length).trim();
-                if (jsonData === '[DONE]') break;
-                try {
-                    const parsed = JSON.parse(jsonData);
-                    if (parsed.choices && parsed.choices[0]?.delta?.content) {
-                        const chunk = parsed.choices[0].delta.content;
-                        fullSceneResponse += chunk;
-                        setCurrentStreamingText(prev => (prev + chunk).slice(-ROLLING_WINDOW_SIZE));
-                    }
-                } catch (e) {
-                    console.error('Error parsing stream JSON chunk:', e, jsonData);
-                    setErrorMessages(prev => [...prev, t('ai_novel_writer_error_parsing_chunk', { sceneName: currentSceneData.name })]);
-                }
+          if (eventString.startsWith('data: ')) {
+            const jsonData = eventString.substring('data: '.length).trim();
+            if (jsonData === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(jsonData);
+              if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                const chunk = parsed.choices[0].delta.content;
+                fullSceneResponse += chunk;
+                setCurrentStreamingText(prev => (prev + chunk).slice(-ROLLING_WINDOW_SIZE));
+              }
+            } catch (e) {
+              console.error('Error parsing stream JSON chunk:', e, jsonData);
+              setErrorMessages(prev => [...prev, t('ai_novel_writer_error_parsing_chunk', { sceneName: currentSceneData.name })]);
             }
-            boundary = buffer.indexOf('\n\n');
+          }
+          boundary = buffer.indexOf('\n\n');
         }
       }
-      
+
       if (abortControllerRef.current && abortControllerRef.current.signal.aborted) {
         setErrorMessages(prev => [...prev, t('ai_novel_writer_status_generation_stopped_for_scene', { sceneName: currentSceneData.name })]);
       } else {
@@ -403,45 +451,45 @@ export const AINovelWriterModal = ({
       }
     } finally {
       if (isGenerating && (!abortControllerRef.current || !abortControllerRef.current.signal.aborted)) {
-        setCurrentSceneIndex(prev => prev + 1); 
+        setCurrentSceneIndex(prev => prev + 1);
       }
     }
   };
-  
+
   useEffect(() => {
     if (isGenerating && currentSceneIndex < scenesQueue.length) {
-        if (abortControllerRef.current) { 
-            abortControllerRef.current.abort();
-        }
-        abortControllerRef.current = new AbortController();
-        processSceneQueue();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+      processSceneQueue();
     } else if (isGenerating && currentSceneIndex >= scenesQueue.length && scenesQueue.length > 0) {
-        // All scenes processed, now batch update
-        setIsGenerating(false); 
-        if (generatedContents.size > 0) {
-            let savedCount = 0;
-            generatedContents.forEach((content, sceneId) => {
-                updateScene({ id: sceneId, content: content });
-                savedCount++;
-            });
-            setErrorMessages(prev => [...prev, t('ai_novel_writer_status_saved_summary', { savedCount, totalCount: totalScenesCount })]);
-            setGeneratedContents(new Map()); // Clear after successful full save
-        } else if (scenesWrittenCount === totalScenesCount && totalScenesCount > 0) { 
-             setErrorMessages(prev => [...prev, t('ai_novel_writer_status_process_complete', { writtenCount: scenesWrittenCount })]);
-        } else if (totalScenesCount === 0) { // Handles case where queue was empty from start
-             setErrorMessages(prev => [...prev, t('ai_novel_writer_status_no_scenes_to_process_at_end')]);
-        }
+      // All scenes processed, now batch update
+      setIsGenerating(false);
+      if (generatedContents.size > 0) {
+        let savedCount = 0;
+        generatedContents.forEach((content, sceneId) => {
+          updateScene({ id: sceneId, content: content });
+          savedCount++;
+        });
+        setErrorMessages(prev => [...prev, t('ai_novel_writer_status_saved_summary', { savedCount, totalCount: totalScenesCount })]);
+        setGeneratedContents(new Map()); // Clear after successful full save
+      } else if (scenesWrittenCount === totalScenesCount && totalScenesCount > 0) {
+        setErrorMessages(prev => [...prev, t('ai_novel_writer_status_process_complete', { writtenCount: scenesWrittenCount })]);
+      } else if (totalScenesCount === 0) { // Handles case where queue was empty from start
+        setErrorMessages(prev => [...prev, t('ai_novel_writer_status_no_scenes_to_process_at_end')]);
+      }
     } else if (isGenerating && scenesQueue.length === 0) { // Edge case: started with no scenes
-        setIsGenerating(false);
-        setErrorMessages(prev => [...prev, t('ai_novel_writer_status_no_scenes_to_process_at_start')]);
+      setIsGenerating(false);
+      setErrorMessages(prev => [...prev, t('ai_novel_writer_status_no_scenes_to_process_at_start')]);
     }
-    
+
     // Cleanup function
     return () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
     };
   }, [isGenerating, currentSceneIndex]); // Removed scenesQueue from deps to avoid re-triggering on initial setup
 
@@ -451,7 +499,7 @@ export const AINovelWriterModal = ({
         abortControllerRef.current.abort();
       }
       setIsGenerating(false);
-      promptAndSavePartial(t('ai_novel_writer_status_stopped_by_user')); 
+      promptAndSavePartial(t('ai_novel_writer_status_stopped_by_user'));
       setHasAttemptedSaveOnStop(true);
     } else { // Start
       if (scenesQueue.length === 0) {
@@ -463,7 +511,7 @@ export const AINovelWriterModal = ({
       setCurrentSceneIndex(0);
       setGeneratedContents(new Map()); // Clear any previous partial data before new start
       setHasAttemptedSaveOnStop(false);
-      setIsGenerating(true); 
+      setIsGenerating(true);
     }
   };
 
@@ -475,9 +523,9 @@ export const AINovelWriterModal = ({
     const translatedActionContext = typeof actionContextKey === 'string' ? actionContextKey : t('ai_novel_writer_status_interrupted');
 
     if (translatedActionContext === t('ai_novel_writer_status_stopped_by_user')) {
-        setErrorMessages(prev => [...prev, t('ai_novel_writer_status_stopped_by_user')]);
+      setErrorMessages(prev => [...prev, t('ai_novel_writer_status_stopped_by_user')]);
     } else if (translatedActionContext === t('ai_novel_writer_status_interrupted')) { // Default or explicit "interrupted"
-        setErrorMessages(prev => [...prev, t('ai_novel_writer_status_interrupted')]);
+      setErrorMessages(prev => [...prev, t('ai_novel_writer_status_interrupted')]);
     }
     // If actionContextKey was something else, it might not add an extra error message here,
     // relying on the dialog description to convey the context.
@@ -497,14 +545,14 @@ export const AINovelWriterModal = ({
             savedCount++;
           });
           setErrorMessages(prev => [...prev, t('ai_novel_writer_status_saved_partial_summary', { count: savedCount })]);
-          setGeneratedContents(new Map()); 
+          setGeneratedContents(new Map());
           confirmActionExecutedRef.current = true;
         },
       });
     } else {
       // No content to save, ensure it's cleared if action implies it (e.g. stop)
-    // This path means no prompt will be shown.
-    // If called from stop/close, and no content, it's fine.
+      // This path means no prompt will be shown.
+      // If called from stop/close, and no content, it's fine.
     }
   };
 
@@ -522,7 +570,7 @@ export const AINovelWriterModal = ({
     const effectiveEndSceneId = selectedEndSceneId === DEFAULT_SCENE_OPTION_VALUE ? '' : selectedEndSceneId;
 
     if (!effectiveStartSceneId || !effectiveEndSceneId) return false;
-    
+
     const startOrder = getSceneComparableOrder(effectiveStartSceneId);
     const endOrder = getSceneComparableOrder(effectiveEndSceneId);
     return startOrder && endOrder && startOrder > endOrder;
@@ -531,27 +579,27 @@ export const AINovelWriterModal = ({
   const progressValue = totalScenesCount > 0 ? (scenesWrittenCount / totalScenesCount) * 100 : 0;
 
   const handleCloseModal = () => {
-    if (isGenerating) { 
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-        setIsGenerating(false); 
-        if (!hasAttemptedSaveOnStop) { 
-            promptAndSavePartial(t('ai_novel_writer_status_interrupted')); // Explicitly pass translated key
-        }
+    if (isGenerating) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      setIsGenerating(false);
+      if (!hasAttemptedSaveOnStop) {
+        promptAndSavePartial(t('ai_novel_writer_status_interrupted')); // Explicitly pass translated key
+      }
     } else {
-        // Not generating.
-        // If stop button was clicked, hasAttemptedSaveOnStop is true.
-        // promptAndSavePartial would have been called, and generatedContents handled.
-        // If generation completed successfully, generatedContents is cleared.
-        // If generation stopped due to error (not user stop), and not all scenes done:
-        if (!hasAttemptedSaveOnStop && generatedContents.size > 0 && scenesWrittenCount < totalScenesCount) {
-             promptAndSavePartial(t('ai_novel_writer_status_interrupted')); // Or a more specific key if available
-        } else if (generatedContents.size > 0) {
-            // Fallback: if there's still content and no other path handled it, clear it on close.
-            // This might happen if promptAndSavePartial was called, user cancelled, and modal wasn't closed immediately.
-            // The onOpenChange of ConfirmModal should handle this.
-        }
+      // Not generating.
+      // If stop button was clicked, hasAttemptedSaveOnStop is true.
+      // promptAndSavePartial would have been called, and generatedContents handled.
+      // If generation completed successfully, generatedContents is cleared.
+      // If generation stopped due to error (not user stop), and not all scenes done:
+      if (!hasAttemptedSaveOnStop && generatedContents.size > 0 && scenesWrittenCount < totalScenesCount) {
+        promptAndSavePartial(t('ai_novel_writer_status_interrupted')); // Or a more specific key if available
+      } else if (generatedContents.size > 0) {
+        // Fallback: if there's still content and no other path handled it, clear it on close.
+        // This might happen if promptAndSavePartial was called, user cancelled, and modal wasn't closed immediately.
+        // The onOpenChange of ConfirmModal should handle this.
+      }
     }
     onClose();
   };
@@ -586,9 +634,9 @@ export const AINovelWriterModal = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="startScene" className="text-xs">{t('ai_chat_modal_label_start_scene')}</Label>
-                      <Select 
-                        value={selectedStartSceneId || DEFAULT_SCENE_OPTION_VALUE} 
-                        onValueChange={(value) => setSelectedStartSceneId(value === DEFAULT_SCENE_OPTION_VALUE ? '' : value)} 
+                      <Select
+                        value={selectedStartSceneId || DEFAULT_SCENE_OPTION_VALUE}
+                        onValueChange={(value) => setSelectedStartSceneId(value === DEFAULT_SCENE_OPTION_VALUE ? '' : value)}
                         disabled={isGenerating}
                       >
                         <SelectTrigger id="startScene">
@@ -606,9 +654,9 @@ export const AINovelWriterModal = ({
                     </div>
                     <div>
                       <Label htmlFor="endScene" className="text-xs">{t('ai_chat_modal_label_end_scene')}</Label>
-                      <Select 
-                        value={selectedEndSceneId || DEFAULT_SCENE_OPTION_VALUE} 
-                        onValueChange={(value) => setSelectedEndSceneId(value === DEFAULT_SCENE_OPTION_VALUE ? '' : value)} 
+                      <Select
+                        value={selectedEndSceneId || DEFAULT_SCENE_OPTION_VALUE}
+                        onValueChange={(value) => setSelectedEndSceneId(value === DEFAULT_SCENE_OPTION_VALUE ? '' : value)}
                         disabled={isGenerating}
                       >
                         <SelectTrigger id="endScene">
@@ -640,10 +688,9 @@ export const AINovelWriterModal = ({
                     <Database className="h-5 w-5 text-muted-foreground" />
                     <Progress
                       value={currentSceneMaxPromptTokens > 0 ? (currentSceneEstimatedTokens / currentSceneMaxPromptTokens) * 100 : 0}
-                      className={`w-full [&>div]:transition-all [&>div]:duration-500 ${
-                        currentSceneMaxPromptTokens > 0 && currentSceneEstimatedTokens / currentSceneMaxPromptTokens >= 1 ? ' [&>div]:bg-destructive' :
+                      className={`w-full [&>div]:transition-all [&>div]:duration-500 ${currentSceneMaxPromptTokens > 0 && currentSceneEstimatedTokens / currentSceneMaxPromptTokens >= 1 ? ' [&>div]:bg-destructive' :
                         currentSceneMaxPromptTokens > 0 && currentSceneEstimatedTokens / currentSceneMaxPromptTokens >= 0.5 ? ' [&>div]:bg-yellow-500' : ''
-                      }`}
+                        }`}
                     />
                   </div>
                   <Collapsible open={isMemoryDetailOpen} onOpenChange={setIsMemoryDetailOpen} className="py-2 border-b text-xs">
@@ -664,12 +711,12 @@ export const AINovelWriterModal = ({
                                 <TriangleAlert className="h-3 w-3 mr-1 text-yellow-500" />
                               )}
                               {currentSceneNovelContextLevel === -1 && (
-                                 <TriangleAlert className="h-3 w-3 mr-1 text-destructive" />
+                                <TriangleAlert className="h-3 w-3 mr-1 text-destructive" />
                               )}
                               <span className={
                                 currentSceneNovelContextLevel === -1 ? 'text-destructive' :
-                                currentSceneNovelContextLevel === 4 ? 'text-destructive' : // Assuming level 4 is also an error/bad state
-                                currentSceneNovelContextLevel === 2 || currentSceneNovelContextLevel === 3 ? 'text-yellow-600 dark:text-yellow-400' : ''
+                                  currentSceneNovelContextLevel === 4 ? 'text-destructive' : // Assuming level 4 is also an error/bad state
+                                    currentSceneNovelContextLevel === 2 || currentSceneNovelContextLevel === 3 ? 'text-yellow-600 dark:text-yellow-400' : ''
                               }>
                                 {t('ai_novel_writer_memory_novel_context_stats_label', { level: currentSceneNovelContextLevel === -1 ? t('ai_novel_writer_memory_details_level_err') : currentSceneNovelContextLevel })}
                               </span>
@@ -684,7 +731,7 @@ export const AINovelWriterModal = ({
                             </p>
                           )}
                           {currentSceneNovelContextLevel === -1 && (
-                             <p className="text-xs text-destructive pl-4">
+                            <p className="text-xs text-destructive pl-4">
                               {t('ai_novel_writer_memory_context_failed_note')}
                             </p>
                           )}
@@ -722,8 +769,8 @@ export const AINovelWriterModal = ({
                 <div className="flex justify-between mb-1 text-sm">
                   <span>{t('ai_novel_writer_label_overall_progress')}</span>
                   <span>
-                    {scenesQueue.length > 0 || totalScenesCount > 0 ? 
-                      t('ai_novel_writer_progress_stats', { writtenCount: scenesWrittenCount, totalCount: totalScenesCount }) : 
+                    {scenesQueue.length > 0 || totalScenesCount > 0 ?
+                      t('ai_novel_writer_progress_stats', { writtenCount: scenesWrittenCount, totalCount: totalScenesCount }) :
                       t('ai_novel_writer_progress_no_scenes')
                     }
                   </span>
@@ -750,37 +797,37 @@ export const AINovelWriterModal = ({
               {isGenerating && (
                 <div>
                   <label htmlFor="rollingTextDisplay" className="text-sm font-medium">{t('ai_novel_writer_label_live_output', { charCount: ROLLING_WINDOW_SIZE })}</label>
-                <Textarea
-                  id="rollingTextDisplay"
-                  readOnly
-                  value={currentStreamingText}
-                  className="mt-1 h-20 w-full resize-none bg-muted/50 text-xs [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] blur-sm hover:blur-none transition-all duration-200"
-                  placeholder={t('ai_novel_writer_placeholder_live_output')}
-                />
-              </div>
-            )}
+                  <Textarea
+                    id="rollingTextDisplay"
+                    readOnly
+                    value={currentStreamingText}
+                    className="mt-1 h-20 w-full resize-none bg-muted/50 text-xs [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] blur-sm hover:blur-none transition-all duration-200"
+                    placeholder={t('ai_novel_writer_placeholder_live_output')}
+                  />
+                </div>
+              )}
 
-            {errorMessages.length > 0 && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
-                <h4 className="font-semibold text-destructive mb-1">{t('ai_novel_writer_label_errors')}</h4>
-                <ul className="list-disc list-inside text-destructive text-xs space-y-1">
-                  {errorMessages.map((err, index) => (
-                    <li key={index}>{err}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+              {errorMessages.length > 0 && (
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+                  <h4 className="font-semibold text-destructive mb-1">{t('ai_novel_writer_label_errors')}</h4>
+                  <ul className="list-disc list-inside text-destructive text-xs space-y-1">
+                    {errorMessages.map((err, index) => (
+                      <li key={index}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </ScrollArea> {/* Closing ScrollArea tag added here */}
 
           <DialogFooter className="p-6 pt-4 border-t mt-auto">
             <Button variant="outline" onClick={handleCloseModal} disabled={isGenerating && scenesQueue.length > 0 && totalScenesCount > 0}>
               {t('ai_novel_writer_button_close')}
             </Button>
-            <Button 
-              onClick={handleStartStopGeneration} 
+            <Button
+              onClick={handleStartStopGeneration}
               disabled={
-                (totalScenesCount === 0 && !isGenerating && scenesQueue.length === 0) || 
+                (totalScenesCount === 0 && !isGenerating && scenesQueue.length === 0) ||
                 isStartAfterEnd() ||
                 (isGenerating && scenesQueue.length === 0) // Also disable if generating but queue became empty (shouldn't happen)
               }
@@ -795,7 +842,7 @@ export const AINovelWriterModal = ({
         open={confirmModalState.isOpen}
         onOpenChange={(openState) => {
           if (!openState) { // Modal is closing
-            if (!confirmActionExecutedRef.current && confirmModalState.isOpen) { 
+            if (!confirmActionExecutedRef.current && confirmModalState.isOpen) {
               // It was open, it's now closing, AND confirm action didn't run (i.e. cancel)
               setErrorMessages(prev => [...prev, t('ai_novel_writer_status_partial_not_saved')]);
               setGeneratedContents(new Map()); // Clear if cancelled
@@ -806,9 +853,9 @@ export const AINovelWriterModal = ({
         }}
         title={confirmModalState.title}
         description={confirmModalState.description}
-        onConfirm={() => { 
+        onConfirm={() => {
           if (confirmModalState.onConfirm) {
-            confirmModalState.onConfirm(); 
+            confirmModalState.onConfirm();
           }
         }}
         confirmText={confirmModalState.confirmText}

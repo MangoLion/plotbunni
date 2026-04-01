@@ -17,6 +17,16 @@ const DEFAULT_ENDPOINT_VALUES = {
   modelName: 'default',
   contextLength: 10512,
   maxOutputTokens: 1024,
+  // New Optional Parameters
+  temperature: 0.7,
+  top_p: 1.0,
+  presence_penalty: 0.0,
+  frequency_penalty: 0.0,
+  logit_bias: '', // JSON string representation
+  logprobs: false,
+  top_logprobs: null, // Integer or null
+  stop: '', // String or JSON string array
+  seed: null, // Integer or null
 };
 
 // Old endpoint values for migration
@@ -44,8 +54,8 @@ const DEFAULT_TASK_PROMPTS = {
   [TASK_KEYS.SCENE_TEXT]: "Based on the provided scene synopsis and context, write the full text for this scene. Do not write the chapter or scene title.",
   [TASK_KEYS.CHAT]: "Engage in a helpful conversation about the novel, offering ideas, answering questions, or discussing plot points.",
   [TASK_KEYS.CONCEPT_DESC]: "Based on the provided concept name and details, write a compelling description for this concept. Focus on its key attributes and role. Do not write the concept name or any other labels.", // New default prompt
-  [TASK_KEYS.PLANNER_OUTLINE]: 
-  `Generate a comprehensive plot outline for a new novel based on the synopsis above. NO markdown, plaintext only!
+  [TASK_KEYS.PLANNER_OUTLINE]:
+    `Generate a comprehensive plot outline for a new novel based on the synopsis above. NO markdown, plaintext only!
 Use indentation (tabs or spaces) to define acts, chapters, and scenes. Example: Act (no indent), Chapter (1 indent), Scene (2 indents), Synopsis (3 indents). Example format:
 Act 1: The Beginning
     Chapter 1: A New Dawn
@@ -94,7 +104,7 @@ const createDefaultTaskSettings = (defaultProfileId = null) => ({
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.CHAT],
   },
-  [TASK_KEYS.NOVEL_DESC]: { 
+  [TASK_KEYS.NOVEL_DESC]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.NOVEL_DESC],
   },
@@ -186,7 +196,7 @@ const loadSettings = () => {
       const validProfiles = (parsed.endpointProfiles && Array.isArray(parsed.endpointProfiles) && parsed.endpointProfiles.length > 0)
         ? parsed.endpointProfiles
         : [createDefaultProfile()];
-      
+
       const defaultProfileIdForTasks = validProfiles[0].id;
 
       let taskSettings = parsed.taskSettings || createDefaultTaskSettings(defaultProfileIdForTasks);
@@ -203,11 +213,11 @@ const loadSettings = () => {
             taskSettings[taskKey].profileId = defaultProfileIdForTasks;
           }
           if (typeof taskSettings[taskKey].prompt !== 'string') {
-             taskSettings[taskKey].prompt = DEFAULT_TASK_PROMPTS[taskKey] || "";
+            taskSettings[taskKey].prompt = DEFAULT_TASK_PROMPTS[taskKey] || "";
           }
         }
       });
-      
+
       return {
         endpointProfiles: validProfiles,
         themeMode: parsed.themeMode || 'system',
@@ -216,11 +226,11 @@ const loadSettings = () => {
         fontFamily: parsed.fontFamily || DEFAULT_FONT_FAMILY,
         fontSize: parsed.fontSize || DEFAULT_FONT_SIZE,
         taskSettings: taskSettings,
-    systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant",
-    showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
-    language: parsed.language || 'en', // Load language
-  };
-}
+        systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant",
+        showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
+        language: parsed.language || 'en', // Load language
+      };
+    }
   } catch (error) {
     console.error("Error loading settings from localStorage:", error);
   }
@@ -296,7 +306,7 @@ export const SettingsProvider = ({ children }) => {
   // Load settings on initial mount
   useEffect(() => {
     const loaded = loadSettings();
-    
+
     // Check for profiles using the old endpoint URL and update them
     const updatedProfiles = loaded.endpointProfiles.map(profile => {
       const isOldEndpoint = OLD_ENDPOINT_URLS.includes(profile.endpointUrl);
@@ -304,6 +314,7 @@ export const SettingsProvider = ({ children }) => {
       if (isOldEndpoint) {
         console.log(`Updating profile "${profile.name}" from old Mistral endpoint to new Violet endpoint`);
         return {
+          ...DEFAULT_ENDPOINT_VALUES, // Ensure all new defaults are present
           ...profile,
           endpointUrl: DEFAULT_ENDPOINT_VALUES.endpointUrl,
           modelName: DEFAULT_ENDPOINT_VALUES.modelName,
@@ -311,9 +322,10 @@ export const SettingsProvider = ({ children }) => {
           maxOutputTokens: DEFAULT_ENDPOINT_VALUES.maxOutputTokens,
         };
       }
-      return profile;
+      // Merge defaults for all profiles to ensure new fields are added to existing profiles
+      return { ...DEFAULT_ENDPOINT_VALUES, ...profile };
     });
-    
+
     setEndpointProfiles(updatedProfiles);
     // Ensure activeProfileId is valid or set to the first profile
     const firstProfileId = updatedProfiles.length > 0 ? updatedProfiles[0].id : null;
@@ -373,7 +385,7 @@ export const SettingsProvider = ({ children }) => {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => setActiveOsTheme(mediaQuery.matches ? 'dark' : 'light');
-    
+
     mediaQuery.addEventListener('change', handleChange);
     handleChange(); // Initial check
 
@@ -436,7 +448,7 @@ export const SettingsProvider = ({ children }) => {
             return null; // Bail out if any color is unparsable
           }
         } else {
-    // console.warn(`CSS variable --${key} not found during guessing.`);
+          // console.warn(`CSS variable --${key} not found during guessing.`);
           return null; // CSS variable not set, cannot reliably guess
         }
       }
@@ -466,7 +478,7 @@ export const SettingsProvider = ({ children }) => {
       }
       return true;
     };
-    
+
     let newThemeMode = themeMode;
     let newLightColors = userLightColors; // These are string objects
     let newDarkColors = userDarkColors;   // These are string objects
@@ -487,8 +499,8 @@ export const SettingsProvider = ({ children }) => {
         }
         if (activeOsTheme === 'dark') {
           if (!compareCssObjectsWithPresetStrings(currentCssColorObjects, userDarkColors)) { // Check if update is needed
-             newDarkColors = { ...matchedPreset.colors }; // preset colors are strings
-             stateChanged = true;
+            newDarkColors = { ...matchedPreset.colors }; // preset colors are strings
+            stateChanged = true;
           }
         } else { // light
           if (!compareCssObjectsWithPresetStrings(currentCssColorObjects, userLightColors)) {
@@ -498,7 +510,7 @@ export const SettingsProvider = ({ children }) => {
         }
       } else if (compareCssObjectsWithPresetStrings(currentCssColorObjects, targetDefaultPresetColors)) {
         const effectiveMode = activeOsTheme === 'dark' ? 'dark' : 'light';
-         if (themeMode !== effectiveMode) {
+        if (themeMode !== effectiveMode) {
           newThemeMode = effectiveMode;
           stateChanged = true;
         }
@@ -518,52 +530,52 @@ export const SettingsProvider = ({ children }) => {
         // Check if it matches the current user colors for this OS theme.
         const currentUserColorsForOSObjects = {};
         for (const key in currentUserColorsForOS) {
-            currentUserColorsForOSObjects[key] = robustParseHslString(currentUserColorsForOS[key]);
+          currentUserColorsForOSObjects[key] = robustParseHslString(currentUserColorsForOS[key]);
         }
         if (!areColorsObjectsEqual(currentCssColorObjects, currentUserColorsForOSObjects)) {
-            // Live CSS is some custom theme not reflected in state for this OS theme. Adopt it.
-            const liveCssAsStrings = {};
-            for (const key in currentCssColorObjects) {
-                liveCssAsStrings[key] = formatHslObjectToCanonicalString(currentCssColorObjects[key]);
-            }
-            if (activeOsTheme === 'dark') {
-                newDarkColors = liveCssAsStrings;
-            } else {
-                newLightColors = liveCssAsStrings;
-            }
-            stateChanged = true;
-            // console.log(`System mode (${activeOsTheme}): Adopted live custom CSS into user colors.`);
+          // Live CSS is some custom theme not reflected in state for this OS theme. Adopt it.
+          const liveCssAsStrings = {};
+          for (const key in currentCssColorObjects) {
+            liveCssAsStrings[key] = formatHslObjectToCanonicalString(currentCssColorObjects[key]);
+          }
+          if (activeOsTheme === 'dark') {
+            newDarkColors = liveCssAsStrings;
+          } else {
+            newLightColors = liveCssAsStrings;
+          }
+          stateChanged = true;
+          // console.log(`System mode (${activeOsTheme}): Adopted live custom CSS into user colors.`);
         }
       }
     } else { // themeMode is 'light' or 'dark'
       const currentPresets = themeMode === 'dark' ? darkThemePresets : lightThemePresets;
       const currentUserColors = themeMode === 'dark' ? userDarkColors : userLightColors;
-      
+
       let matchedPreset = currentPresets.find(p => compareCssObjectsWithPresetStrings(currentCssColorObjects, p.colors));
 
       if (matchedPreset) {
         // CSS matches a known preset for the current explicit mode.
         // Check if current userColors state already reflects this preset.
         const currentPresetColorsObjects = {};
-         for(const key in matchedPreset.colors) currentPresetColorsObjects[key] = robustParseHslString(matchedPreset.colors[key]);
-        
-        const currentUserColorsObjects = {};
-        for(const key in currentUserColors) currentUserColorsObjects[key] = robustParseHslString(currentUserColors[key]);
+        for (const key in matchedPreset.colors) currentPresetColorsObjects[key] = robustParseHslString(matchedPreset.colors[key]);
 
-        if(!areColorsObjectsEqual(currentUserColorsObjects, currentPresetColorsObjects)){
-            if (themeMode === 'dark') {
-                newDarkColors = { ...matchedPreset.colors };
-            } else { // light
-                newLightColors = { ...matchedPreset.colors };
-            }
-            stateChanged = true;
-            // console.log(`${themeMode} mode: CSS matches preset ${matchedPreset.name}, updated user colors.`);
+        const currentUserColorsObjects = {};
+        for (const key in currentUserColors) currentUserColorsObjects[key] = robustParseHslString(currentUserColors[key]);
+
+        if (!areColorsObjectsEqual(currentUserColorsObjects, currentPresetColorsObjects)) {
+          if (themeMode === 'dark') {
+            newDarkColors = { ...matchedPreset.colors };
+          } else { // light
+            newLightColors = { ...matchedPreset.colors };
+          }
+          stateChanged = true;
+          // console.log(`${themeMode} mode: CSS matches preset ${matchedPreset.name}, updated user colors.`);
         }
       } else {
         // CSS does not match any known preset for the current explicit mode.
         // This means CSS is some custom theme. Check if state reflects this custom theme.
         const currentUserColorsObjects = {};
-        for(const key in currentUserColors) currentUserColorsObjects[key] = robustParseHslString(currentUserColors[key]);
+        for (const key in currentUserColors) currentUserColorsObjects[key] = robustParseHslString(currentUserColors[key]);
 
         if (!areColorsObjectsEqual(currentCssColorObjects, currentUserColorsObjects)) {
           // Live CSS is custom and different from state. Update state to reflect live CSS.
@@ -584,28 +596,28 @@ export const SettingsProvider = ({ children }) => {
 
     if (stateChanged) {
       if (newThemeMode !== themeMode) setThemeModeState(newThemeMode);
-      
+
       // For color objects, compare properly before setting to avoid unnecessary re-renders/saves
       const currentLightColorsObjects = {};
-      for(const key in userLightColors) currentLightColorsObjects[key] = robustParseHslString(userLightColors[key]);
+      for (const key in userLightColors) currentLightColorsObjects[key] = robustParseHslString(userLightColors[key]);
       const newLightColorsObjects = {};
-      for(const key in newLightColors) newLightColorsObjects[key] = robustParseHslString(newLightColors[key]);
+      for (const key in newLightColors) newLightColorsObjects[key] = robustParseHslString(newLightColors[key]);
 
       if (!areColorsObjectsEqual(currentLightColorsObjects, newLightColorsObjects)) {
         setUserLightColorsState(newLightColors);
       }
 
       const currentDarkColorsObjects = {};
-      for(const key in userDarkColors) currentDarkColorsObjects[key] = robustParseHslString(userDarkColors[key]);
+      for (const key in userDarkColors) currentDarkColorsObjects[key] = robustParseHslString(userDarkColors[key]);
       const newDarkColorsObjects = {};
-      for(const key in newDarkColors) newDarkColorsObjects[key] = robustParseHslString(newDarkColors[key]);
+      for (const key in newDarkColors) newDarkColorsObjects[key] = robustParseHslString(newDarkColors[key]);
 
       if (!areColorsObjectsEqual(currentDarkColorsObjects, newDarkColorsObjects)) {
         setUserDarkColorsState(newDarkColors);
       }
     }
   }, [
-    isLoaded, activeOsTheme, themeMode, userLightColors, userDarkColors, 
+    isLoaded, activeOsTheme, themeMode, userLightColors, userDarkColors,
     setThemeModeState, setUserLightColorsState, setUserDarkColorsState
   ]);
 
@@ -660,7 +672,7 @@ export const SettingsProvider = ({ children }) => {
       setUserDarkColorsState({ ...defaultDarkPreset.colors });
     }
   }, []);
-  
+
   const getAvailablePresets = useCallback((mode) => {
     return mode === 'light' ? lightThemePresets : darkThemePresets;
   }, []);
@@ -721,7 +733,7 @@ export const SettingsProvider = ({ children }) => {
         finalProfiles = [defaultProfile];
         newActiveProfileId = defaultProfile.id;
       }
-      
+
       setActiveProfileId(newActiveProfileId);
 
       // Update taskSettings if the removed profile was used
