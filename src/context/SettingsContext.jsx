@@ -229,6 +229,7 @@ const loadSettings = () => {
         systemPrompt: parsed.systemPrompt || "You are an experienced creative writing assistant",
         showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
         language: parsed.language || 'en', // Load language
+        savedPrompts: parsed.savedPrompts || [],
       };
     }
   } catch (error) {
@@ -248,6 +249,7 @@ const loadSettings = () => {
     systemPrompt: "You are an experienced creative writing assistant",
     showAiFeatures: true,
     language: 'en', // Default language if loading fails
+    savedPrompts: [],
   };
 };
 
@@ -299,6 +301,9 @@ export const SettingsProvider = ({ children }) => {
   // AI Features Toggle state
   const [showAiFeatures, setShowAiFeatures] = useState(true);
 
+  // Saved Prompts state
+  const [savedPrompts, setSavedPrompts] = useState([]);
+
   // Language state
   const [language, setLanguageState] = useState('en'); // Default language
 
@@ -339,6 +344,7 @@ export const SettingsProvider = ({ children }) => {
     setSystemPrompt(loaded.systemPrompt);
     setShowAiFeatures(loaded.showAiFeatures !== undefined ? loaded.showAiFeatures : true);
     setLanguageState(loaded.language);
+    setSavedPrompts(loaded.savedPrompts || []);
 
     // Sync i18next with loaded language setting
     if (i18n.language !== loaded.language) {
@@ -377,9 +383,10 @@ export const SettingsProvider = ({ children }) => {
         systemPrompt,
         showAiFeatures,
         language, // Save language
+        savedPrompts,
       });
     }
-  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, language, isLoaded]); // Add language to dependencies
+  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, language, savedPrompts, isLoaded]); // Add language to dependencies
 
   // OS theme listener
   useEffect(() => {
@@ -814,6 +821,23 @@ export const SettingsProvider = ({ children }) => {
     setSystemPrompt("You are an experienced creative writing assistant");
   }, [endpointProfiles]);
 
+  // --- Saved Prompts Management Functions ---
+  const addSavedPrompt = useCallback((name, text) => {
+    const trimmedName = name.trim();
+    const trimmedText = text.trim();
+    if (!trimmedName || !trimmedText) return;
+    setSavedPrompts(prev => [...prev, { id: uuidv4(), name: trimmedName, text: trimmedText }]);
+  }, []);
+
+  const deleteSavedPrompt = useCallback((id) => {
+    setSavedPrompts(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  const updateSavedPrompt = useCallback((id, updates) => {
+    setSavedPrompts(prev =>
+      prev.map(p => (p.id === id ? { ...p, ...updates } : p))
+    );
+  }, []);
 
   const toggleAiFeatures = useCallback(() => {
     setShowAiFeatures(prev => !prev);
@@ -881,6 +905,12 @@ export const SettingsProvider = ({ children }) => {
     // Language
     language,
     setLanguage,
+
+    // Saved Prompts
+    savedPrompts,
+    addSavedPrompt,
+    deleteSavedPrompt,
+    updateSavedPrompt,
   };
 
   return (

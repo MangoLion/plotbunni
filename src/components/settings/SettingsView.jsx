@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch"; // Added Switch
 import { Brain, EyeOff, Trash2, PlusCircle, Edit, Palette, Cloud, FileText, Info } from 'lucide-react'; // Added Brain, EyeOff, Info
 import { useSettings } from '@/context/SettingsContext';
 import EndpointProfileFormModal from './EndpointProfileFormModal';
+import PromptManagerModal, { PromptManagerTrigger } from './PromptManagerModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { ThemeEditor } from './ThemeEditor';
 import FontSettingsControl from './FontSettingsControl'; // Import the new component
@@ -45,6 +46,8 @@ const SettingsView = () => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState(null);
   const [isConfirmResetPromptsOpen, setIsConfirmResetPromptsOpen] = useState(false); // New state for reset prompts confirmation
+  // null | { taskKey: string } | { isSystem: true }
+  const [promptManagerTarget, setPromptManagerTarget] = useState(null);
 
   const handleEditClick = (profile) => {
     setProfileToEdit(profile);
@@ -267,14 +270,20 @@ const SettingsView = () => {
                     </CardDescription>
                     <div>
                       <Label htmlFor="system-prompt" className="mb-1 block">{t('settings_system_prompt_label')}</Label>
-                      <Textarea
-                        id="system-prompt"
-                        value={systemPrompt}
-                        onChange={(e) => setSystemPrompt(e.target.value)}
-                        rows={8}
-                        className="resize-y"
-                        placeholder={t('settings_system_prompt_placeholder')}
-                      />
+                      <div className="relative">
+                        <Textarea
+                          id="system-prompt"
+                          value={systemPrompt}
+                          onChange={(e) => setSystemPrompt(e.target.value)}
+                          rows={8}
+                          className="resize-y"
+                          placeholder={t('settings_system_prompt_placeholder')}
+                        />
+                        <PromptManagerTrigger
+                          currentPromptText={systemPrompt}
+                          onViewSaved={() => setPromptManagerTarget({ isSystem: true })}
+                        />
+                      </div>
                     </div>
                   </Card>
 
@@ -311,14 +320,20 @@ const SettingsView = () => {
                           </div>
                           <div>
                             <Label htmlFor={`${taskKey}-prompt`} className="mb-1 block">{t('settings_task_ai_prompt_label')}</Label>
-                            <Textarea
-                              id={`${taskKey}-prompt`}
-                              value={taskSetting.prompt}
-                              onChange={(e) => updateTaskSetting(taskKey, 'prompt', e.target.value)}
-                              rows={6}
-                              className="resize-y"
-                              placeholder={t('settings_task_ai_prompt_placeholder', { taskName: formatTaskKey(taskKey)})}
-                            />
+                            <div className="relative">
+                              <Textarea
+                                id={`${taskKey}-prompt`}
+                                value={taskSetting.prompt}
+                                onChange={(e) => updateTaskSetting(taskKey, 'prompt', e.target.value)}
+                                rows={6}
+                                className="resize-y"
+                                placeholder={t('settings_task_ai_prompt_placeholder', { taskName: formatTaskKey(taskKey)})}
+                              />
+                              <PromptManagerTrigger
+                                currentPromptText={taskSetting.prompt}
+                                onViewSaved={() => setPromptManagerTarget({ taskKey })}
+                              />
+                            </div>
                           </div>
                         </div>
                       </Card>
@@ -416,6 +431,19 @@ const SettingsView = () => {
         description={t('settings_confirm_reset_prompts_description')}
         onConfirm={resetAllTaskPrompts}
         confirmText={t('settings_confirm_reset_prompts_button')}
+      />
+
+      <PromptManagerModal
+        isOpen={promptManagerTarget !== null}
+        onClose={() => setPromptManagerTarget(null)}
+        onUsePrompt={(text) => {
+          if (!promptManagerTarget) return;
+          if (promptManagerTarget.isSystem) {
+            setSystemPrompt(text);
+          } else {
+            updateTaskSetting(promptManagerTarget.taskKey, 'prompt', text);
+          }
+        }}
       />
     </ScrollArea>
   );
