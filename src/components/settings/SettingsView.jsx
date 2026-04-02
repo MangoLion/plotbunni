@@ -9,9 +9,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Select might still be used
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch"; // Added Switch
-import { Brain, EyeOff, Trash2, PlusCircle, Edit, Palette, Cloud, FileText, Info } from 'lucide-react'; // Added Brain, EyeOff, Info
+import { Brain, EyeOff, Trash2, PlusCircle, Edit, Palette, Cloud, FileText, Info, Zap } from 'lucide-react'; // Added Brain, EyeOff, Info
 import { useSettings } from '@/context/SettingsContext';
 import EndpointProfileFormModal from './EndpointProfileFormModal';
+import AIHordeSettingsSection from './AIHordeSettingsSection';
 import PromptManagerModal, { PromptManagerTrigger } from './PromptManagerModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { ThemeEditor } from './ThemeEditor';
@@ -39,6 +40,9 @@ const SettingsView = () => {
     // AI Features Toggle
     showAiFeatures,
     toggleAiFeatures,
+    // AI Horde
+    aiHordeSettings,
+    updateAiHordeSettings,
   } = useSettings();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -46,6 +50,7 @@ const SettingsView = () => {
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState(null);
   const [isConfirmResetPromptsOpen, setIsConfirmResetPromptsOpen] = useState(false); // New state for reset prompts confirmation
+  const [isConfirmAiHordeGlobalOpen, setIsConfirmAiHordeGlobalOpen] = useState(false);
   // null | { taskKey: string } | { isSystem: true }
   const [promptManagerTarget, setPromptManagerTarget] = useState(null);
 
@@ -82,7 +87,7 @@ const SettingsView = () => {
 
   return (
     <ScrollArea className="h-[calc(100vh-4rem)] p-6">
-      <div className="space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8">
         <h1 className="text-3xl font-bold mb-6">{t('settings_page_title')}</h1>
 
         <Tabs defaultValue="appearance" className="w-full"> {/* Changed default value */}
@@ -151,6 +156,32 @@ const SettingsView = () => {
           <TabsContent value="aiEndpoints" className="mt-6"> {/* Renamed for clarity */}
             {showAiFeatures ? (
             <div className="space-y-6">
+              {/* Global AI Horde toggle */}
+              <Card className={aiHordeSettings.useGlobally ? 'ring-2 ring-primary' : ''}>
+                <CardContent className="pt-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <Zap className={`h-5 w-5 mt-0.5 shrink-0 ${aiHordeSettings.useGlobally ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div>
+                        <p className="font-medium leading-none mb-1">{t('ai_horde_use_globally_label')}</p>
+                        <p className="text-sm text-muted-foreground">{t('ai_horde_use_globally_description')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={!!aiHordeSettings.useGlobally}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setIsConfirmAiHordeGlobalOpen(true);
+                        } else {
+                          updateAiHordeSettings({ useGlobally: false });
+                        }
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className={aiHordeSettings.useGlobally ? 'opacity-50 pointer-events-none select-none' : ''}>
               <Card>
                 <CardHeader>
                   <CardTitle>{t('settings_ai_endpoint_config_title')}</CardTitle>
@@ -222,18 +253,12 @@ const SettingsView = () => {
                   )}
                 </CardContent>
               </Card>
+              </div>{/* end disabled wrapper */}
 
               <Separator />
 
-              {/* AI Feature Placeholders (Remain Non-Functional) */}
-              <div>
-                <h3 className="text-lg font-medium">{t('settings_ai_feature_placeholders_title')}</h3>
-                <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
-                  <li>{t('settings_ai_feature_placeholder_chat')}</li>
-                  <li>{t('settings_ai_feature_placeholder_scene_gen')}</li>
-                  <li>{t('settings_ai_feature_placeholder_scene_summary')}</li>
-                </ul>
-              </div>
+              {/* AI Horde Section */}
+              <AIHordeSettingsSection />
             </div>
             ) : (
               <Card>
@@ -303,8 +328,15 @@ const SettingsView = () => {
                           <div>
                             <Label htmlFor={`${taskKey}-profile`} className="mb-1 block">{t('settings_task_ai_endpoint_profile_label')}</Label>
                             <Select
-                              value={taskSetting.profileId || ''}
-                              onValueChange={(newProfileId) => updateTaskSetting(taskKey, 'profileId', newProfileId)}
+                              value={taskSetting.useAiHorde ? '__ai_horde__' : (taskSetting.profileId || '')}
+                              onValueChange={(val) => {
+                                if (val === '__ai_horde__') {
+                                  updateTaskSetting(taskKey, 'useAiHorde', true);
+                                } else {
+                                  updateTaskSetting(taskKey, 'useAiHorde', false);
+                                  updateTaskSetting(taskKey, 'profileId', val);
+                                }
+                              }}
                             >
                               <SelectTrigger id={`${taskKey}-profile`}>
                                 <SelectValue placeholder={t('settings_select_profile_placeholder')} />
@@ -315,6 +347,11 @@ const SettingsView = () => {
                                     {profile.name}
                                   </SelectItem>
                                 ))}
+                                {aiHordeSettings.selectedModelId && (
+                                  <SelectItem value="__ai_horde__">
+                                    {t('ai_horde_task_option_label', { modelName: aiHordeSettings.selectedModelName || aiHordeSettings.selectedModelId })}
+                                  </SelectItem>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
@@ -444,6 +481,16 @@ const SettingsView = () => {
             updateTaskSetting(promptManagerTarget.taskKey, 'prompt', text);
           }
         }}
+      />
+
+      {/* Confirmation for enabling AI Horde globally */}
+      <ConfirmModal
+        open={isConfirmAiHordeGlobalOpen}
+        onOpenChange={setIsConfirmAiHordeGlobalOpen}
+        title={t('ai_horde_use_globally_confirm_title')}
+        description={t('ai_horde_use_globally_confirm_description')}
+        onConfirm={() => updateAiHordeSettings({ useGlobally: true })}
+        confirmText={t('ai_horde_use_globally_confirm_button')}
       />
     </ScrollArea>
   );

@@ -101,11 +101,21 @@ function getNovelDataKey(novelId) {
 
 /**
  * Fetches the metadata for all novels.
- * @returns {Promise<Array<{id: string, name: string, lastModified: string}>>} A promise that resolves to an array of novel metadata objects.
+ * @returns {Promise<Array<{id: string, name: string, lastModified: string, synopsis: string, coverImage: string|null}>>} A promise that resolves to an array of novel metadata objects.
  */
 export async function getAllNovelMetadata() {
   const metadata = await _idbGet(NOVELS_METADATA_KEY);
   return metadata || []; // Return empty array if no metadata found
+}
+
+/**
+ * Persists the entire novel metadata array back to IndexedDB.
+ * Used internally and for one-time migration passes.
+ * @param {Array} metadataList - The full array of novel metadata objects to save.
+ * @returns {Promise<void>}
+ */
+export async function saveAllNovelMetadata(metadataList) {
+  await _idbSet(NOVELS_METADATA_KEY, metadataList);
 }
 
 /**
@@ -136,14 +146,22 @@ export async function saveNovelData(novelId, novelData) {
   const novelKey = getNovelDataKey(novelId);
   await _idbSet(novelKey, novelData);
 
-  // Update lastModified in metadata
+  // Update lastModified, synopsis, and coverImage in metadata so the grid
+  // view never needs to fetch full novel data just to display a card.
   const metadataList = await getAllNovelMetadata();
   const novelMetadataIndex = metadataList.findIndex(meta => meta.id === novelId);
   if (novelMetadataIndex !== -1) {
-    metadataList[novelMetadataIndex].lastModified = new Date().toISOString();
+    metadataList[novelMetadataIndex] = {
+      ...metadataList[novelMetadataIndex],
+      lastModified: new Date().toISOString(),
+      synopsis: novelData.synopsis ?? metadataList[novelMetadataIndex].synopsis ?? '',
+      coverImage: novelData.coverImage !== undefined
+        ? novelData.coverImage
+        : (metadataList[novelMetadataIndex].coverImage ?? null),
+    };
     await _idbSet(NOVELS_METADATA_KEY, metadataList);
   } else {
-    console.warn(`saveNovelData: Metadata not found for novelId ${novelId} while trying to update lastModified.`);
+    console.warn(`saveNovelData: Metadata not found for novelId ${novelId} while trying to update metadata.`);
   }
 }
 
@@ -165,6 +183,8 @@ export async function createNovel(novelName) {
     id: novelId,
     name: novelName.trim(),
     lastModified: now,
+    synopsis: '',
+    coverImage: null,
   };
 
   // Add to metadata list

@@ -58,7 +58,7 @@ export const AIChatModal = ({
   onResetChat,
 }) => {
   const { t } = useTranslation();
-  const { systemPrompt, endpointProfiles, activeProfileId: globalActiveProfileId, taskSettings, TASK_KEYS, getActiveProfile } = useSettings();
+  const { systemPrompt, endpointProfiles, activeProfileId: globalActiveProfileId, taskSettings, TASK_KEYS, getActiveProfile, resolveEndpointForTask } = useSettings();
   const { actOrder, acts, chapters, scenes, concepts, novelSynopsis } = useData();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -85,10 +85,9 @@ export const AIChatModal = ({
 
 
   useEffect(() => {
-    const profileIdToUse = taskSettings[TASK_KEYS.CHATTING]?.profileId || globalActiveProfileId;
-    const activeProf = endpointProfiles?.find(p => p.id === profileIdToUse);
-    setCurrentProfile(activeProf);
-  }, [isOpen, endpointProfiles, globalActiveProfileId, taskSettings, TASK_KEYS.CHATTING]);
+    const resolved = resolveEndpointForTask(TASK_KEYS.CHAT);
+    setCurrentProfile(resolved);
+  }, [isOpen, endpointProfiles, globalActiveProfileId, taskSettings, TASK_KEYS, resolveEndpointForTask]);
 
   useEffect(() => {
     if (isOpen) {
@@ -277,11 +276,11 @@ export const AIChatModal = ({
         targetData: contextTargetData,
         aiProfile: currentProfile,
         systemPromptText: systemPrompt,
-        userQueryText: taskSettings[TASK_KEYS.CHATTING]?.prompt || t('ai_chat_modal_default_chat_prompt'),
+        userQueryText: taskSettings[TASK_KEYS.CHAT]?.prompt || t('ai_chat_modal_default_chat_prompt'),
     });
     setInitialNovelContext(contextResult);
     setActuallySentNovelContextTokens(contextResult.estimatedTokens);
-  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId, t]);
+  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHAT, selectedStartSceneId, selectedEndSceneId, t]);
 
   const regenerateContextCallback = useCallback(async () => {
     if (!currentProfile || !actOrder || !acts || !chapters || !scenes || !concepts) {
@@ -290,7 +289,7 @@ export const AIChatModal = ({
       return;
     }
     await generateInitialContext();
-  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHATTING, selectedStartSceneId, selectedEndSceneId, generateInitialContext, t]);
+  }, [currentProfile, actOrder, acts, chapters, scenes, concepts, novelSynopsis, systemPrompt, taskSettings, TASK_KEYS.CHAT, selectedStartSceneId, selectedEndSceneId, generateInitialContext, t]);
 
   useEffect(() => {
     if (isOpen && currentProfile) {
@@ -342,7 +341,7 @@ export const AIChatModal = ({
     const currentInputContent = userInput.trim();
     const currentChatHistory = [...chatMessages];
 
-    const endpointConfig = getActiveProfile(taskSettings[TASK_KEYS.CHATTING]?.profileId || globalActiveProfileId);
+    const endpointConfig = currentProfile;
 
     if (!endpointConfig || !endpointConfig.endpointUrl) {
       setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
@@ -560,7 +559,7 @@ export const AIChatModal = ({
     // Get the updated chat history (without the last AI message)
     const updatedChatHistory = chatMessages.slice(0, -1);
     
-    const endpointConfig = getActiveProfile(taskSettings[TASK_KEYS.CHATTING]?.profileId || globalActiveProfileId);
+    const endpointConfig = currentProfile;
 
     if (!endpointConfig || !endpointConfig.endpointUrl) {
       setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: t('ai_chat_modal_error_endpoint_not_configured') }]);

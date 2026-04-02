@@ -44,6 +44,7 @@ export const AISuggestionModal = ({
     endpointProfiles,
     activeProfileId: globalActiveProfileId,
     taskSettings,
+    resolveEndpointForTask,
     // getActiveProfile, // Removed as it's not used directly by this component
   } = useSettings();
 
@@ -91,13 +92,9 @@ export const AISuggestionModal = ({
 
   useEffect(() => {
     // Determine and set the active profile when the modal opens or settings change
-    let profileIdToUse = globalActiveProfileId;
-    if (taskKeyForProfile && taskSettings && taskSettings[taskKeyForProfile]?.profileId) {
-      profileIdToUse = taskSettings[taskKeyForProfile].profileId;
-    }
-    const activeProf = endpointProfiles?.find(p => p.id === profileIdToUse);
-    setCurrentProfile(activeProf);
-  }, [isOpen, endpointProfiles, globalActiveProfileId, taskKeyForProfile, taskSettings]);
+    const resolved = resolveEndpointForTask(taskKeyForProfile);
+    setCurrentProfile(resolved);
+  }, [isOpen, endpointProfiles, globalActiveProfileId, taskKeyForProfile, taskSettings, resolveEndpointForTask]);
 
   useEffect(() => {
     if (isOpen) {
@@ -212,7 +209,6 @@ export const AISuggestionModal = ({
       token: currentProfile.apiToken || '',
       model: currentProfile.modelName,
       maxOutputTokens: currentProfile.maxOutputTokens || 1024,
-      contextLength: currentProfile.contextLength || 4096,
       contextLength: currentProfile.contextLength || 4096,
       // Optional params
       temperature: currentProfile.temperature ?? 0.7,
@@ -401,37 +397,40 @@ export const AISuggestionModal = ({
       const decoder = new TextDecoder();
       let buffer = '';
 
+      const processSSEChunk = (chunk) => {
+        const jsonData = chunk.substring('data: '.length).trim();
+        if (!jsonData || jsonData === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(jsonData);
+          if (parsed.choices && parsed.choices[0]?.delta?.content) {
+            setAiResponse(prev => prev + parsed.choices[0].delta.content);
+          }
+        } catch (e) {
+          console.error('Error parsing stream JSON chunk:', e, jsonData);
+        }
+      };
+
+      const flushBuffer = () => {
+        // Normalize CRLF → LF so both \r\n\r\n and \n\n act as SSE separators
+        const normalized = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const events = normalized.split('\n\n');
+        for (const event of events) {
+          const trimmed = event.trim();
+          if (trimmed.startsWith('data: ')) processSSEChunk(trimmed);
+        }
+        buffer = '';
+      };
+
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
-
+        if (done) {
+          if (buffer.trim()) flushBuffer(); // flush any remaining data
+          break;
+        }
         buffer += decoder.decode(value, { stream: true });
-
-        let boundary = buffer.indexOf('\n\n');
-        while (boundary !== -1) {
-          const eventString = buffer.substring(0, boundary);
-          buffer = buffer.substring(boundary + 2);
-
-          if (eventString.startsWith('data: ')) {
-            const jsonData = eventString.substring('data: '.length).trim();
-            if (jsonData === '[DONE]') {
-              // OpenAI specific [DONE] signal, loop will break on next reader.read()
-              // For robustness, we can break here if we are sure it's the end.
-              // await reader.cancel(); // This might be too aggressive
-              // The 'done' flag from reader.read() is the primary way to exit.
-            } else {
-              try {
-                const parsed = JSON.parse(jsonData);
-                if (parsed.choices && parsed.choices[0]?.delta?.content) {
-                  setAiResponse(prev => prev + parsed.choices[0].delta.content);
-                }
-              } catch (e) {
-                console.error('Error parsing stream JSON chunk:', e, jsonData);
-                // Potentially append raw chunk if it's just text and not JSON
-              }
-            }
-          }
-          boundary = buffer.indexOf('\n\n');
+        // Only flush complete SSE events (ending with \n\n or \r\n\r\n)
+        if (buffer.includes('\n\n') || buffer.includes('\r\n\r\n')) {
+          flushBuffer();
         }
       }
     } catch (error) {

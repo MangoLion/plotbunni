@@ -41,6 +41,14 @@ Plot Bunni offers a comprehensive suite of features for novelists:
 -   **Settings (`SettingsView.jsx`)**:
     -   Global application settings.
     -   AI endpoint configuration and profile management.
+    -   **Task Prompts Tab**:
+        -   Global system prompt editor for all AI tasks.
+        -   Task-specific prompt customization for 6 tasks (planner outline, synopsis, scene text, chat, concept description, novel description).
+        -   Each task can use a different AI endpoint profile.
+    -   **AI Horde Integration**:
+        -   Use free, community-powered AI models.
+        -   Support for a developer-provided **shared community key** via `.env`.
+        -   Option to use personal AI Horde API keys for priority generations.
     -   Theme customization (see Theme Features).
 
 ### III. Story Planning (`PlanView.jsx`)
@@ -118,6 +126,13 @@ Plot Bunni offers a comprehensive suite of features for novelists:
     -   Reusable `AISuggestionModal` for various text generation tasks.
     -   Context generation utilities (`aiContextUtils.js`) with truncation strategies to manage token limits.
     -   Task-specific AI configurations and system prompts.
+-   **Prompt Manager (`PromptManagerModal.jsx`)**:
+    -   Save and reuse custom prompts across all tasks via a library.
+    -   Access via a `BookMarked` icon button on each prompt textarea in Settings.
+    -   Popover menu options: "Save Current Prompt" or "View Saved Prompts".
+    -   Full CRUD: create new prompts, search, edit names and text, delete, or use saved prompts.
+    -   Duplicate name detection: attempting to save a prompt with an existing name shows an override confirmation.
+    -   Saved prompts persisted in `localStorage` alongside other settings.
 -   **Data Persistence**:
     -   All novel-specific data is saved locally using IndexedDB, ensuring work is not lost.
     -   Includes sanity checks during novel loading (e.g., removing references to deleted concepts from scenes).
@@ -178,6 +193,7 @@ src/
 │   ├── settings/               # Components related to Settings (global and per-novel)
 │   │   ├── SettingsView.jsx    # Main settings UI.
 │   │   ├── ThemeEditor.jsx     # UI for theme customization.
+│   │   ├── PromptManagerModal.jsx # Modal and popover for saving/managing custom prompts.
 │   │   └── EndpointProfileFormModal.jsx # Modal for AI endpoint profile editing.
 │   └── ui/                     # Shadcn UI components (auto-generated)
 │       ├── button.jsx
@@ -211,3 +227,13 @@ To set up and run Plot Bunni locally:
     ```
 
 This will start the application, typically accessible at `http://localhost:5173/` (or another port if 5173 is in use).
+
+### Environment Variables (Optional)
+
+To enable the shared community key for AI Horde, create a `.env` file in the root directory:
+
+```env
+VITE_AIHORDE_KEY=your_shared_key_here
+```
+
+If set, users will have the option to use this shared key by default in the AI Horde settings section.

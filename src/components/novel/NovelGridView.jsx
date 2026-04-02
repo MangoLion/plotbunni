@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'; // Import useTranslation
 import NovelCard from './NovelCard';
 import AddNewNovelCard from './AddNewNovelCard';
 import CreateNovelFormModal from './CreateNovelFormModal';
+import ChangeLogModal from './ChangeLogModal';
 import SettingsView from '@/components/settings/SettingsView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import * as idb from '@/lib/indexedDb';
+import { saveAllNovelMetadata } from '@/lib/indexedDb';
 import { getDefaultConceptTemplates } from '@/data/models';
 
 const NovelGridView = () => {
@@ -55,6 +57,7 @@ const NovelGridView = () => {
 
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [novelToDelete, setNovelToDelete] = useState(null);
+  const [isChangeLogModalOpen, setIsChangeLogModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -79,29 +82,54 @@ const NovelGridView = () => {
     setError(null);
     try {
       const novelMetadatas = await idb.getAllNovelMetadata();
-      const enrichedNovels = await Promise.all(
-        novelMetadatas.map(async (meta) => {
-          const novelData = await idb.getNovelData(meta.id);
-          return {
-            ...meta,
-            coverImage: novelData?.coverImage || null,
-            synopsis: novelData?.synopsis || "",
-          };
-        })
+
+      // One-time lazy migration: backfill synopsis/coverImage into metadata for
+      // novels created before this field was denormalized into metadata.
+      // After migration runs once the novels will already have these fields and
+      // this branch is skipped on every subsequent load.
+      const needsMigration = novelMetadatas.some(
+        (m) => m.synopsis === undefined || m.coverImage === undefined
       );
-      enrichedNovels.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-      setNovels(enrichedNovels);
+      if (needsMigration) {
+        await Promise.all(
+          novelMetadatas
+            .filter((m) => m.synopsis === undefined || m.coverImage === undefined)
+            .map(async (meta) => {
+              const novelData = await idb.getNovelData(meta.id);
+              meta.synopsis = novelData?.synopsis ?? '';
+              meta.coverImage = novelData?.coverImage ?? null;
+            })
+        );
+        await saveAllNovelMetadata(novelMetadatas);
+      }
+
+      novelMetadatas.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+      setNovels(novelMetadatas);
     } catch (err) {
       console.error("Error fetching novels:", err);
       setError(t('error_load_novels'));
     } finally {
       setIsLoading(false);
     }
-  }, [t]); // Add t to dependencies
+  }, [t]);
 
   useEffect(() => {
     fetchNovels();
+    checkAppVersion();
   }, [fetchNovels]);
+
+  const checkAppVersion = () => {
+    const currentVersion = import.meta.env.VITE_APP_VERSION;
+    const dontShowAgainVersion = localStorage.getItem('plotbunni_dont_show_changelog_for_version');
+
+    if (currentVersion && dontShowAgainVersion !== currentVersion) {
+      setIsChangeLogModalOpen(true);
+    }
+  };
+
+  const handleDontShowAgain = (version) => {
+    localStorage.setItem('plotbunni_dont_show_changelog_for_version', version);
+  };
 
   const handleOpenNovel = (novelId) => {
     navigate(`/novel/${novelId}`);
@@ -442,6 +470,13 @@ const NovelGridView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ChangeLogModal
+        isOpen={isChangeLogModalOpen}
+        onOpenChange={setIsChangeLogModalOpen}
+        version={import.meta.env.VITE_APP_VERSION}
+        onDontShowAgain={handleDontShowAgain}
+      />
     </div>
   );
 };

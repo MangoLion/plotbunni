@@ -48,6 +48,16 @@ const TASK_KEYS = {
   CONCEPT_DESC: 'conceptDescriptionWriting', // New task key
 };
 
+const DEFAULT_AI_HORDE_SETTINGS = {
+  apiKey: '',              // '' means anonymous access (sent as '0000000000')
+  useCommunityKey: true,   // when true, uses developer's shared key from .env
+  selectedModelId: null,   // full model ID string for API calls
+  selectedModelName: null, // clean display name
+  contextLength: 4096,     // derived from workers on model selection
+  maxOutputTokens: 512,    // derived from workers on model selection
+  useGlobally: false,      // when true, overrides ALL tasks to use AI Horde
+};
+
 const DEFAULT_TASK_PROMPTS = {
   [TASK_KEYS.NOVEL_DESC]: "Write the synopsis for my novel. Don't include title or any other text or labels!",
   [TASK_KEYS.SYNOPSIS]: "write the synopsis for the next chapter scene. Do not write the chapter or scene title.",
@@ -91,26 +101,32 @@ const createDefaultTaskSettings = (defaultProfileId = null) => ({
   [TASK_KEYS.PLANNER_OUTLINE]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.PLANNER_OUTLINE],
+    useAiHorde: false,
   },
   [TASK_KEYS.SYNOPSIS]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.SYNOPSIS],
+    useAiHorde: false,
   },
   [TASK_KEYS.SCENE_TEXT]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.SCENE_TEXT],
+    useAiHorde: false,
   },
   [TASK_KEYS.CHAT]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.CHAT],
+    useAiHorde: false,
   },
   [TASK_KEYS.NOVEL_DESC]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.NOVEL_DESC],
+    useAiHorde: false,
   },
-  [TASK_KEYS.CONCEPT_DESC]: { // New task settings
+  [TASK_KEYS.CONCEPT_DESC]: {
     profileId: defaultProfileId,
     prompt: DEFAULT_TASK_PROMPTS[TASK_KEYS.CONCEPT_DESC],
+    useAiHorde: false,
   }
 });
 
@@ -207,6 +223,7 @@ const loadSettings = () => {
           taskSettings[taskKey] = {
             profileId: defaultProfileIdForTasks,
             prompt: DEFAULT_TASK_PROMPTS[taskKey] || "",
+            useAiHorde: false,
           };
         } else {
           if (!taskSettings[taskKey].profileId || !validProfiles.find(p => p.id === taskSettings[taskKey].profileId)) {
@@ -215,8 +232,17 @@ const loadSettings = () => {
           if (typeof taskSettings[taskKey].prompt !== 'string') {
             taskSettings[taskKey].prompt = DEFAULT_TASK_PROMPTS[taskKey] || "";
           }
+          // Migrate: add useAiHorde if missing
+          if (typeof taskSettings[taskKey].useAiHorde !== 'boolean') {
+            taskSettings[taskKey].useAiHorde = false;
+          }
         }
       });
+
+      // Load AI Horde settings with migration defaults
+      const aiHordeSettings = parsed.aiHordeSettings
+        ? { ...DEFAULT_AI_HORDE_SETTINGS, ...parsed.aiHordeSettings }
+        : { ...DEFAULT_AI_HORDE_SETTINGS };
 
       return {
         endpointProfiles: validProfiles,
@@ -230,6 +256,7 @@ const loadSettings = () => {
         showAiFeatures: parsed.showAiFeatures !== undefined ? parsed.showAiFeatures : true,
         language: parsed.language || 'en', // Load language
         savedPrompts: parsed.savedPrompts || [],
+        aiHordeSettings,
       };
     }
   } catch (error) {
@@ -250,6 +277,7 @@ const loadSettings = () => {
     showAiFeatures: true,
     language: 'en', // Default language if loading fails
     savedPrompts: [],
+    aiHordeSettings: { ...DEFAULT_AI_HORDE_SETTINGS },
   };
 };
 
@@ -307,6 +335,9 @@ export const SettingsProvider = ({ children }) => {
   // Language state
   const [language, setLanguageState] = useState('en'); // Default language
 
+  // AI Horde settings state
+  const [aiHordeSettings, setAiHordeSettingsState] = useState({ ...DEFAULT_AI_HORDE_SETTINGS });
+
 
   // Load settings on initial mount
   useEffect(() => {
@@ -345,6 +376,7 @@ export const SettingsProvider = ({ children }) => {
     setShowAiFeatures(loaded.showAiFeatures !== undefined ? loaded.showAiFeatures : true);
     setLanguageState(loaded.language);
     setSavedPrompts(loaded.savedPrompts || []);
+    setAiHordeSettingsState(loaded.aiHordeSettings || { ...DEFAULT_AI_HORDE_SETTINGS });
 
     // Sync i18next with loaded language setting
     if (i18n.language !== loaded.language) {
@@ -384,9 +416,10 @@ export const SettingsProvider = ({ children }) => {
         showAiFeatures,
         language, // Save language
         savedPrompts,
+        aiHordeSettings,
       });
     }
-  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, language, savedPrompts, isLoaded]); // Add language to dependencies
+  }, [endpointProfiles, themeMode, userLightColors, userDarkColors, fontFamily, fontSize, taskSettings, systemPrompt, showAiFeatures, language, savedPrompts, aiHordeSettings, isLoaded]); // Add language to dependencies
 
   // OS theme listener
   useEffect(() => {
@@ -854,6 +887,51 @@ export const SettingsProvider = ({ children }) => {
     }
   }, []); // i18n.options.resources is stable after i18n initialization, so no need to add to deps.
 
+  // --- AI Horde Management Functions ---
+
+  const updateAiHordeSettings = useCallback((updates) => {
+    setAiHordeSettingsState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  /**
+   * Resolves the endpoint config for a given task key.
+   * If the task is set to use AI Horde and a model is selected, returns an
+   * AI Horde config shaped like an endpoint profile. Otherwise falls back to
+   * the task's assigned profile or the global active profile.
+   */
+  const resolveEndpointForTask = useCallback((taskKey) => {
+    const taskSetting = taskKey ? taskSettings[taskKey] : null;
+    const useHorde = aiHordeSettings.useGlobally || taskSetting?.useAiHorde;
+    if (useHorde && aiHordeSettings.selectedModelId) {
+      let apiToken = aiHordeSettings.apiKey || '0000000000';
+      
+      // If community key is enabled, use the shared key from .env
+      if (aiHordeSettings.useCommunityKey) {
+        apiToken = import.meta.env.VITE_AIHORDE_KEY || apiToken;
+      }
+
+      return {
+        endpointUrl: 'https://oai.aihorde.net/v1/chat/completions',
+        apiToken: apiToken,
+        modelName: aiHordeSettings.selectedModelId,
+        contextLength: aiHordeSettings.contextLength || 4096,
+        maxOutputTokens: aiHordeSettings.maxOutputTokens || 512,
+        temperature: 0.7,
+        top_p: 1.0,
+        presence_penalty: 0.0,
+        frequency_penalty: 0.0,
+        logit_bias: '',
+        logprobs: false,
+        top_logprobs: null,
+        stop: '',
+        seed: null,
+        _isAiHorde: true,
+      };
+    }
+    const profileId = taskSetting?.profileId || activeProfileId;
+    return endpointProfiles.find(p => p.id === profileId) || endpointProfiles[0] || null;
+  }, [taskSettings, aiHordeSettings, activeProfileId, endpointProfiles]);
+
   const value = {
     // Existing profile values
     endpointProfiles,
@@ -911,6 +989,11 @@ export const SettingsProvider = ({ children }) => {
     addSavedPrompt,
     deleteSavedPrompt,
     updateSavedPrompt,
+
+    // AI Horde
+    aiHordeSettings,
+    updateAiHordeSettings,
+    resolveEndpointForTask,
   };
 
   return (

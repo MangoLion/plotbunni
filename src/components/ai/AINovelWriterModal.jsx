@@ -40,7 +40,8 @@ export const AINovelWriterModal = ({
     activeProfileId: globalActiveProfileId,
     taskSettings,
     TASK_KEYS,
-    getActiveProfile // Added
+    getActiveProfile, // Added
+    resolveEndpointForTask,
   } = useSettings();
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -88,15 +89,10 @@ export const AINovelWriterModal = ({
   // Effect to set the current AI profile based on task settings
   useEffect(() => {
     if (isOpen) {
-      let profileIdToUse = globalActiveProfileId;
-      const taskKey = TASK_KEYS.SCENE_TEXT;
-      if (taskKey && taskSettings && taskSettings[taskKey]?.profileId) {
-        profileIdToUse = taskSettings[taskKey].profileId;
-      }
-      const activeProf = endpointProfiles?.find(p => p.id === profileIdToUse);
-      setCurrentAIProfile(activeProf);
+      const resolved = resolveEndpointForTask(TASK_KEYS.SCENE_TEXT);
+      setCurrentAIProfile(resolved);
     }
-  }, [isOpen, endpointProfiles, globalActiveProfileId, taskSettings, TASK_KEYS]);
+  }, [isOpen, endpointProfiles, globalActiveProfileId, taskSettings, TASK_KEYS, resolveEndpointForTask]);
 
 
   useEffect(() => {
