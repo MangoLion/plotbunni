@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from './context/DataContext.jsx';
 import { useSettings } from './context/SettingsContext.jsx';
@@ -6,16 +6,17 @@ import { getAllNovelMetadata } from '@/lib/indexedDb.js'; // Import for fetching
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import ConceptCacheList from '@/components/concept/ConceptCacheList.jsx';
-import NovelOverviewTab from '@/components/novel/NovelOverviewTab.jsx'; // Import new component
-import PlanView from '@/components/plan/PlanView.jsx';
-import SettingsView from '@/components/settings/SettingsView.jsx';
-import WriteView from '@/components/write/WriteView.jsx';
+
+const ConceptCacheList = lazy(() => import('@/components/concept/ConceptCacheList.jsx'));
+const NovelOverviewTab = lazy(() => import('@/components/novel/NovelOverviewTab.jsx'));
+const PlanView = lazy(() => import('@/components/plan/PlanView.jsx'));
+const SettingsView = lazy(() => import('@/components/settings/SettingsView.jsx'));
+const WriteView = lazy(() => import('@/components/write/WriteView.jsx'));
+const FontSettingsControl = lazy(() => import('@/components/settings/FontSettingsControl'));
 import { Link } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, Rabbit, Home, Clipboard, Edit, Settings, BookOpen, Lightbulb, Sun, Moon, Text } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import FontSettingsControl from '@/components/settings/FontSettingsControl';
 
 // App component now represents the Novel Editor for a specific novel
 function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayout
@@ -215,7 +216,9 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" side="bottom" align="end">
-              <FontSettingsControl />
+              <Suspense fallback={null}>
+                <FontSettingsControl />
+              </Suspense>
             </PopoverContent>
           </Popover>
 
@@ -270,8 +273,9 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                   
                   {/* Use absolute positioning for TabsContent to ensure they take full height */}
                   <div className="relative flex-grow">
-                    <TabsContent 
-                      value="overview" 
+                    <Suspense fallback={<div className="flex items-center justify-center h-full p-4">Loading…</div>}>
+                    <TabsContent
+                      value="overview"
                       className="absolute inset-0 p-0 m-0"
                       forceMount={activeSidebarTab === "overview"}
                     >
@@ -285,6 +289,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                     >
                       <ConceptCacheList />
                     </TabsContent>
+                    </Suspense>
                   </div>
                 </Tabs>
               </div>
@@ -293,7 +298,9 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
           <ResizableHandle withHandle className={isSidebarCollapsed ? "hidden" : ""} /> {/* Hide handle when collapsed */}
           <ResizablePanel defaultSize={70} className="flex flex-col h-full"> {/* This panel will expand to fill space */}
             <ScrollArea className="h-full">
-              {renderRightPaneContent()}
+              <Suspense fallback={<div className="flex items-center justify-center h-full p-8">Loading…</div>}>
+                {renderRightPaneContent()}
+              </Suspense>
             </ScrollArea>
           </ResizablePanel>
         </ResizablePanelGroup>
@@ -302,7 +309,9 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
       {/* Mobile: Single Pane Layout */}
       <div className="md:hidden flex-grow border-t">
         <ScrollArea className="h-full">
-          {renderMobileContent()}
+          <Suspense fallback={<div className="flex items-center justify-center h-full p-8">Loading…</div>}>
+            {renderMobileContent()}
+          </Suspense>
         </ScrollArea>
       </div>
     </div>

@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   createHashRouter,
   RouterProvider,
   useParams,
 } from 'react-router-dom';
-import App from './App';
-import NovelGridView from './components/novel/NovelGridView';
 import { DataProvider } from './context/DataContext';
 import { SettingsProvider } from './context/SettingsContext';
+
+const App = lazy(() => import('./App'));
+const NovelGridView = lazy(() => import('./components/novel/NovelGridView'));
 
 // Novel Editor View Layout
 // Extracts novelId from params and provides DataContext for that novel
@@ -48,7 +49,9 @@ const router = createHashRouter([
 function RootApp() {
   return (
     <SettingsProvider>
-      <RouterProvider router={router} />
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading…</div>}>
+        <RouterProvider router={router} />
+      </Suspense>
     </SettingsProvider>
   );
 }

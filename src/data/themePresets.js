@@ -822,9 +822,9 @@ export const discordDarkPreset = {
   }
 };
 
-export const defaultLightPreset = amethystHazeLightPreset;
+export const defaultLightPreset = modernMinimalLightPreset;
 
-export const defaultDarkPreset = amethystHazeDarkPreset;
+export const defaultDarkPreset = modernMinimalDarkPreset;
 
 export const lightThemePresets = [
   amethystHazeLightPreset,

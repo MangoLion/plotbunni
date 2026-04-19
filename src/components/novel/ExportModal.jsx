@@ -14,13 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/context/SettingsContext'; // Added
-import pdfMake from "pdfmake/build/pdfmake"; // Added for npm import
-import pdfFonts from "pdfmake/build/vfs_fonts"; // Added for npm import
 import JSZip from 'jszip'; // Added for ZIP export
-
-// Configure pdfmake to use the VFS for fonts.
-// Based on the error "pdfFonts.pdfMake is undefined", pdfFonts itself is the VFS.
-pdfMake.vfs = pdfFonts;
 
 
 export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
@@ -178,8 +172,7 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
       toast({ title: t('export_modal_toast_error_title'), description: t('export_modal_toast_error_data_missing_desc'), variant: "destructive" });
       return null;
     }
-    // pdfMake is now imported, so no need for typeof pdfMake === 'undefined' check here.
-    // It will throw an error during import if not found, or pdfMake.createPdf will fail if not initialized.
+
 
     const { novelName, authorName, synopsis, acts, chapters, scenes, actOrder } = novelData;
     const selectedFont = 'Roboto'; // Always use Roboto for PDF to avoid font definition issues
@@ -375,6 +368,11 @@ export const ExportModal = ({ isOpen, onClose, novelData, isDataLoaded }) => {
       const docDefinition = generatePdfDocDefinition();
       if (docDefinition) {
         try {
+          const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
+            import('pdfmake/build/pdfmake'),
+            import('pdfmake/build/vfs_fonts'),
+          ]);
+          pdfMake.vfs = pdfFonts;
           pdfMake.createPdf(docDefinition).download(`${novelData.novelName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'novel'}.pdf`);
           toast({ title: t('export_modal_toast_exported_title'), description: t('export_modal_toast_pdf_exported_desc') });
           onClose();
