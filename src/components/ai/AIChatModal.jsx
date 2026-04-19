@@ -344,7 +344,7 @@ export const AIChatModal = ({
     const endpointConfig = currentProfile;
 
     if (!endpointConfig || !endpointConfig.endpointUrl) {
-      setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
+      setChatMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
       setIsLoading(false);
       return;
     }
@@ -398,7 +398,7 @@ export const AIChatModal = ({
     if (finalPayloadTokenEstimate > maxContextTokensForPrompt) {
         setChatMessages(prev => [...prev, {
             id: Date.now(),
-            role: 'ai',
+            role: 'assistant',
             content: t('ai_chat_modal_error_prompt_too_large', { currentTokens: finalPayloadTokenEstimate, maxTokens: maxContextTokensForPrompt })
         }]);
         setIsLoading(false);
@@ -415,7 +415,10 @@ export const AIChatModal = ({
     try {
       const messagesPayload = [];
       messagesPayload.push({ role: 'system', content: effectiveSystemPrompt });
-      currentChatHistory.forEach(msg => messagesPayload.push({ role: msg.role, content: msg.content }));
+      currentChatHistory.forEach(msg => messagesPayload.push({ 
+        role: msg.role === 'ai' ? 'assistant' : msg.role, 
+        content: msg.content 
+      }));
       messagesPayload.push({ role: newUserMessage.role, content: newUserMessage.content });
       
       let lastRole = 'system';
@@ -562,7 +565,7 @@ export const AIChatModal = ({
     const endpointConfig = currentProfile;
 
     if (!endpointConfig || !endpointConfig.endpointUrl) {
-      setChatMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
+      setChatMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: t('ai_chat_modal_error_endpoint_not_configured') }]);
       setIsLoading(false);
       return;
     }
@@ -615,7 +618,7 @@ export const AIChatModal = ({
     if (finalPayloadTokenEstimate > maxContextTokensForPrompt) {
         setChatMessages(prev => [...prev, {
             id: Date.now(),
-            role: 'ai',
+            role: 'assistant',
             content: t('ai_chat_modal_error_prompt_too_large', { currentTokens: finalPayloadTokenEstimate, maxTokens: maxContextTokensForPrompt })
         }]);
         setIsLoading(false);
@@ -628,7 +631,10 @@ export const AIChatModal = ({
     try {
       const messagesPayload = [];
       messagesPayload.push({ role: 'system', content: effectiveSystemPrompt });
-      updatedChatHistory.forEach(msg => messagesPayload.push({ role: msg.role, content: msg.content }));
+      updatedChatHistory.forEach(msg => messagesPayload.push({ 
+        role: msg.role === 'ai' ? 'assistant' : msg.role, 
+        content: msg.content 
+      }));
 
       const payload = {
         model: endpointConfig.modelName,
@@ -831,7 +837,7 @@ export const AIChatModal = ({
                 <div className={cn("max-w-[75%] p-3 rounded-lg shadow", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background border', msg.content === t('ai_chat_modal_thinking_indicator') && 'italic text-muted-foreground')}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center">
-                      {msg.role === 'ai' && <Bot className="h-4 w-4 mr-2 text-muted-foreground" />}
+                      {(msg.role === 'ai' || msg.role === 'assistant') && <Bot className="h-4 w-4 mr-2 text-muted-foreground" />}
                       {msg.role === 'user' && <User className="h-4 w-4 mr-2 text-muted-background" />}
                       <span className="text-xs font-medium">{msg.role === 'user' ? t('ai_chat_modal_user_role_label') : t('ai_chat_modal_ai_role_label')}</span>
                     </div>
@@ -861,7 +867,7 @@ export const AIChatModal = ({
                   ) : (
                     <div className={cn(
                       "text-sm break-words",
-                      msg.role === 'ai' && "prose prose-sm dark:prose-invert max-w-none"
+                      (msg.role === 'ai' || msg.role === 'assistant') && "prose prose-sm dark:prose-invert max-w-none"
                     )}>
                       <Markdown>{msg.content}</Markdown>
                     </div>
