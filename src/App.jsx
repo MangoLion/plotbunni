@@ -154,7 +154,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
     <div className="flex flex-col h-screen overflow-hidden">
       <header className="flex items-center justify-between p-3 border-b bg-background shadow-sm print:hidden">
         <div className="flex items-center min-w-0"> {/* Left side items: Home, Novel Name, Tabs */}
-          <Link to="/" className="p-2 rounded-md hover:bg-muted mr-2 flex-shrink-0" title={t('back_to_novels')}>
+          <Link to="/" className="p-2 rounded-md hover:bg-muted mr-2 flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center" title={t('back_to_novels')}>
             <Home className="h-5 w-5 text-foreground" />
           </Link>
 
@@ -164,7 +164,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="hidden md:flex mr-2 flex-shrink-0"
+              className="hidden md:flex mr-2 flex-shrink-0 min-w-[44px] min-h-[44px]"
               title={t('novel_editor_show_sidebar_tooltip')}
             >
               <PanelLeftOpen className="h-5 w-5" />
@@ -183,23 +183,23 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
           >
             <TabsList className="justify-start">
               {/* Mobile-only tabs - icon only */}
-              <TabsTrigger value="overview" className="md:hidden p-2" title={t('novel_editor_overview_tab')}>
+              <TabsTrigger value="overview" className="md:hidden p-2 min-h-[44px] min-w-[44px]" title={t('novel_editor_overview_tab')}>
                 <BookOpen className="h-5 w-5" />
               </TabsTrigger>
-              <TabsTrigger value="concepts" className="md:hidden p-2" title={t('novel_editor_concepts_tab_mobile_tooltip')} data-joyride="concepts-tab">
+              <TabsTrigger value="concepts" className="md:hidden p-2 min-h-[44px] min-w-[44px]" title={t('novel_editor_concepts_tab_mobile_tooltip')} data-joyride="concepts-tab">
                 <Lightbulb className="h-5 w-5" />
               </TabsTrigger>
 
               {/* Tabs visible on all sizes, icon-only on mobile, icon + text on md+ */}
-              <TabsTrigger value="plan" className="text-sm md:text-base p-2 md:px-4 md:py-2" title={t('novel_editor_plan_tab')} data-joyride="plan-tab">
+              <TabsTrigger value="plan" className="text-sm md:text-base p-2 md:px-4 md:py-2 min-h-[44px]" title={t('novel_editor_plan_tab')} data-joyride="plan-tab">
                 <Clipboard className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">{t('novel_editor_plan_tab')}</span>
               </TabsTrigger>
-              <TabsTrigger value="write" className="text-sm md:text-base p-2 md:px-4 md:py-2" title={t('novel_editor_write_tab')} data-joyride="write-tab">
+              <TabsTrigger value="write" className="text-sm md:text-base p-2 md:px-4 md:py-2 min-h-[44px]" title={t('novel_editor_write_tab')} data-joyride="write-tab">
                 <Edit className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">{t('novel_editor_write_tab')}</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="text-sm md:text-base p-2 md:px-4 md:py-2" title={t('novel_editor_settings_tab')} data-joyride="settings-tab">
+              <TabsTrigger value="settings" className="text-sm md:text-base p-2 md:px-4 md:py-2 min-h-[44px]" title={t('novel_editor_settings_tab')} data-joyride="settings-tab">
                 <Settings className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">{t('novel_editor_settings_tab')}</span>
               </TabsTrigger>
@@ -211,7 +211,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
           <Popover>
             <PopoverTrigger asChild>
               {/* Apply hidden md:inline-flex to hide on small screens and show on md+ */}
-              <Button variant="ghost" size="icon" className="ml-2 hidden md:inline-flex" title={t('novel_editor_font_settings_tooltip')}>
+              <Button variant="ghost" size="icon" className="ml-2 hidden md:inline-flex min-h-[44px] min-w-[44px]" title={t('novel_editor_font_settings_tooltip')}>
                 <Text className="h-5 w-5" />
               </Button>
             </PopoverTrigger>
@@ -222,7 +222,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" onClick={handleThemeToggle} className="ml-2" title={effectiveTheme === 'light' ? t('theme_toggle_tooltip_light') : t('theme_toggle_tooltip_dark')}>
+          <Button variant="ghost" size="icon" onClick={handleThemeToggle} className="ml-2 min-h-[44px] min-w-[44px]" title={effectiveTheme === 'light' ? t('theme_toggle_tooltip_light') : t('theme_toggle_tooltip_dark')}>
             {effectiveTheme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
         </div>
@@ -264,7 +264,7 @@ function App({ novelId }) { // novelId is passed as a prop from NovelEditorLayou
                       variant="ghost"
                       size="icon"
                       onClick={toggleSidebar}
-                      className="hidden md:flex mx-1 flex-shrink-0" // Desktop only, with horizontal margin
+                      className="hidden md:flex mx-1 flex-shrink-0 min-h-[44px] min-w-[44px]" // Desktop only, with horizontal margin
                       title={t('novel_editor_hide_sidebar_tooltip')}
                     >
                       <PanelLeftClose className="h-5 w-5" />

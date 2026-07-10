@@ -1,0 +1,114 @@
+/* Android-specific CSS optimizations */
+
+/* Prevent layout shift and ensure proper scroll behavior */
+html, body {
+  width: 100%;
+  height: 100%;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Safe area support for notched devices */
+.flex.flex-col {
+  padding-top: max(0px, env(safe-area-inset-top));
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+}
+
+/* Fix sticky header for Android browsers */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Optimize scrolling performance */
+.overflow-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent text selection on UI elements */
+button, [role="button"], .cursor-pointer {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve text inputs on mobile */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+textarea,
+select {
+  font-size: 16px; /* Prevents auto-zoom on iOS/Android */
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Fix spacing issues on small screens */
+@media (max-width: 480px) {
+  header {
+    padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  }
+  
+  button {
+    min-height: 44px; /* Minimum touch target size */
+    min-width: 44px;
+  }
+  
+  /* Ensure readable text without zoom */
+  body {
+    font-size: 16px;
+  }
+}
+
+/* Android-specific smooth scrolling */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fix viewport height issues on Android (address bar) */
+.flex-grow {
+  flex-grow: 1;
+  min-height: 0; /* Important for Firefox mobile */
+}
+
+/* Prevent horizontal scroll */
+body, html {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Modal and dialog z-index safety */
+[role="dialog"],
+[role="alertdialog"] {
+  z-index: 1000;
+}
+
+/* Fix button focus state */
+button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Disable zoom on double-tap for specific elements */
+button, a, input[type="checkbox"], input[type="radio"] {
+  touch-action: manipulation;
+}

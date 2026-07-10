@@ -1,18 +1,21 @@
-import { StrictMode, Suspense } from 'react' // Add Suspense
-import { createRoot } from 'react-dom/client'
-import './i18n'; // Import the i18n configuration
-import RootApp from './RootApp.jsx'; // Import the new RootApp
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
 import './index.css'
-// DataProvider will be used within RootApp or its children where needed,
-// specifically around the NovelEditor component (App.jsx).
+import './android-compat.css'
+import { initializeAndroidCompat, preventZoomOnInputFocus } from './utils/androidCompat.js'
+import { initializePerformanceOptimizations } from './utils/performanceOptimization.js'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <Suspense fallback={<div>Loading...</div>}> {/* Add Suspense */}
-      <RootApp />
-    </Suspense>
-  </StrictMode>,
-);
+// Initialize Android compatibility features
+initializeAndroidCompat()
+preventZoomOnInputFocus()
+initializePerformanceOptimizations()
 
-// Add 'loaded' class to body to hide spinner and show app
-document.body.classList.add('loaded');
+// Signal that the app has loaded
+document.body.classList.add('loaded')
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App novelId="default" />
+  </React.StrictMode>,
+)
