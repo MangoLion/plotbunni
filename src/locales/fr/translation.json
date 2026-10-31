@@ -92,6 +92,7 @@
   "ai_chat_modal_status_thinking": "Réflexion...",
   "ai_chat_modal_placeholder_user_input": "Posez une question ou tapez votre message...",
   "ai_chat_modal_tooltip_stop_generating": "Arrêter la Génération",
+  "ai_chat_modal_tooltip_send_message": "Envoyer le message (Ctrl+Entrée)",
   "ai_chat_modal_button_stop": "Arrêter",
   "ai_chat_modal_button_send_message": "Envoyer",
   "ai_chat_modal_confirm_reset_title": "Confirmer la Réinitialisation du Chat",

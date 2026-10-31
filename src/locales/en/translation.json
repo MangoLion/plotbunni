@@ -92,6 +92,7 @@
   "ai_chat_modal_status_thinking": "Thinking...",
   "ai_chat_modal_placeholder_user_input": "Ask a question or type your message...",
   "ai_chat_modal_tooltip_stop_generating": "Stop Generating",
+  "ai_chat_modal_tooltip_send_message": "Send message (Ctrl+Enter)",
   "ai_chat_modal_button_stop": "Stop",
   "ai_chat_modal_button_send_message": "Send",
   "ai_chat_modal_confirm_reset_title": "Confirm Chat Reset",

@@ -453,8 +453,8 @@ const SettingsView = () => {
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
-        isOpen={isConfirmDeleteOpen}
-        onClose={() => setIsConfirmDeleteOpen(false)}
+        open={isConfirmDeleteOpen}
+        onOpenChange={setIsConfirmDeleteOpen}
         onConfirm={confirmDelete}
         title={t('settings_confirm_delete_profile_title')}
         description={t('settings_confirm_delete_profile_description', { profileName: profileToDelete?.name })}
