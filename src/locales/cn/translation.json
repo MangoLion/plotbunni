@@ -94,6 +94,7 @@
   "ai_chat_modal_status_thinking": "正在思考...",
   "ai_chat_modal_placeholder_user_input": "提问或输入您的消息...",
   "ai_chat_modal_tooltip_stop_generating": "停止生成",
+  "ai_chat_modal_tooltip_send_message": "发送消息 (Ctrl+Enter)",
   "ai_chat_modal_button_stop": "停止",
   "ai_chat_modal_button_send_message": "发送",
   "ai_chat_modal_confirm_reset_title": "确认重置聊天",

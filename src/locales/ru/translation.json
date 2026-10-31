@@ -92,6 +92,7 @@
   "ai_chat_modal_status_thinking": "Думаю...",
   "ai_chat_modal_placeholder_user_input": "Задайте вопрос или введите ваше сообщение...",
   "ai_chat_modal_tooltip_stop_generating": "Остановить генерацию",
+  "ai_chat_modal_tooltip_send_message": "Отправить сообщение (Ctrl+Enter)",
   "ai_chat_modal_button_stop": "Стоп",
   "ai_chat_modal_button_send_message": "Отправить",
   "ai_chat_modal_confirm_reset_title": "Подтвердить сброс чата",

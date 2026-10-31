@@ -94,6 +94,7 @@
   "ai_chat_modal_status_thinking": "Pensando...",
   "ai_chat_modal_placeholder_user_input": "Haz una pregunta o escribe tu mensaje...",
   "ai_chat_modal_tooltip_stop_generating": "Detener Generación",
+  "ai_chat_modal_tooltip_send_message": "Enviar mensaje (Ctrl+Enter)",
   "ai_chat_modal_button_stop": "Detener",
   "ai_chat_modal_button_send_message": "Enviar",
   "ai_chat_modal_confirm_reset_title": "Confirmar Restablecimiento de Chat",

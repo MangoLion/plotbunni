@@ -92,6 +92,7 @@
   "ai_chat_modal_status_thinking": "Đang suy nghĩ...",
   "ai_chat_modal_placeholder_user_input": "Đặt câu hỏi hoặc nhập tin nhắn của bạn...",
   "ai_chat_modal_tooltip_stop_generating": "Dừng tạo",
+  "ai_chat_modal_tooltip_send_message": "Gửi tin nhắn (Ctrl+Enter)",
   "ai_chat_modal_button_stop": "Dừng",
   "ai_chat_modal_button_send_message": "Gửi",
   "ai_chat_modal_confirm_reset_title": "Xác nhận đặt lại trò chuyện",
